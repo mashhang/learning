@@ -12,9 +12,9 @@ const cardDeal = () => {
             Transform Learning, Tailored for You
           </h1>
           <p className="text-[18px] w-[650px] mx-auto mt-1 text-[#8A94A7]">
-            At Mathmath, we`&apos;`re committed to revolutionizing math
-            education with a platform designed to meet individual needs. Explore
-            a seamless, adaptive solution for crafting personalized lessons,
+            At Mathmath, we&apos;re committed to revolutionizing math education
+            with a platform designed to meet individual needs. Explore a
+            seamless, adaptive solution for crafting personalized lessons,
             tracking progress, and engaging students with dynamic, customized
             content.
           </p>

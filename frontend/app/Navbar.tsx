@@ -101,7 +101,7 @@ const Navbar: React.FC<NavbarProps> = ({
     if (link) {
       setActiveLabel(link.label);
     }
-  }, [currentPath]);
+  }, [currentPath, links, qalinks]);
 
   return (
     <>

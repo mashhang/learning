@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import Navbar from "..//..//Navbar";
 
-const page = () => {
+const Page = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isProfileMenuOpen, setIsProfileOpen] = useState(false);
 
@@ -63,7 +63,8 @@ const page = () => {
             </div>
 
             <h1 className="text-[20px] font-light mt-3">
-              Keep up the great work! You're close to completing the course.
+              Keep up the great work! You&apos;re close to completing the
+              course.
             </h1>
           </div>
           <div className="w-full h-[400px] bg-white shadow-custom col-span-2 row-span-3 col-start-1 row-start-2 rounded-xl px-10 pt-4">
@@ -81,4 +82,4 @@ const page = () => {
   );
 };
 
-export default page;
+export default Page;
