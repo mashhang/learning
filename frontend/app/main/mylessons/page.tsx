@@ -16,7 +16,7 @@ const MyLessons = () => {
 
   const isAuthenticated = true;
 
-  const [progress, setProgress] = useState(0);
+  // const [progress, setProgress] = useState(0);
 
   return (
     <div

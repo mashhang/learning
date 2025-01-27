@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import Dashboard from "./main/page";
+// import Dashboard from "./main/page";
 import Navbar from "./Navbar";
 // import LandingPage from "./components/LandingPAGE/LandingPage";
 // import Offer from "./components/LandingPAGE/offer";
@@ -14,7 +14,7 @@ import {
   GetStarted,
 } from "./components/LandingPAGE";
 
-const page = () => {
+const Page = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isProfileMenuOpen, setIsProfileOpen] = useState(false);
 
@@ -52,4 +52,4 @@ const page = () => {
   );
 };
 
-export default page;
+export default Page;

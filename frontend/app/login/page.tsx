@@ -5,7 +5,7 @@ import Logo from "../assets/logo.png";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 
-const page = () => {
+const Page = () => {
   const router = useRouter(); // Initialize useRouter
 
   const login = () => {
@@ -57,4 +57,4 @@ const page = () => {
   );
 };
 
-export default page;
+export default Page;
