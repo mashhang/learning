@@ -1,7 +1,7 @@
 import Image from "next/image";
 import React from "react";
 import { useRouter } from "next/navigation"; // Import useRouter
-import { learning } from "../../assets/landingPage";
+import { learning } from "../../../public/assets/landingPage";
 
 const LandingPage = () => {
   const router = useRouter(); // Initialize useRouter

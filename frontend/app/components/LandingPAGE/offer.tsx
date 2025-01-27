@@ -1,6 +1,6 @@
 import React from "react";
 import Image from "next/image";
-import { sci, alm, ilt } from "../../assets/landingPage";
+import { sci, alm, ilt } from "../../../public/assets/landingPage";
 
 const offer = () => {
   return (
