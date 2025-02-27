@@ -34,14 +34,16 @@ const prisma = new PrismaClient();
 //   }
 // }
 
-export async function PUT(
-  req: NextRequest,
-  { params }: { params: { id: string } }
-) {
-  try {
-    const { id } = params; // id is directly available in params
-    const { title, content } = await req.json(); // assuming you're sending these fields in the request body
+export async function PUT(req: NextRequest) {
+  // Extract 'id' from the request's URL path
+  const { pathname } = req.nextUrl;
+  const id = pathname.split("/").pop()!; // Extracting the 'id' from the URL
 
+  try {
+    // Extract title and content from the request body
+    const { title, content } = await req.json();
+
+    // Check if the lesson exists
     const existingLesson = await prisma.lesson.findUnique({
       where: { id },
     });
@@ -50,6 +52,7 @@ export async function PUT(
       return NextResponse.json({ error: "Lesson not found" }, { status: 404 });
     }
 
+    // Update the lesson
     const updatedLesson = await prisma.lesson.update({
       where: { id },
       data: { title, content },
