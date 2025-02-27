@@ -16,6 +16,7 @@ declare module "express-serve-static-core" {
 export const getLessons: RequestHandler = async (_req, res) => {
   try {
     const lessons = await prisma.lesson.findMany({
+      include: { questions: true }, // Include related questions
       orderBy: { createdAt: "asc" }, // Ensure lessons are ordered
     });
     res.status(200).json(lessons);
@@ -35,7 +36,10 @@ export const getLessonById: RequestHandler = async (
   try {
     const lessonId = req.params.id;
 
-    const lesson = await prisma.lesson.findUnique({ where: { id: lessonId } });
+    const lesson = await prisma.lesson.findUnique({
+      where: { id: lessonId },
+      include: { questions: true },
+    });
     if (!lesson) {
       res.status(404).json({ error: "Lesson not found" });
       return;
@@ -51,36 +55,51 @@ export const getLessonById: RequestHandler = async (
 /**
  * ✅ UPDATE A LESSON
  */
-export const updateLesson: RequestHandler = async (req, res): Promise<void> => {
+export const updateLesson = async (req: Request, res: Response) => {
   try {
+    const { title, content, questions } = req.body;
     const lessonId = req.params.id;
-    const { title, content } = req.body;
 
-    if (!req.user) {
-      res.status(401).json({ error: "Unauthorized: No user found" });
-      return;
-    }
-
-    if (req.user.role !== "ADMIN") {
-      res
+    if (!req.user || req.user.role !== "ADMIN") {
+      return res
         .status(403)
         .json({ error: "Forbidden: Only admins can update lessons" });
-      return;
     }
 
-    const existingLesson = await prisma.lesson.findUnique({
-      where: { id: lessonId },
-    });
-
-    if (!existingLesson) {
-      res.status(404).json({ error: "Lesson not found" });
-      return;
-    }
-
+    // ✅ Update the lesson details
     const updatedLesson = await prisma.lesson.update({
       where: { id: lessonId },
       data: { title, content },
     });
+
+    // ✅ Process questions: Update existing ones or create new ones
+    if (questions && questions.length > 0) {
+      await Promise.all(
+        questions.map(async (q: any) => {
+          if (q.id) {
+            // ✅ Update existing question
+            await prisma.question.update({
+              where: { id: q.id },
+              data: {
+                question: q.question,
+                choices: q.choices,
+                correctAnswer: q.correctAnswer,
+              },
+            });
+          } else {
+            // ✅ Create new question
+            await prisma.question.create({
+              data: {
+                lessonId,
+                question: q.question,
+                choices: q.choices,
+                correctAnswer: q.correctAnswer,
+              },
+            });
+          }
+        })
+      );
+    }
 
     res.status(200).json(updatedLesson);
   } catch (error) {
@@ -124,7 +143,7 @@ export const createLesson: RequestHandler = async (
   next
 ): Promise<void> => {
   try {
-    const { title, content, chapterId } = req.body;
+    const { title, content, chapterId, questions } = req.body;
 
     if (!req.user) {
       res.status(401).json({ error: "Unauthorized: No user found" });
@@ -155,7 +174,19 @@ export const createLesson: RequestHandler = async (
     }
 
     const lesson = await prisma.lesson.create({
-      data: { title, content, chapterId },
+      data: {
+        title,
+        content,
+        chapterId,
+        questions: {
+          create: questions.map((q: any) => ({
+            question: q.question,
+            choices: q.choices,
+            correctAnswer: q.correctAnswer,
+          })),
+        },
+      },
+      include: { questions: true }, // Include questions in response
     });
 
     res.status(201).json(lesson);

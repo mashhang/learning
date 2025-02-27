@@ -6,22 +6,56 @@ import { useRouter } from "next/navigation";
 export default function AddLesson() {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
-  const [chapterId, setChapterId] = useState(""); // ✅ Ensure chapterId is selected
+  const [chapterId, setChapterId] = useState("");
   const [chapters, setChapters] = useState<{ id: string; title: string }[]>([]);
+  const [questions, setQuestions] = useState([
+    { question: "", choices: ["", "", "", ""], correctAnswer: "" },
+  ]);
   const router = useRouter();
 
   useEffect(() => {
-    // ✅ Fetch all available chapters
     fetch("http://localhost:5001/api/chapters")
       .then((res) => res.json())
       .then((data) => setChapters(data))
       .catch((error) => console.error("Error fetching chapters:", error));
   }, []);
 
+  // ✅ Handle question field updates
+  const handleQuestionChange = (
+    index: number,
+    field: "question" | "correctAnswer",
+    value: string
+  ) => {
+    const newQuestions = [...questions];
+    newQuestions[index][field] = value; // ✅ Direct assignment for string fields
+    setQuestions(newQuestions);
+  };
+
+  // ✅ Handle choices updates separately
+  const handleChoiceChange = (
+    qIndex: number,
+    cIndex: number,
+    value: string
+  ) => {
+    const newQuestions = [...questions];
+    newQuestions[qIndex].choices[cIndex] = value; // ✅ Assign to the correct index in the array
+    setQuestions(newQuestions);
+  };
+
+  const addQuestion = () => {
+    setQuestions([
+      ...questions,
+      { question: "", choices: ["", "", "", ""], correctAnswer: "" },
+    ]);
+  };
+
+  const removeQuestion = (index: number) => {
+    setQuestions(questions.filter((_, i) => i !== index));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // ✅ Ensure a chapter is selected before proceeding
     if (!chapterId) {
       alert("Please select a chapter before adding a lesson.");
       return;
@@ -39,7 +73,7 @@ export default function AddLesson() {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify({ title, content, chapterId }), // ✅ Include chapterId
+      body: JSON.stringify({ title, content, chapterId, questions }),
     });
 
     if (res.ok) {
@@ -68,7 +102,7 @@ export default function AddLesson() {
           className="border p-2 w-full mb-2"
         />
 
-        {/* ✅ Add Chapter Selection */}
+        {/* ✅ Select Chapter */}
         <select
           value={chapterId}
           onChange={(e) => setChapterId(e.target.value)}
@@ -81,6 +115,61 @@ export default function AddLesson() {
             </option>
           ))}
         </select>
+
+        {/* ✅ Questions Section */}
+        <h2 className="text-xl font-bold mt-4">Questions</h2>
+        {questions.map((q, qIndex) => (
+          <div key={qIndex} className="border p-4 mb-4 rounded">
+            <input
+              type="text"
+              placeholder="Enter Question"
+              value={q.question}
+              onChange={(e) =>
+                handleQuestionChange(qIndex, "question", e.target.value)
+              }
+              className="border p-2 w-full mb-2"
+            />
+
+            {q.choices.map((choice, cIndex) => (
+              <input
+                key={cIndex}
+                type="text"
+                placeholder={`Choice ${cIndex + 1}`}
+                value={choice}
+                onChange={(e) =>
+                  handleChoiceChange(qIndex, cIndex, e.target.value)
+                }
+                className="border p-2 w-full mb-2"
+              />
+            ))}
+
+            <input
+              type="text"
+              placeholder="Correct Answer"
+              value={q.correctAnswer}
+              onChange={(e) =>
+                handleQuestionChange(qIndex, "correctAnswer", e.target.value)
+              }
+              className="border p-2 w-full mb-2"
+            />
+
+            <button
+              type="button"
+              onClick={() => removeQuestion(qIndex)}
+              className="bg-red-500 text-white p-2 rounded"
+            >
+              Remove Question
+            </button>
+          </div>
+        ))}
+
+        <button
+          type="button"
+          onClick={addQuestion}
+          className="bg-blue-500 text-white p-2 rounded mb-4"
+        >
+          + Add Question
+        </button>
 
         <button type="submit" className="bg-green-500 text-white p-2 rounded">
           Save Lesson
