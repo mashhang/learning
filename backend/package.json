@@ -1,12 +1,12 @@
 {
+  "type": "module",
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
     "@types/cors": "^2.8.17",
     "@types/express": "^5.0.0",
     "@types/jsonwebtoken": "^9.0.8",
     "prisma": "^6.3.1",
-    "ts-node-dev": "^2.0.0",
-    "type": "module"
+    "ts-node-dev": "^2.0.0"
   },
   "scripts": {
     "dev": "tsx watch server.mts"

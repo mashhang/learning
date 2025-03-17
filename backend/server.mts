@@ -241,7 +241,7 @@ import {
   deleteLesson,
 } from "./src/routes/lesson";
 
-import { getUsers } from "./src/routes/user";
+import { getUsers, getUserById } from "./src/routes/user";
 
 dotenv.config();
 const app = express();
@@ -270,5 +270,6 @@ app.delete("/api/lessons/:id", authenticateUser, deleteLesson); // ✅ Now corre
 
 // ✅ USERS ROUTE
 app.get("/api/users", authenticateUser, getUsers);
+app.get("/api/user/:id", getUserById); // ✅ Get a user by ID
 
 app.listen(5001, () => console.log("✅ Backend running on port 5001"));

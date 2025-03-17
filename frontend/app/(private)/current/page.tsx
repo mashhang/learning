@@ -48,10 +48,45 @@ export default function CurrentLesson() {
           width: isSidebarOpen ? `calc(100% - ${sidebarWidth})` : "100%",
         }}
       >
-        <div className="max-w-[90%] mx-auto mt-8 p-8 bg-white rounded-lg shadow-md">
-          <h1 className="text-3xl font-bold text-center my-4">
-            {lesson.title}
-          </h1>
+        {/* Navigation Buttons */}
+        <div className="flex justify-between mt-11 py-3 px-5 bg-[#D9D9D9]">
+          {lessons[lessons.findIndex((l) => l.id === lesson.id) - 1] ? (
+            <button
+              onClick={() =>
+                router.push(
+                  `/current?id=${
+                    lessons[lessons.findIndex((l) => l.id === lesson.id) - 1].id
+                  }`
+                )
+              }
+              className="text-[13px] py-2 px-4 bg-[#30608E] text-white rounded-md"
+            >
+              Previous Lesson
+            </button>
+          ) : (
+            <div className="py-2 px-12"></div>
+          )}
+          <h1 className="text-lg my-auto">{lesson.title}</h1>
+
+          {lessons[lessons.findIndex((l) => l.id === lesson.id) + 1] ? (
+            <button
+              onClick={() =>
+                router.push(
+                  `/current?id=${
+                    lessons[lessons.findIndex((l) => l.id === lesson.id) + 1].id
+                  }`
+                )
+              }
+              className="text-[13px] py-2 px-4 bg-[#30608E] text-white rounded-md"
+            >
+              Next Lesson
+            </button>
+          ) : (
+            <div></div>
+          )}
+        </div>
+
+        <div className="max-w-full mx-auto max-h-full p-8 bg-white">
           {/*  */}
           {/* Markdown Renderer */}
           <div className="prose max-w-none text-lg leading-relaxed">
@@ -61,7 +96,7 @@ export default function CurrentLesson() {
               rehypePlugins={[rehypeKatex]}
               components={{
                 p: ({ node, children }) => (
-                  <p className="text-gray-700">{children}</p>
+                  <p className="text-gray-700 mb-4">{children}</p>
                 ),
                 strong: ({ node, children }) => (
                   <strong className="text-red-500">{children}</strong>
@@ -85,45 +120,6 @@ export default function CurrentLesson() {
                 ),
               }}
             />
-          </div>
-
-          {/* Navigation Buttons */}
-          <div className="flex justify-between mt-6">
-            {lessons[lessons.findIndex((l) => l.id === lesson.id) - 1] ? (
-              <button
-                onClick={() =>
-                  router.push(
-                    `/current?id=${
-                      lessons[lessons.findIndex((l) => l.id === lesson.id) - 1]
-                        .id
-                    }`
-                  )
-                }
-                className="text-[14px] py-2 px-4 bg-[#30608E] text-white rounded-md"
-              >
-                Previous Lesson
-              </button>
-            ) : (
-              <div></div>
-            )}
-
-            {lessons[lessons.findIndex((l) => l.id === lesson.id) + 1] ? (
-              <button
-                onClick={() =>
-                  router.push(
-                    `/current?id=${
-                      lessons[lessons.findIndex((l) => l.id === lesson.id) + 1]
-                        .id
-                    }`
-                  )
-                }
-                className="text-[14px] py-2 px-4 bg-[#30608E] text-white rounded-md"
-              >
-                Next Lesson
-              </button>
-            ) : (
-              <div></div>
-            )}
           </div>
         </div>
       </div>

@@ -99,7 +99,7 @@ export default function AddLesson() {
           placeholder="Lesson Content"
           value={content}
           onChange={(e) => setContent(e.target.value)}
-          className="border p-2 w-full mb-2"
+          className="border p-2 w-full mb-2 h-80"
         />
 
         {/* ✅ Select Chapter */}

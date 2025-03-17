@@ -122,7 +122,7 @@ export default function EditLesson() {
         <textarea
           value={lesson.content}
           onChange={(e) => handleLessonChange("content", e.target.value)}
-          className="border p-2 w-full mb-2"
+          className="border p-2 w-full mb-2 h-80"
           placeholder="Lesson Content"
         />
 

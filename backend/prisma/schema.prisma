@@ -38,6 +38,7 @@ model Lesson {
   id        String   @id @default(uuid())
   title     String
   content   String
+  media     String?  // ✅ Stores image or video URLs (nullable)
   progress  Float    @default(0.0) // Tracks student progress
   chapterId String
   chapter   Chapter  @relation(fields: [chapterId], references: [id], onDelete: Cascade)
