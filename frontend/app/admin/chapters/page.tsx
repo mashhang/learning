@@ -3,11 +3,13 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
+
 export default function ChaptersAdmin() {
   const [chapters, setChapters] = useState<{ id: string; title: string }[]>([]);
 
   useEffect(() => {
-    fetch("http://localhost:5001/api/chapters") // ✅ Fetch from backend
+    fetch(`${API_URL}/api/chapters`) // ✅ Fetch from backend
       .then((res) => res.json())
       .then((data) => setChapters(data))
       .catch((error) => console.error("Error fetching chapters:", error));
@@ -22,18 +24,18 @@ export default function ChaptersAdmin() {
       >
         Add Chapter
       </Link>
-      <table className="mt-4 w-full border">
+      <table className="mt-4 w-full border border-collapse">
         <thead>
-          <tr className="border-b">
+          <tr className="border bg-gray-200">
             <th className="p-2">Title</th>
             <th className="p-2">Actions</th>
           </tr>
         </thead>
         <tbody>
           {chapters.map((chapter) => (
-            <tr key={chapter.id} className="border-b">
-              <td className="p-2">{chapter.title}</td>
-              <td className="p-2">
+            <tr key={chapter.id} className="border">
+              <td className="p-2 border pl-5">{chapter.title}</td>
+              <td className="p-2 border pl-5">
                 <Link
                   href={`/admin/chapters/${chapter.id}`}
                   className="text-blue-600"

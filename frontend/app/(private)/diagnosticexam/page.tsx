@@ -16,6 +16,8 @@ type Lesson = {
   questions: Question[];
 };
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
+
 export default function DiagnosticExam() {
   const [lessons, setLessons] = useState<Lesson[]>([]);
   const [selectedAnswers, setSelectedAnswers] = useState<{
@@ -23,7 +25,7 @@ export default function DiagnosticExam() {
   }>({});
 
   useEffect(() => {
-    fetch("http://localhost:5001/api/lessons") // ✅ Fetch all lessons with questions
+    fetch(`${API_URL}/api/lessons`) // ✅ Fetch all lessons with questions
       .then((res) => res.json())
       .then((data) => setLessons(data))
       .catch((error) => console.error("Error fetching lessons:", error));

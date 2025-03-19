@@ -20,6 +20,15 @@ export const getChapters: RequestHandler = async (_req, res): Promise<void> => {
     const chapters = await prisma.chapter.findMany({
       include: { lessons: true },
     });
+
+    // ✅ Sort lessons using natural sorting (Lesson 1, Lesson 2, Lesson 3, etc.)
+    chapters.sort((a, b) =>
+      new Intl.Collator(undefined, {
+        numeric: true,
+        sensitivity: "base",
+      }).compare(a.title, b.title)
+    );
+
     res.status(200).json(chapters);
   } catch (error) {
     console.error("Error fetching chapters:", error);

@@ -3,10 +3,13 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
+
 export default function AddLesson() {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [chapterId, setChapterId] = useState("");
+  const [media, setMedia] = useState<File | null>(null);
   const [chapters, setChapters] = useState<{ id: string; title: string }[]>([]);
   const [questions, setQuestions] = useState([
     { question: "", choices: ["", "", "", ""], correctAnswer: "" },
@@ -14,11 +17,18 @@ export default function AddLesson() {
   const router = useRouter();
 
   useEffect(() => {
-    fetch("http://localhost:5001/api/chapters")
+    fetch(`${API_URL}/api/chapters`)
       .then((res) => res.json())
       .then((data) => setChapters(data))
       .catch((error) => console.error("Error fetching chapters:", error));
   }, []);
+
+  // ✅ Handle file selection
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setMedia(e.target.files[0]);
+    }
+  };
 
   // ✅ Handle question field updates
   const handleQuestionChange = (
@@ -53,6 +63,7 @@ export default function AddLesson() {
     setQuestions(questions.filter((_, i) => i !== index));
   };
 
+  // ✅ Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -67,13 +78,22 @@ export default function AddLesson() {
       return;
     }
 
-    const res = await fetch("http://localhost:5001/api/lessons", {
+    // ✅ Use FormData to send text + file data
+    const formData = new FormData();
+    formData.append("title", title);
+    formData.append("content", content);
+    formData.append("chapterId", chapterId);
+    if (media) formData.append("media", media);
+    formData.append("questions", JSON.stringify(questions));
+
+    const res = await fetch(`${API_URL}/api/lessons`, {
       method: "POST",
       headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
+        // "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`, // ✅ Still needs auth, but no 'Content-Type'
       },
-      body: JSON.stringify({ title, content, chapterId, questions }),
+      body: formData, // ✅ Send as FormData
+      // JSON.stringify({ title, content, chapterId, questions }),
     });
 
     if (res.ok) {
@@ -100,6 +120,14 @@ export default function AddLesson() {
           value={content}
           onChange={(e) => setContent(e.target.value)}
           className="border p-2 w-full mb-2 h-80"
+        />
+
+        {/* ✅ File Upload Field */}
+        <input
+          type="file"
+          accept="image/*,video/*"
+          onChange={handleFileChange}
+          className="border p-2 w-full mb-2"
         />
 
         {/* ✅ Select Chapter */}

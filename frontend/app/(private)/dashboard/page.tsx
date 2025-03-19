@@ -3,10 +3,12 @@
 import React, { useEffect, useState } from "react";
 import ProtectedRoute from "@/app/components/ProtectedRoute";
 import { useSidebar } from "@/app/context/SidebarContext";
+import { useAuth } from "@/app/context/AuthContext";
 
 export default function Dashboard() {
   const [formattedDate, setFormattedDate] = useState("");
   const [greeting, setGreeting] = useState("");
+  const { user } = useAuth();
 
   useEffect(() => {
     const currentDate = new Date();
@@ -42,22 +44,24 @@ export default function Dashboard() {
       >
         <div className="pt-[96px] mb-6 p-6">
           <h3 className="text-center font-[200]">{formattedDate}</h3>
-          <h1 className="text-center text-4xl font-[300]">{greeting}, King</h1>
+          <h1 className="text-center text-4xl font-[300]">
+            {greeting}, {user?.name ?? "Guest"}
+          </h1>
         </div>
 
         <div className="max-w-[1520px] h-[500px] mx-auto">
           <div className="h-full grid grid-cols-4 grid-rows-9 gap-14">
-            <div className="w-full h-[200px] border-black border-[1px] col-span-2 row-span-3 col-start-1 row-start-1 rounded-xl py-2">
+            <div className="w-full h-[200px] bg-white border-black border-[1px] col-span-2 row-span-3 col-start-1 row-start-1 rounded-xl py-2 shadow-custom">
               <h1 className="text-center text-[28px] font-medium">
                 Current Lesson
               </h1>
 
               <div className="mx-12 mt-3">
-                <p className="font-bold">
+                <p className="font-bold text-xl">
                   Lesson 5:
                   <span> Algebra Basics</span>
                 </p>
-                <p>
+                <p className="text-xl">
                   Progress:
                   <span> 75% completed</span>
                 </p>
@@ -71,12 +75,12 @@ export default function Dashboard() {
                 </div>
               </div>
             </div>
-            <div className="w-full h-[200px] border-black border-[1px] col-span-2 row-span-3 col-start-1 row-start-5 rounded-xl py-2">
+            <div className="w-full h-[200px] bg-white border-black border-[1px] col-span-2 row-span-3 col-start-1 row-start-5 rounded-xl py-2 shadow-custom">
               <h1 className="text-center text-[28px] font-medium">
                 Progress Report
               </h1>
 
-              <div className="mx-12 mt-5">
+              <div className="mx-12 mt-5 text-xl">
                 <p>
                   Total Lessons Completed:
                   <span className="font-bold"> 4/10</span>
@@ -90,22 +94,51 @@ export default function Dashboard() {
                 </p>
               </div>
             </div>
-            <div className="w-full h-[200px] border-black border-[1px] col-span-2 row-span-3 col-start-1 row-start-9 rounded-xl py-2">
-              <h1 className="text-center text-[28px] font-medium">
-                Assignments Due
-              </h1>
-            </div>
-            <div className="w-full h-[200px] border-black border-[1px] col-span-2 row-span-3 col-start-3 row-start-1 rounded-xl py-2">
+            <div className="w-full h-[200px] bg-white border-black border-[1px] col-span-2 row-span-3 col-start-3 row-start-1 rounded-xl py-2 shadow-custom">
               <h1 className="text-center text-[28px] font-medium">
                 Next Lessons
               </h1>
+
+              <div className="mx-12 mt-3">
+                <p className="font-bold text-xl">
+                  Lesson 7:
+                  <span> Quadratic Equations</span>
+                </p>
+                <p className="text-lg">
+                  Scheduled for:
+                  <span> November 20</span>
+                </p>
+
+                <p className="font-bold text-xl mt-3">
+                  Lesson 8:
+                  <span> Polynomials</span>
+                </p>
+                <p className="text-lg">
+                  Scheduled for:
+                  <span> November 25</span>
+                </p>
+              </div>
             </div>
-            <div className="w-full h-[200px] border-black border-[1px] col-span-2 row-span-3 col-start-3 row-start-5 rounded-xl py-2">
+            <div className="w-full h-[200px] bg-white border-black border-[1px] col-span-2 row-span-3 col-start-3 row-start-5 rounded-xl py-2 shadow-custom">
               <h1 className="text-center text-[28px] font-medium">
                 Announcements
               </h1>
+
+              <div className="mx-12 mt-5 text-xl">
+                <p className="font-bold text-xl">
+                  New Lesson Released:
+                  <span className="font-normal"> Algebra Practice Set</span>
+                </p>
+                <p className="text-lg">Due: November 15</p>
+                <p className="font-bold text-xl mt-3">
+                  Exam Reminder:
+                  <span className="font-normal">
+                    Midterm Exam on November 30
+                  </span>
+                </p>
+              </div>
             </div>
-            <div className="w-full h-[200px] border-black border-[1px] col-span-2 row-span-3 col-start-3 row-start-9 rounded-xl py-2">
+            <div className="w-full h-[200px] bg-white border-black border-[1px] col-span-2 row-span-3 col-start-2 row-start-9 rounded-xl py-2 shadow-custom">
               <h1 className="text-center text-[28px] font-medium">
                 Current Lesson
               </h1>

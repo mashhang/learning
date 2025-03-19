@@ -9,12 +9,14 @@ type User = {
   role: "USER" | "ADMIN";
 };
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
+
 export default function UsersAdmin() {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("http://localhost:5001/api/users", {
+    fetch(`${API_URL}/api/users`, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
@@ -37,6 +39,7 @@ export default function UsersAdmin() {
   return (
     <div className="p-6">
       <h1 className="text-2xl font-bold mb-4">Manage Users</h1>
+
       <table className="mt-4 w-full border">
         <thead>
           <tr className="border-b bg-gray-200">
@@ -47,10 +50,10 @@ export default function UsersAdmin() {
         </thead>
         <tbody>
           {users.map((user) => (
-            <tr key={user.id} className="border-b">
-              <td className="p-2">{user.name}</td>
-              <td className="p-2">{user.email}</td>
-              <td className="p-2">{user.role}</td>
+            <tr key={user.id} className="border">
+              <td className="p-2 border">{user.name}</td>
+              <td className="p-2 border">{user.email}</td>
+              <td className="p-2 border">{user.role}</td>
             </tr>
           ))}
         </tbody>

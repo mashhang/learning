@@ -2,11 +2,13 @@ import { Request, Response, NextFunction, RequestHandler } from "express";
 import { PrismaClient, User } from "@prisma/client";
 
 const prisma = new PrismaClient();
+const API_URL = process.env.API_URL || "http://192.168.1.4:5001"; // ✅ Use backend env
 
 // ✅ Extend Express Request type to include `user`
-declare module "express-serve-static-core" {
+declare module global {
   interface Request {
     user?: User;
+    file?: Express.Multer.File; // ✅ Extend Request type to include `file`
   }
 }
 
@@ -16,10 +18,36 @@ declare module "express-serve-static-core" {
 export const getLessons: RequestHandler = async (_req, res) => {
   try {
     const lessons = await prisma.lesson.findMany({
-      include: { questions: true }, // Include related questions
-      orderBy: { createdAt: "asc" }, // Ensure lessons are ordered
+      include: {
+        chapter: true, // Include chapter details
+        questions: true, // Include related questions
+      },
+      // orderBy: { title: "asc" },
     });
-    res.status(200).json(lessons);
+
+    // ✅ Sort lessons using natural sorting (Lesson 1, Lesson 2, Lesson 3, etc.)
+    lessons.sort((a, b) =>
+      new Intl.Collator(undefined, {
+        numeric: true,
+        sensitivity: "base",
+      }).compare(a.title, b.title)
+    );
+
+    // Ensure the response includes `chapterId`
+    res.status(200).json(
+      lessons.map((lesson) => ({
+        id: lesson.id,
+        title: lesson.title,
+        content: lesson.content,
+        chapterId: lesson.chapterId,
+        chapterTitle: lesson.chapter ? lesson.chapter.title : "Unassigned", // ✅ Include Chapter Title
+        media: lesson.media
+          ? `${API_URL}${lesson.media.startsWith("/") ? "" : "/"}${
+              lesson.media
+            }`
+          : null, // ✅ Ensure full path
+      }))
+    );
   } catch (error) {
     console.error("Error fetching lessons:", error);
     res.status(500).json({ error: "Internal Server Error" });
@@ -55,51 +83,29 @@ export const getLessonById: RequestHandler = async (
 /**
  * ✅ UPDATE A LESSON
  */
-export const updateLesson = async (req: Request, res: Response) => {
+export const updateLesson: RequestHandler = async (req, res) => {
   try {
     const { title, content, questions } = req.body;
     const lessonId = req.params.id;
+    const media = req.file ? `/uploads/${req.file.filename}` : undefined; // ✅ Store File URL
 
     if (!req.user || req.user.role !== "ADMIN") {
-      return res
+      res
         .status(403)
         .json({ error: "Forbidden: Only admins can update lessons" });
+      return;
     }
 
-    // ✅ Update the lesson details
+    const updateData: { title?: string; content?: string; media?: string } = {
+      title,
+      content,
+    };
+    if (media) updateData.media = media; // ✅ Only update media if present
+
     const updatedLesson = await prisma.lesson.update({
       where: { id: lessonId },
-      data: { title, content },
+      data: updateData,
     });
-
-    // ✅ Process questions: Update existing ones or create new ones
-    if (questions && questions.length > 0) {
-      await Promise.all(
-        questions.map(async (q: any) => {
-          if (q.id) {
-            // ✅ Update existing question
-            await prisma.question.update({
-              where: { id: q.id },
-              data: {
-                question: q.question,
-                choices: q.choices,
-                correctAnswer: q.correctAnswer,
-              },
-            });
-          } else {
-            // ✅ Create new question
-            await prisma.question.create({
-              data: {
-                lessonId,
-                question: q.question,
-                choices: q.choices,
-                correctAnswer: q.correctAnswer,
-              },
-            });
-          }
-        })
-      );
-    }
 
     res.status(200).json(updatedLesson);
   } catch (error) {
@@ -137,20 +143,12 @@ export const deleteLesson: RequestHandler = async (req, res): Promise<void> => {
 /**
  * ✅ CREATE A NEW LESSON INSIDE A CHAPTER
  */
-export const createLesson: RequestHandler = async (
-  req,
-  res,
-  next
-): Promise<void> => {
+export const createLesson: RequestHandler = async (req, res) => {
   try {
     const { title, content, chapterId, questions } = req.body;
+    const media = req.file ? `/uploads/${req.file.filename}` : null; // ✅ Store File URL
 
-    if (!req.user) {
-      res.status(401).json({ error: "Unauthorized: No user found" });
-      return;
-    }
-
-    if (req.user.role !== "ADMIN") {
+    if (!req.user || req.user.role !== "ADMIN") {
       res
         .status(403)
         .json({ error: "Forbidden: Only admins can create lessons" });
@@ -164,32 +162,26 @@ export const createLesson: RequestHandler = async (
       return;
     }
 
-    const chapter = await prisma.chapter.findUnique({
-      where: { id: chapterId },
-    });
-
-    if (!chapter) {
-      res.status(404).json({ error: "Chapter not found" });
-      return;
-    }
-
     const lesson = await prisma.lesson.create({
       data: {
         title,
         content,
         chapterId,
+        media,
         questions: {
-          create: questions.map((q: any) => ({
-            question: q.question,
-            choices: q.choices,
-            correctAnswer: q.correctAnswer,
-          })),
+          create: Array.isArray(questions)
+            ? questions.map((q: any) => ({
+                question: q.question,
+                choices: q.choices,
+                correctAnswer: q.correctAnswer,
+              }))
+            : [],
         },
       },
-      include: { questions: true }, // Include questions in response
+      include: { questions: true },
     });
 
-    res.status(201).json(lesson);
+    res.status(201).json({ message: "Lesson created successfully!", lesson });
   } catch (error) {
     console.error("Error creating lesson:", error);
     res.status(500).json({ error: "Internal Server Error" });

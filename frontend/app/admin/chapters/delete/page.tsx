@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
+
 export default function DeleteChapter() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -13,7 +15,7 @@ export default function DeleteChapter() {
     if (!id) return;
 
     // ✅ Fetch chapter details
-    fetch(`http://localhost:5001/api/chapters/${id}`)
+    fetch(`${API_URL}/api/chapters/${id}`)
       .then((res) => res.json())
       .then((data) => {
         if (data.error) {
@@ -43,7 +45,7 @@ export default function DeleteChapter() {
     }
 
     try {
-      const res = await fetch(`http://localhost:5001/api/chapters/${id}`, {
+      const res = await fetch(`${API_URL}/api/chapters/${id}`, {
         method: "DELETE",
         headers: {
           "Content-Type": "application/json",

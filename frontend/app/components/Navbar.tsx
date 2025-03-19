@@ -84,13 +84,13 @@ const Navbar: React.FC<NavbarProps> = ({
     {
       icon: <LibraryBig strokeWidth={1.25} />,
       label: "Current Lessons",
-      href: firstLessonId ? `/current?id=${firstLessonId}` : "/dashboard", // ✅ Dynamically link
+      href: firstLessonId ? `/current?id=${firstLessonId}` : "/current", // ✅ Dynamically link
     },
-    {
-      icon: <Backpack strokeWidth={1.25} />,
-      label: "Assignments",
-      href: "/assignments",
-    },
+    // {
+    //   icon: <Backpack strokeWidth={1.25} />,
+    //   label: "Assignments",
+    //   href: "/assignments",
+    // },
     {
       icon: <Bell strokeWidth={1.25} />,
       label: "Announcements",
@@ -122,15 +122,38 @@ const Navbar: React.FC<NavbarProps> = ({
   // State for the current active label
   const [activeLabel, setActiveLabel] = useState<string | null>(null);
 
+  const isActive = (linkHref: string) => {
+    const basePath = linkHref.split("?")[0]; // Remove query parameters from href
+    return currentPath.startsWith(basePath);
+  };
+
   // Update active label when the path changes
+  // useEffect(() => {
+  //   const link = [...links, ...qalinks].find((link) =>
+  //     currentPath.startsWith(link.href)
+  //   );
+  //   if (link) {
+  //     setActiveLabel(link ? link.label : "Dashboard");
+  //   }
+  // }, [currentPath]);
   useEffect(() => {
-    const link = [...links, ...qalinks].find((link) =>
-      currentPath.startsWith(link.href)
+    // Ensure the dynamic "Current Lessons" link is properly handled
+    const updatedLinks = [...links, ...qalinks].map((link) => ({
+      ...link,
+      href:
+        link.label === "Current Lessons" && firstLessonId
+          ? `/current?id=${firstLessonId}`
+          : link.href,
+    }));
+
+    const activeLink = updatedLinks.find(
+      (link) => currentPath.startsWith(link.href.split("?")[0]) // Ignore query params
     );
-    if (link) {
-      setActiveLabel(link ? link.label : "Dashboard");
+
+    if (activeLink) {
+      setActiveLabel(activeLink.label);
     }
-  }, [currentPath]);
+  }, [currentPath, firstLessonId]);
 
   // Inside the Navbar component
 
@@ -281,7 +304,9 @@ const Navbar: React.FC<NavbarProps> = ({
             <Link
               key={link.href}
               href={link.href}
-              className="flex mx-5 p-2 rounded-md hover:bg-zinc-300 hover:transition-all"
+              className={`flex mx-5 p-2 rounded-md hover:bg-zinc-300 hover:transition-all ${
+                isActive(link.href) ? "bg-[#D7E5F3]" : ""
+              }`}
             >
               <span className="mr-3">{link.icon}</span>
               {link.label}
@@ -358,14 +383,6 @@ const Navbar: React.FC<NavbarProps> = ({
           </div>
         </div>
       )}
-
-      {/* overlay for profile menu */}
-      {/* {isSidebarOpen && (
-        <div onClick={toggleSidebar} className="absolute inset-0 "></div>
-      )}
-      {isProfileOpen && (
-        <div onClick={toggleProfile} className="absolute inset-0"></div>
-      )} */}
     </>
   );
 };

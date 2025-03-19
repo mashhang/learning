@@ -220,12 +220,17 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
+import upload from "./src/middleware/upload"; // ✅ Import upload middleware
+import path from "path";
+import { fileURLToPath } from "url";
+
 import {
   registerUser,
   loginUser,
   getProfile,
   authenticateUser,
 } from "./src/routes/auth";
+
 import {
   getChapters,
   getChapterById,
@@ -233,6 +238,7 @@ import {
   updateChapter,
   deleteChapter,
 } from "./src/routes/chapter"; // ✅ Import chapter routes
+
 import {
   getLessons,
   getLessonById,
@@ -246,8 +252,24 @@ import { getUsers, getUserById } from "./src/routes/user";
 dotenv.config();
 const app = express();
 
-app.use(cors());
+// ✅ Manually define __dirname for ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// app.use(cors());
+app.use(
+  cors({
+    origin: "*", // ✅ Temporarily allow all origins (change later for security)
+    credentials: true, // ✅ Allow cookies & auth headers
+  })
+);
+
 app.use(express.json());
+
+// Serve uploaded files publicly
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+// app.use("/uploads", express.static(path.resolve("uploads")));
+// app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
 
 // ✅ AUTH ROUTES
 app.post("/api/auth/register", registerUser); // Takes (req, res)
@@ -264,8 +286,18 @@ app.delete("/api/chapters/:id", deleteChapter);
 // ✅ LESSON ROUTES
 app.get("/api/lessons", getLessons);
 app.get("/api/lessons/:id", getLessonById);
-app.post("/api/lessons", authenticateUser, createLesson);
-app.put("/api/lessons/:id", authenticateUser, updateLesson); // ✅ Now correctly includes `authenticateUser`
+app.post(
+  "/api/lessons",
+  authenticateUser,
+  upload.single("media"),
+  createLesson
+);
+app.put(
+  "/api/lessons/:id",
+  authenticateUser,
+  upload.single("media"),
+  updateLesson
+); // ✅ Now correctly includes `authenticateUser`
 app.delete("/api/lessons/:id", authenticateUser, deleteLesson); // ✅ Now correctly includes `authenticateUser`
 
 // ✅ USERS ROUTE

@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
+
 export default function DeleteLesson() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -13,7 +15,7 @@ export default function DeleteLesson() {
     if (!id) return;
 
     // Fetch lesson details before deletion
-    fetch(`http://localhost:5001/api/lessons/${id}`)
+    fetch(`${API_URL}/api/lessons/${id}`)
       .then((res) => res.json())
       .then((data) => {
         if (data.error) {
@@ -42,7 +44,7 @@ export default function DeleteLesson() {
       return;
     }
 
-    const res = await fetch(`http://localhost:5001/api/lessons/${id}`, {
+    const res = await fetch(`${API_URL}/api/lessons/${id}`, {
       method: "DELETE",
       headers: {
         "Content-Type": "application/json",

@@ -8,13 +8,17 @@ import ReactMarkdown from "react-markdown";
 import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
 import "katex/dist/katex.min.css"; // Import KaTeX styles
+import Image from "next/image";
 
 type Lesson = {
   id: string;
   title: string;
   content: string; // Markdown content
+  media?: string;
   chapterId: string;
 };
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
 
 export default function CurrentLesson() {
   const [lesson, setLesson] = useState<Lesson | null>(null);
@@ -25,7 +29,7 @@ export default function CurrentLesson() {
   const { isSidebarOpen, sidebarWidth } = useSidebar();
 
   useEffect(() => {
-    fetch("http://localhost:5001/api/lessons")
+    fetch(`${API_URL}/api/lessons`)
       .then((res) => res.json())
       .then((data) => {
         setLessons(data);
@@ -86,8 +90,38 @@ export default function CurrentLesson() {
           )}
         </div>
 
-        <div className="max-w-full mx-auto max-h-full p-8 bg-white">
-          {/*  */}
+        <div className="max-w-full mx-auto max-h-full bg-white">
+          {/* ✅ Display Media (Image or Video) */}
+          {lesson.media && (
+            <div className="flex justify-center mb-6">
+              {lesson.media.endsWith(".mp4") ? (
+                <video controls className="max-w-full h-auto rounded-lg">
+                  <source src={`${API_URL}${lesson.media}`} type="video/mp4" />
+                  Your browser does not support the video tag.
+                </video>
+              ) : (
+                // <img
+                //   src={`${API_URL}${lesson.media}`}
+                //   // width={100}
+                //   // height={100}
+                //   alt="Lesson Media"
+                //   className="w-full h-auto rounded-lg"
+                //   draggable="false"
+                //   // priority
+                // />
+                <Image
+                  src={lesson.media}
+                  alt="Lesson Media"
+                  width={800} // ✅ Set width
+                  height={800} // ✅ Set height
+                  className="w-full h-auto rounded-lg"
+                  priority // ✅ Improve LCP by prioritizing image loading
+                  unoptimized={true}
+                />
+              )}
+            </div>
+          )}
+
           {/* Markdown Renderer */}
           <div className="prose max-w-none text-lg leading-relaxed">
             <ReactMarkdown

@@ -3,13 +3,15 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
+
 export default function AddChapter() {
   const [title, setTitle] = useState("");
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const res = await fetch("http://localhost:5001/api/chapters", {
+    const res = await fetch(`${API_URL}/api/chapters`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

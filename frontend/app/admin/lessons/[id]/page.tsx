@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
+
 type Question = {
   id: string;
   question: string;
@@ -13,22 +15,30 @@ type Question = {
 export default function EditLesson() {
   const router = useRouter();
   const { id } = useParams();
+
   const [lesson, setLesson] = useState({
     title: "",
     content: "",
+    chapterId: "",
+    media: "", // ✅ Keep existing media file
     questions: [] as Question[],
   });
+
+  const [selectedFile, setSelectedFile] = useState<File | null>(null); // ✅ Track file upload
 
   useEffect(() => {
     if (!id) return;
 
-    fetch(`http://localhost:5001/api/lessons/${id}`)
+    fetch(`${API_URL}/api/lessons/${id}`)
       .then((res) => res.json())
       .then((data) => {
         if (!data.error) {
           setLesson({
-            ...data,
-            questions: data.questions ? data.questions : [], // ✅ Ensure questions is an array
+            title: data.title || "",
+            content: data.content || "",
+            chapterId: data.chapterId || "",
+            media: data.media || "", // ✅ Load existing media file
+            questions: Array.isArray(data.questions) ? data.questions : [], // ✅ Ensure it's an array
           });
         } else {
           alert("Lesson not found.");
@@ -39,7 +49,18 @@ export default function EditLesson() {
   }, [id]);
 
   const handleLessonChange = (field: keyof typeof lesson, value: string) => {
-    setLesson({ ...lesson, [field]: value });
+    setLesson((prevLesson) => ({
+      ...prevLesson,
+      [field]: value,
+      media: prevLesson.media, // ✅ Preserve existing file
+      questions: prevLesson.questions, // ✅ Preserve existing questions
+    }));
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      setSelectedFile(e.target.files[0]); // ✅ Only update file when a new one is selected
+    }
   };
 
   const handleQuestionChange = (
@@ -47,14 +68,13 @@ export default function EditLesson() {
     field: keyof Question,
     value: string
   ) => {
-    const updatedQuestions = [...lesson.questions];
+    const updatedQuestions = lesson.questions.map((q, index) => {
+      if (index === qIndex) {
+        return { ...q, [field]: value }; // ✅ Update question fields correctly
+      }
+      return q;
+    });
 
-    if (field === "choices") {
-      console.error("Use handleChoiceChange instead for choices.");
-      return;
-    }
-
-    updatedQuestions[qIndex][field] = value;
     setLesson({ ...lesson, questions: updatedQuestions });
   };
 
@@ -63,41 +83,59 @@ export default function EditLesson() {
     cIndex: number,
     value: string
   ) => {
-    const updatedQuestions = [...lesson.questions];
-    updatedQuestions[qIndex].choices = [...updatedQuestions[qIndex].choices];
-    updatedQuestions[qIndex].choices[cIndex] = value;
+    setLesson((prevLesson) => {
+      const updatedQuestions = prevLesson.questions.map((q, index) => {
+        if (index === qIndex) {
+          const updatedChoices = [...q.choices];
+          updatedChoices[cIndex] = value;
+          return { ...q, choices: updatedChoices };
+        }
+        return q;
+      });
 
-    setLesson({ ...lesson, questions: updatedQuestions });
-  };
-
-  const addQuestion = () => {
-    setLesson({
-      ...lesson,
-      questions: [
-        ...lesson.questions,
-        { id: "", question: "", choices: ["", "", "", ""], correctAnswer: "" },
-      ],
+      return { ...prevLesson, questions: updatedQuestions };
     });
   };
 
+  const addQuestion = () => {
+    setLesson((prevLesson) => ({
+      ...prevLesson,
+      questions: [
+        ...prevLesson.questions,
+        { id: "", question: "", choices: ["", "", "", ""], correctAnswer: "" },
+      ],
+    }));
+  };
+
   const removeQuestion = (qIndex: number) => {
-    const updatedQuestions = lesson.questions.filter(
-      (_, index) => index !== qIndex
-    );
-    setLesson({ ...lesson, questions: updatedQuestions });
+    setLesson((prevLesson) => ({
+      ...prevLesson,
+      questions: prevLesson.questions.filter((_, index) => index !== qIndex),
+    }));
   };
 
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
     const token = localStorage.getItem("token");
 
-    const res = await fetch(`http://localhost:5001/api/lessons/${id}`, {
+    const formData = {
+      title: lesson.title,
+      content: lesson.content,
+      questions: lesson.questions.map((q) => ({
+        id: q.id,
+        question: q.question,
+        choices: q.choices,
+        correctAnswer: q.correctAnswer,
+      })),
+    };
+
+    const res = await fetch(`${API_URL}/api/lessons/${id}`, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify(lesson),
+      body: JSON.stringify(formData),
     });
 
     if (res.ok) {
@@ -111,7 +149,7 @@ export default function EditLesson() {
   return (
     <div className="p-6">
       <h1 className="text-2xl font-bold mb-4">Edit Lesson</h1>
-      <form onSubmit={handleUpdate}>
+      <form onSubmit={handleUpdate} encType="multipart/form-data">
         <input
           type="text"
           value={lesson.title}
@@ -124,6 +162,34 @@ export default function EditLesson() {
           onChange={(e) => handleLessonChange("content", e.target.value)}
           className="border p-2 w-full mb-2 h-80"
           placeholder="Lesson Content"
+        />
+
+        {/* ✅ Display existing file */}
+        {lesson.media && (
+          <div className="mb-4">
+            <p>Current Media:</p>
+            {lesson.media.endsWith(".mp4") ? (
+              <video controls className="w-full">
+                <source
+                  src={`http://localhost:5001${lesson.media}`}
+                  type="video/mp4"
+                />
+              </video>
+            ) : (
+              <img
+                src={`http://localhost:5001${lesson.media}`}
+                alt="Lesson media"
+                className="max-w-4xl"
+              />
+            )}
+          </div>
+        )}
+
+        {/* ✅ File input */}
+        <input
+          type="file"
+          onChange={handleFileChange}
+          className="border p-2 w-full mb-2"
         />
 
         <h2 className="text-xl font-bold mt-4">Edit Questions</h2>

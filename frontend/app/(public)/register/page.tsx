@@ -5,6 +5,8 @@ import Image from "next/image";
 import Logo from "../../../public/logo.png";
 import { useRouter } from "next/navigation";
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
+
 export default function Register() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -12,7 +14,7 @@ export default function Register() {
   const router = useRouter();
 
   const handleRegister = async () => {
-    const res = await fetch("http://localhost:5001/api/auth/register", {
+    const res = await fetch(`${API_URL}/api/auth/register`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name, email, password }),
