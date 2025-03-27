@@ -1,44 +1,59 @@
-import { Request, Response, RequestHandler } from "express";
-import { PrismaClient } from "@prisma/client";
+// import { Request, Response, RequestHandler } from "express";
+// import { PrismaClient } from "@prisma/client";
+// import { Router } from "express";
 
-const prisma = new PrismaClient();
+// const prisma = new PrismaClient();
+// const router = Router();
 
-/**
- * ✅ GET ALL USERS
- */
-export const getUsers: RequestHandler = async (_req, res) => {
-  try {
-    const users = await prisma.user.findMany({
-      select: { id: true, name: true, email: true, role: true }, // Exclude password for security
-    });
+// // GET /api/user/:userId/top-priority-lesson
+// router.get("/:userId/top-priority-lesson", async (req, res) => {
+//   const { userId } = req.params;
 
-    res.status(200).json(users);
-  } catch (error) {
-    console.error("Error fetching users:", error);
-    res.status(500).json({ error: "Internal Server Error" });
-  }
-};
+//   try {
+//     const topLesson = await prisma.userLessonPriority.findFirst({
+//       where: { userId },
+//       include: {
+//         lesson: {
+//           include: { chapter: true },
+//         },
+//       },
+//       orderBy: [
+//         { priority: "desc" }, // highest priority
+//         { lesson: { title: "asc" } }, // or updatedAt or title
+//       ],
+//     });
 
-/**
- * ✅ GET A SINGLE USER BY ID
- */
-export const getUserById: RequestHandler = async (req, res): Promise<void> => {
-  try {
-    const userId = req.params.id;
+//     if (!topLesson) {
+//       return res.status(404).json({ error: "No prioritized lesson found" });
+//     }
 
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { id: true, name: true, email: true, createdAt: true },
-    });
+//     res.status(200).json(topLesson.lesson);
+//   } catch (error) {
+//     console.error("Top lesson error:", error);
+//     res.status(500).json({ error: "Server error" });
+//   }
+// });
 
-    if (!user) {
-      res.status(404).json({ error: "User not found" });
-      return;
-    }
+// // ✅ GET /api/user/:id
+// router.get("/:id", getUserById);
+// // ✅ GET all users
+// router.get("/", getUsers);
 
-    res.status(200).json(user);
-  } catch (error) {
-    console.error("Error fetching user:", error);
-    res.status(500).json({ error: "Internal Server Error" });
-  }
-};
+// export { router as userRouter }; // ✅ export with alias
+
+import { Router } from "express";
+import {
+  getUsers,
+  getUserById,
+  markDiagnosticTaken,
+  getTopPriorityLesson,
+} from "./userHandlers";
+
+const router = Router();
+
+router.get("/:userId/top-priority-lesson", getTopPriorityLesson);
+router.get("/:id", getUserById);
+router.get("/", getUsers);
+router.patch("/:id/diagnostic", markDiagnosticTaken);
+
+export { router as userRouter };

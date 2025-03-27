@@ -50,17 +50,38 @@ const Navbar: React.FC<NavbarProps> = ({
   const profileRef = useRef<HTMLDivElement | null>(null);
   const modalRef = useRef<HTMLDivElement | null>(null);
 
+  // useEffect(() => {
+  //   // Fetch the first lesson
+  //   fetch("http://localhost:5001/api/lessons")
+  //     .then((res) => res.json())
+  //     .then((data) => {
+  //       if (data.length > 0) {
+  //         setFirstLessonId(data[0].id); // ✅ Set first lesson ID
+  //       }
+  //     })
+  //     .catch((error) => console.error("Error fetching lessons:", error));
+  // }, []);
   useEffect(() => {
-    // Fetch the first lesson
-    fetch("http://localhost:5001/api/lessons")
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.length > 0) {
-          setFirstLessonId(data[0].id); // ✅ Set first lesson ID
+    if (!user?.id) return;
+
+    fetch(
+      `${process.env.NEXT_PUBLIC_API_URL}/api/user/${user.id}/top-priority-lesson`
+    )
+      .then(async (res) => {
+        const text = await res.text(); // ← get the raw response as text first
+        try {
+          const json = JSON.parse(text); // attempt to parse
+          if (json?.id) {
+            setFirstLessonId(json.id);
+          }
+        } catch (err) {
+          console.error("❌ Failed to parse JSON. Response was:", text);
         }
       })
-      .catch((error) => console.error("Error fetching lessons:", error));
-  }, []);
+      .catch((error) => {
+        console.error("Error fetching top-priority lesson:", error);
+      });
+  }, [user]);
 
   const links = [
     {
@@ -84,7 +105,8 @@ const Navbar: React.FC<NavbarProps> = ({
     {
       icon: <LibraryBig strokeWidth={1.25} />,
       label: "Current Lessons",
-      href: firstLessonId ? `/current?id=${firstLessonId}` : "/current", // ✅ Dynamically link
+      // href: firstLessonId ? `/current?id=${firstLessonId}` : "/current", // ✅ Dynamically link
+      href: firstLessonId ? `/current?id=${firstLessonId}` : "/current", // ✅ Use dynamic top-priority lesson
     },
     // {
     //   icon: <Backpack strokeWidth={1.25} />,
@@ -233,6 +255,8 @@ const Navbar: React.FC<NavbarProps> = ({
               alt="logo"
               height={160}
               width={160}
+              priority
+              unoptimized={true}
             />
           </Link>
 

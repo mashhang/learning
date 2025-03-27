@@ -2,6 +2,8 @@ import { Request, Response, NextFunction } from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { PrismaClient, User } from "@prisma/client";
+import crypto from "crypto";
+import nodemailer from "nodemailer";
 
 const prisma = new PrismaClient();
 const JWT_SECRET = process.env.JWT_SECRET || "default_secret";
@@ -23,23 +25,93 @@ export const registerUser = async (
   try {
     const { name, email, password } = req.body;
 
-    // Check if user already exists
     const existingUser = await prisma.user.findUnique({ where: { email } });
     if (existingUser) {
       res.status(400).json({ error: "Email already exists" });
       return;
     }
 
-    // Hash password and save user
     const hashedPassword = await bcrypt.hash(password, 10);
     const user = await prisma.user.create({
       data: { name, email, password: hashedPassword, role: "USER" },
     });
 
-    res.status(201).json({ message: "User registered successfully", user });
+    // ✅ Email verification setup
+    const transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        user: process.env.EMAIL_USER, // sender email from .env
+        pass: process.env.EMAIL_PASS, // sender password from .env
+      },
+    });
+
+    const verificationToken = crypto.randomBytes(32).toString("hex");
+
+    // Save the token to the user
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { verificationToken },
+    });
+
+    const verificationLink = `http://localhost:5001/api/auth/verify-email?token=${verificationToken}`;
+
+    await transporter.sendMail({
+      from: process.env.EMAIL_USER,
+      to: email, // user email from input
+      subject: "Verify your email",
+      html: `
+        <h2>Welcome to the Learning App, ${name}!</h2>
+        <p>Please click the button below to verify your email address:</p>
+        <a href="${verificationLink}" style="padding: 10px 20px; background: #30608E; color: white; text-decoration: none;">Verify Email</a>
+      `,
+    });
+
+    res.status(201).json({
+      message:
+        "User registered successfully. Please check your email to verify.",
+    });
   } catch (error) {
     console.error("Registration Error:", error);
     res.status(500).json({ error: "Internal Server Error" });
+  }
+};
+
+/**
+ * ✅ VERIFY EMAIL
+ */
+export const verifyEmail = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const token = req.query.token as string;
+
+    if (!token) {
+      res.status(400).json({ error: "Missing token" });
+      return;
+    }
+
+    const user = await prisma.user.findFirst({
+      where: { verificationToken: token },
+    });
+
+    if (!user) {
+      res.status(400).json({ error: "Invalid or expired token." });
+      return;
+    }
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        isVerified: true,
+        verificationToken: null,
+      },
+    });
+
+    res.send("✅ Email verified! You may now log in.");
+  } catch (err) {
+    console.error("Email verification error:", err);
+    res.status(500).json({ error: "Internal server error" });
   }
 };
 

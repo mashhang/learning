@@ -38,6 +38,18 @@ export default function LessonsAdmin() {
       .catch((error) => console.error("Error fetching chapters:", error));
   }, [token]);
 
+  // Store selected chapter in local storage
+  useEffect(() => {
+    const storedChapter = localStorage.getItem("selectedChapter");
+    if (storedChapter) {
+      setSelectedChapter(storedChapter);
+    }
+  }, []);
+  const handleChapterChange = (value: string) => {
+    setSelectedChapter(value);
+    localStorage.setItem("selectedChapter", value);
+  };
+
   return (
     <div className="p-6">
       <h1 className="text-2xl font-bold mb-4">Manage Lessons</h1>
@@ -48,7 +60,7 @@ export default function LessonsAdmin() {
           <select
             className="bg-#9b9b9b-500 text-black p-2 rounded cursor-pointer shadow-sm"
             value={selectedChapter}
-            onChange={(e) => setSelectedChapter(e.target.value)}
+            onChange={(e) => handleChapterChange(e.target.value)}
           >
             <option value="All">All</option>
             {chapters.map((chapter) => (

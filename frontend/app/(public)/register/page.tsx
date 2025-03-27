@@ -19,7 +19,9 @@ export default function Register() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name, email, password }),
     });
-
+    alert(
+      "Registration successful! Please check your email to verify your account."
+    );
     const data = await res.json();
     alert(data.message);
 

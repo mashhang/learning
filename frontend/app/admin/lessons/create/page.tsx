@@ -12,7 +12,14 @@ export default function AddLesson() {
   const [media, setMedia] = useState<File | null>(null);
   const [chapters, setChapters] = useState<{ id: string; title: string }[]>([]);
   const [questions, setQuestions] = useState([
-    { question: "", choices: ["", "", "", ""], correctAnswer: "" },
+    {
+      question: "",
+      questionImage: null as File | null,
+      choices: ["", "", "", ""],
+      choiceImages: [null, null, null, null] as (File | null)[],
+      isChoiceImage: false,
+      correctAnswer: "",
+    },
   ]);
   const router = useRouter();
 
@@ -55,7 +62,14 @@ export default function AddLesson() {
   const addQuestion = () => {
     setQuestions([
       ...questions,
-      { question: "", choices: ["", "", "", ""], correctAnswer: "" },
+      {
+        question: "",
+        questionImage: null as File | null,
+        choices: ["", "", "", ""],
+        choiceImages: [null, null, null, null] as (File | null)[],
+        isChoiceImage: false,
+        correctAnswer: "",
+      },
     ]);
   };
 
@@ -148,28 +162,84 @@ export default function AddLesson() {
         <h2 className="text-xl font-bold mt-4">Questions</h2>
         {questions.map((q, qIndex) => (
           <div key={qIndex} className="border p-4 mb-4 rounded">
-            <input
-              type="text"
-              placeholder="Enter Question"
-              value={q.question}
-              onChange={(e) =>
-                handleQuestionChange(qIndex, "question", e.target.value)
-              }
-              className="border p-2 w-full mb-2"
-            />
-
-            {q.choices.map((choice, cIndex) => (
+            {/* Toggle for text/image choices */}
+            <label className="flex items-center gap-2">
               <input
-                key={cIndex}
+                type="checkbox"
+                checked={q.isChoiceImage}
+                onChange={(e) => {
+                  setQuestions((prev) => {
+                    const updated = [...prev];
+                    updated[qIndex].isChoiceImage = e.target.checked;
+                    return updated;
+                  });
+                }}
+              />
+              Use image choices
+            </label>
+
+            {/* Question Text or Image Upload */}
+            {!q.questionImage ? (
+              <input
                 type="text"
-                placeholder={`Choice ${cIndex + 1}`}
-                value={choice}
+                placeholder="Enter Question"
+                value={q.question}
                 onChange={(e) =>
-                  handleChoiceChange(qIndex, cIndex, e.target.value)
+                  handleQuestionChange(qIndex, "question", e.target.value)
                 }
                 className="border p-2 w-full mb-2"
               />
-            ))}
+            ) : (
+              <img
+                src={URL.createObjectURL(q.questionImage)}
+                alt="Preview"
+                className="mb-2"
+              />
+            )}
+            <input
+              type="file"
+              accept="image/*"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                setQuestions((prev) => {
+                  const updated = [...prev];
+                  updated[qIndex].questionImage = file || null;
+                  return updated;
+                });
+              }}
+              className="border p-2 w-full mb-2"
+            />
+
+            {/* Choices */}
+            {q.choices.map((choice, cIndex) =>
+              q.isChoiceImage ? (
+                <input
+                  type="file"
+                  accept="image/*"
+                  key={cIndex}
+                  onChange={(e) => {
+                    const file = e.target.files?.[0] || null;
+                    setQuestions((prev) => {
+                      const updated = [...prev];
+                      updated[qIndex].choiceImages[cIndex] = file;
+                      return updated;
+                    });
+                  }}
+                  className="border p-2 w-full mb-2"
+                />
+              ) : (
+                <input
+                  type="text"
+                  key={cIndex}
+                  placeholder={`Choice ${cIndex + 1}`}
+                  value={choice}
+                  onChange={(e) =>
+                    handleChoiceChange(qIndex, cIndex, e.target.value)
+                  }
+                  className="border p-2 w-full mb-2"
+                />
+              )
+            )}
 
             <input
               type="text"

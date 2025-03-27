@@ -13,14 +13,17 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-
 model User {
-  id        String   @id @default(uuid())
-  name      String
-  email     String   @unique
-  password  String
-  role      Role     @default(USER) // New field to define admin or user
-  createdAt DateTime @default(now())
+  id                 String               @id @default(uuid())
+  name               String
+  email              String               @unique
+  password           String
+  role               Role                 @default(USER) // New field to define admin or user
+  createdAt          DateTime             @default(now())
+  isVerified         Boolean              @default(false)
+  verificationToken  String?
+  hasTakenDiagnostic Boolean              @default(false) // ✅ Add this
+  lessonPriorities   UserLessonPriority[]
 }
 
 enum Role {
@@ -29,29 +32,46 @@ enum Role {
 }
 
 model Chapter {
-  id        String   @id @default(uuid())
-  title     String
-  lessons   Lesson[]
+  id      String   @id @default(uuid())
+  title   String
+  lessons Lesson[]
 }
 
 model Lesson {
-  id        String   @id @default(uuid())
-  title     String
-  content   String
-  media     String?  // ✅ Stores image or video URLs (nullable)
-  progress  Float    @default(0.0) // Tracks student progress
-  chapterId String
-  chapter   Chapter  @relation(fields: [chapterId], references: [id], onDelete: Cascade)
-  questions Question[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id               String               @id @default(uuid())
+  title            String
+  content          String
+  media            String? // ✅ Stores image or video URLs (nullable)
+  chapterId        String
+  chapter          Chapter              @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+  questions        Question[]
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
+  lessonPriorities UserLessonPriority[]
 }
 
 model Question {
-  id          String  @id @default(uuid())
-  lessonId    String
-  lesson      Lesson  @relation(fields: [lessonId], references: [id], onDelete: Cascade)
-  question    String
-  choices     String[] // Array of choices
+  id            String   @id @default(uuid())
+  lessonId      String
+  lesson        Lesson   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  question      String?
+  questionImage String? // ✅ image file path
+  choices       String[] // Array of choices
+  isChoiceImage Boolean  @default(false) // ✅ whether choices are images
   correctAnswer String
+}
+
+model UserLessonPriority {
+  id        String   @id @default(uuid())
+  userId    String
+  lessonId  String
+  priority  Float // Computed priority value
+  progress  Float    @default(0.0) // ✅ Track per-user progress here
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, lessonId]) // Prevent duplicates
 }
