@@ -45,6 +45,7 @@ const handler: RequestHandler = async (req, res) => {
       data: {
         progress: newProgress,
         currentPage, // ✅ Save this too!
+        updatedAt: new Date(), // ✅ Force update of timestamp
       },
     });
 

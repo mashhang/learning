@@ -3,6 +3,8 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/app/context/AuthContext";
+import { InlineMath, BlockMath } from "react-katex";
+import "katex/dist/katex.min.css";
 
 type Question = {
   id: string;
@@ -245,7 +247,7 @@ export default function DiagnosticExam() {
                     {lesson.questions.map((question, qIndex) => (
                       <div
                         key={question.id}
-                        className="bg-[#30608E] text-white p-6 rounded-lg w-[50%] shadow-custom"
+                        className="bg-[#30608E] text-white p-6 rounded-lg w-full max-w-5xl shadow-custom"
                       >
                         {/* Header */}
                         <div className="text-left text-sm font-semibold">
@@ -254,7 +256,9 @@ export default function DiagnosticExam() {
 
                         {/* Question Text */}
                         {question.question && (
-                          <p className="mt-4 text-xl">{question.question}</p>
+                          <p className="mt-4 text-xl break-words whitespace-normal leading-relaxed">
+                            <InlineMath>{question.question}</InlineMath>
+                          </p>
                         )}
 
                         {/* <p className="mt-4 text-xl">{question.question}</p> */}
@@ -301,7 +305,7 @@ export default function DiagnosticExam() {
                                   className="w-auto h-auto rounded"
                                 />
                               ) : (
-                                choice
+                                <InlineMath>{choice}</InlineMath>
                               )}
                             </button>
                           ))}
@@ -401,7 +405,6 @@ export default function DiagnosticExam() {
               </button>
               <button
                 className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded"
-                // onClick={() => alert("Feature: Review Mistakes coming soon!")}
                 onClick={handleBackToDashboard}
               >
                 Continue

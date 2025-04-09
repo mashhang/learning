@@ -44,9 +44,21 @@ export default function MyLessons() {
     fetchLessons();
   }, [user]);
 
-  const currentLessons = lessons.filter(
+  const startedLessons = lessons.filter(
     (l) => l.progress > 0 && l.progress < 1
   );
+
+  let currentLessons: PrioritizedLesson[] = [];
+
+  if (startedLessons.length > 0) {
+    // If there are lessons in progress, those are current
+    currentLessons = startedLessons;
+  } else {
+    // If none are started, promote the top-priority unstarted lesson
+    const nextAvailable = lessons.find((l) => l.progress === 0);
+    if (nextAvailable) currentLessons = [nextAvailable];
+  }
+
   const visibleCurrent = showAllCurrent
     ? currentLessons
     : currentLessons.slice(0, 1);
@@ -65,7 +77,7 @@ export default function MyLessons() {
       (a, b) =>
         new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
     );
-  const visiblePast = showAllPast ? pastLessons : pastLessons.slice(0, 1);
+  const visiblePast = showAllPast ? pastLessons : pastLessons.slice(0, 2);
 
   return (
     <ProtectedRoute>
@@ -79,7 +91,7 @@ export default function MyLessons() {
         }}
       >
         <div className="mt-[46.4px] p-6">
-          <div className="ml-[200px] w-[1520px]">
+          <div className="ml-[200px] w-[1520px] mb-10">
             <h1 className="text-[#30608E] text-[18px] font-semibold">
               Current Lesson
             </h1>
@@ -96,7 +108,7 @@ export default function MyLessons() {
             {currentLessons.length > 2 && (
               <button
                 onClick={() => setShowAllCurrent(!showAllCurrent)}
-                className="mt-2 text-blue-600 underline"
+                className="float-right mt-2 text-[#8f8f8f] underline hover:text-[#383838] transition"
               >
                 {showAllCurrent ? "See less" : "See more"}
               </button>
@@ -118,7 +130,7 @@ export default function MyLessons() {
             {upcomingLessons.length > 2 && (
               <button
                 onClick={() => setShowAllUpcoming(!showAllUpcoming)}
-                className="mt-2 text-blue-600 underline"
+                className="float-right mt-2 text-[#8f8f8f] underline hover:text-[#383838] transition"
               >
                 {showAllUpcoming ? "See less" : "See more"}
               </button>
@@ -140,7 +152,7 @@ export default function MyLessons() {
             {pastLessons.length > 2 && (
               <button
                 onClick={() => setShowAllPast(!showAllPast)}
-                className="mt-2 text-blue-600 underline"
+                className="float-right mt-2 text-[#8f8f8f] underline hover:text-[#383838] transition"
               >
                 {showAllPast ? "See less" : "See more"}
               </button>
@@ -195,7 +207,7 @@ function LessonCard({
         </div>
 
         <button
-          className="text-[14px] py-2 px-4 mt-4 bg-[#30608E] text-white rounded-md"
+          className="text-[14px] w-36 h-12 mt-4 bg-[#30608E] text-white rounded-md hover:bg-[#254a6d] transition"
           onClick={() => router.push(`/current?id=${lesson.id}`)}
         >
           {buttonLabel}

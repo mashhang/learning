@@ -28,6 +28,7 @@ router.get("/:userId/prioritized-lessons", async (req, res) => {
     chapterTitle: item.lesson?.chapter?.title ?? null,
     progress: item.progress,
     priority: item.priority,
+    updatedAt: item.updatedAt, // ✅ Add this!
   }));
 
   res.status(200).json(formatted);
