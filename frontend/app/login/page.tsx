@@ -14,27 +14,6 @@ export default function Login() {
 
   const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
-  // const handleLogin = async () => {
-  //   try {
-  //     const res = await fetch("http://localhost:5001/api/auth/login", {
-  //       method: "POST",
-  //       headers: { "Content-Type": "application/json" },
-  //       body: JSON.stringify({ email, password }),
-  //     });
-
-  //     const data = await res.json();
-  //     if (!res.ok) {
-  //       throw new Error(data.error || "Login failed");
-  //     }
-
-  //     localStorage.setItem("token", data.token);
-  //     login(data.user, data.token);
-  //   } catch (error) {
-  //     console.error("Login Error:", error);
-  //     alert((error as Error).message || "Something went wrong");
-  //   }
-  // };
-
   const handleLogin = async () => {
     try {
       const res = await fetch(`${API_URL}/api/auth/login`, {

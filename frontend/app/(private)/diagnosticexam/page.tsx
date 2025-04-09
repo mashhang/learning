@@ -24,6 +24,12 @@ type Lesson = {
   questions: Question[];
 };
 
+type QuestionWithLessonInfo = Question & {
+  lessonId: string;
+  lessonTitle: string;
+  chapterTitle: string;
+};
+
 type TopicPerformance = {
   title: string;
   chapter: string;
@@ -36,6 +42,17 @@ export default function DiagnosticExam() {
   const { user } = useAuth();
 
   const [lessons, setLessons] = useState<Lesson[]>([]);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [shuffledQuestions, setShuffledQuestions] = useState<
+    (Question & {
+      lessonId: string;
+      lessonTitle: string;
+      chapterTitle: string;
+    })[]
+  >([]);
+
+  const [reviewLaterIds, setReviewLaterIds] = useState<Set<string>>(new Set());
+  const [showProgressDropdown, setShowProgressDropdown] = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false);
 
   const groupedLessons = lessons.reduce(
@@ -200,6 +217,38 @@ export default function DiagnosticExam() {
       .catch((error) => console.error("Error fetching lessons:", error));
   }, []);
 
+  useEffect(() => {
+    if (lessons.length > 0) {
+      const allQuestions: QuestionWithLessonInfo[] = [];
+
+      lessons.forEach((lesson) => {
+        lesson.questions.forEach((q) => {
+          allQuestions.push({
+            ...q,
+            lessonId: lesson.id,
+            lessonTitle: lesson.title,
+            chapterTitle: lesson.chapterTitle,
+          });
+        });
+      });
+
+      const shuffled = allQuestions.sort(() => Math.random() - 0.5);
+      setShuffledQuestions(shuffled);
+    }
+  }, [lessons]);
+
+  const goToNext = () => {
+    if (currentIndex < shuffledQuestions.length - 1) {
+      setCurrentIndex(currentIndex + 1);
+    }
+  };
+
+  const goToPrev = () => {
+    if (currentIndex > 0) {
+      setCurrentIndex(currentIndex - 1);
+    }
+  };
+
   if (lessons.length === 0) {
     return (
       <p className=" text-gray-500 flex flex-col justify-center items-center h-screen">
@@ -218,121 +267,257 @@ export default function DiagnosticExam() {
   };
 
   return (
-    <div className="pt-[96px] px-10">
-      <div className="text-[#30608E] text-center mt-[50px]">
-        <h1 className="text-3xl font-bold">Diagnostic Exam</h1>
-      </div>
+    <div className="h-screen w-screen flex overflow-hidden pt-20">
+      {/* Sidebar - independently scrollable */}
+      <div className="w-64 border-r overflow-y-auto h-full px-4">
+        <h2 className="text-sm font-semibold text-gray-700 mb-4">
+          Exam Toolbar
+        </h2>
+        <ul className="space-y-2 text-sm">
+          <li className="flex items-center gap-2 text-[#1A3D6D] font-medium cursor-pointer hover:underline">
+            <span>📄</span>
+            Exam Question Details
+          </li>
 
-      {/* ✅ Stacked Layout (Vertical) */}
-      {Object.entries(groupedLessons)
-        .sort(([a], [b]) => {
-          const getChapterNumber = (title: string) =>
-            parseInt(title.replace(/\D/g, ""), 10); // extract number from "Chapter 1"
-          return getChapterNumber(a) - getChapterNumber(b);
-        })
-        .map(([chapterTitle, lessonsInChapter]) => (
-          <div key={chapterTitle} className="mb-10 mt-[50px] ">
-            <h2 className="text-3xl font-bold text-[#30608E] ml-[15.6em]">
-              {chapterTitle}
-            </h2>
-            <div className="flex flex-col gap-10">
-              {lessonsInChapter.map((lesson) => (
-                <div key={lesson.id} className="w-full">
-                  <h2 className="text-2xl font-bold text-[#30608E] mb-4 ml-[19.6em]">
-                    {lesson.title}
-                  </h2>
-
-                  {/* ✅ Center the Question Box */}
-                  <div className="flex flex-col items-center gap-6">
-                    {lesson.questions.map((question, qIndex) => (
-                      <div
-                        key={question.id}
-                        className="bg-[#30608E] text-white p-6 rounded-lg w-full max-w-5xl shadow-custom"
-                      >
-                        {/* Header */}
-                        <div className="text-left text-sm font-semibold">
-                          Question {qIndex + 1}
-                        </div>
-
-                        {/* Question Text */}
-                        {question.question && (
-                          <p className="mt-4 text-xl break-words whitespace-normal leading-relaxed">
-                            <InlineMath>{question.question}</InlineMath>
-                          </p>
-                        )}
-
-                        {/* <p className="mt-4 text-xl">{question.question}</p> */}
-
-                        {/* ✅ Show image if available */}
-                        {question.questionImage && (
-                          <div className="my-4">
-                            <img
-                              src={
-                                question.questionImage.startsWith("http")
-                                  ? question.questionImage
-                                  : `${API_URL}${question.questionImage}`
-                              }
-                              alt="Question"
-                              className="max-w-full rounded"
-                            />
-                          </div>
-                        )}
-
-                        <p className="mt-2 text-md">
-                          Choose the correct answer.
-                        </p>
-
-                        {/* Answer Choices */}
-                        <div className="mt-4 flex flex-col gap-2">
-                          {question.choices.map((choice, index) => (
-                            <button
-                              key={index}
-                              onClick={() =>
-                                handleAnswerClick(question.id, choice)
-                              }
-                              className={`w-full border border-[#C5C5C5] py-3 px-4 rounded-md text-left transition
-                          ${
-                            selectedAnswers[question.id] === choice
-                              ? "bg-white text-[#30608E] font-bold"
-                              : "bg-transparent text-white"
-                          }
-                          hover:bg-white hover:text-[#30608E]`}
-                            >
-                              {choice.startsWith("/uploads/") ? (
-                                <img
-                                  src={`${API_URL}${choice}`}
-                                  alt={`Choice ${index + 1}`}
-                                  className="w-auto h-auto rounded"
-                                />
-                              ) : (
-                                <InlineMath>{choice}</InlineMath>
-                              )}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ))}
+          <li className="text-[#1A3D6D] font-medium">
+            <div
+              onClick={() => setShowProgressDropdown((prev) => !prev)}
+              className="flex items-center gap-2 cursor-pointer hover:underline"
+            >
+              <span>📊</span>
+              <span>Exam Progress</span>
+              <span>{showProgressDropdown ? "▲" : "▼"}</span>
             </div>
-          </div>
-        ))}
-      <div className="text-right my-14 max-w-[50%] mx-auto as">
-        {!submitted ? (
-          <button
-            onClick={handleSubmitExam}
-            className="bg-green-600 text-white px-6 py-3 rounded hover:bg-green-700 transition shadow-custom"
-          >
-            Submit Exam
-          </button>
-        ) : (
-          <div className="text-2xl font-semibold text-[#30608E]">
-            Your score: {score} /{" "}
-            {lessons.reduce((acc, lesson) => acc + lesson.questions.length, 0)}
-          </div>
-        )}
+
+            {/* Compact pills */}
+            {showProgressDropdown && (
+              <div className="grid grid-cols-6 gap-3 p-2 mt-2">
+                {shuffledQuestions.map((question, index) => {
+                  const isCurrent = currentIndex === index;
+                  const isReviewLater = reviewLaterIds.has(question.id);
+
+                  return (
+                    <button
+                      key={index}
+                      onClick={() => setCurrentIndex(index)}
+                      className={`w-8 h-8 text-sm rounded-full border text-center transition
+                        ${isCurrent ? "bg-blue-600 text-white font-bold" : ""}
+                        ${isReviewLater ? "bg-red-500 text-white" : ""}
+                        ${
+                          !isCurrent && !isReviewLater
+                            ? "bg-white hover:bg-blue-100 text-gray-700 border-gray-300"
+                            : ""
+                        }
+                      `}
+                    >
+                      {index + 1}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </li>
+        </ul>
       </div>
+
+      {/* Main Exam Content (no scroll) */}
+      <div className="flex-1 overflow-y-hidden">
+        <div className="flex-1 overflow-hidden">
+          <div className="flex justify-between items-center mb-6  px-10">
+            {/* Title on the left */}
+            <h1 className="text-3xl font-bold text-[#30608E]">
+              Diagnostic Exam
+            </h1>
+
+            {/* Centered Question Info and Progress */}
+            <div className="flex flex-col items-center flex-grow text-center">
+              {/* <span className="text-sm font-semibold text-gray-800">
+            Question {currentIndex + 1}
+          </span> */}
+              <span className="text-sm text-gray-500">
+                Exam Question Progress ({currentIndex + 1}/
+                {shuffledQuestions.length})
+              </span>
+              <div className="w-48 bg-gray-300 h-2 rounded mt-1">
+                <div
+                  className="bg-[#1A3D6D] h-2 rounded"
+                  style={{
+                    width: `${
+                      ((currentIndex + 1) / shuffledQuestions.length) * 100
+                    }%`,
+                  }}
+                />
+              </div>
+            </div>
+
+            {/* Spacer on the right to balance flex layout */}
+            <div className="w-[180px]" />
+          </div>
+
+          {/* ✅ Stacked Layout (Vertical) */}
+          {shuffledQuestions.length > 0 && (
+            <div className="flex flex-col items-center gap-6 mt-10">
+              <div className="bg-white border rounded-lg p-6 shadow-md w-full max-w-[95%] mx-auto">
+                {/* top label */}
+                <div className="text-left text-sm font-semibold mb-4 text-gray-700">
+                  Question {currentIndex + 1} of {shuffledQuestions.length}
+                </div>
+
+                {/* Question text */}
+                {shuffledQuestions[currentIndex].question && (
+                  <p className="mt-2 text-gray-800 text-base whitespace-pre-line leading-relaxed">
+                    <InlineMath>
+                      {shuffledQuestions[currentIndex].question}
+                    </InlineMath>
+                  </p>
+                )}
+
+                {/* Question image */}
+                {shuffledQuestions[currentIndex].questionImage && (
+                  <div className="my-4">
+                    <img
+                      src={
+                        shuffledQuestions[
+                          currentIndex
+                        ].questionImage?.startsWith("http")
+                          ? shuffledQuestions[currentIndex].questionImage
+                          : `${API_URL}${shuffledQuestions[currentIndex].questionImage}`
+                      }
+                      alt="Question"
+                      className="max-w-full rounded"
+                    />
+                  </div>
+                )}
+
+                {/* Choices */}
+                <div className="mt-6 space-y-3">
+                  {shuffledQuestions[currentIndex].choices.map(
+                    (choice, index) => (
+                      <label
+                        key={index}
+                        className={`flex items-center space-x-3 cursor-pointer border px-4 py-3 rounded-md ${
+                          selectedAnswers[
+                            shuffledQuestions[currentIndex].id
+                          ] === choice
+                            ? "border-blue-600 bg-blue-50"
+                            : "border-gray-300"
+                        }`}
+                      >
+                        <input
+                          type="radio"
+                          name={`question-${shuffledQuestions[currentIndex].id}`}
+                          value={choice}
+                          checked={
+                            selectedAnswers[
+                              shuffledQuestions[currentIndex].id
+                            ] === choice
+                          }
+                          onChange={() =>
+                            handleAnswerClick(
+                              shuffledQuestions[currentIndex].id,
+                              choice
+                            )
+                          }
+                          className="form-radio text-blue-600"
+                        />
+                        <span className="text-gray-800">
+                          <InlineMath>{choice}</InlineMath>
+                        </span>
+                      </label>
+                    )
+                  )}
+                </div>
+
+                {/* Optional footer like 'Reset Answer', 'Review Later' etc. */}
+                <div className="flex items-center mt-6 space-x-6">
+                  <button
+                    onClick={() =>
+                      setSelectedAnswers((prev) => ({
+                        ...prev,
+                        [shuffledQuestions[currentIndex].id]: null,
+                      }))
+                    }
+                    className="text-sm text-gray-700 px-3 py-1 border border-gray-400 rounded hover:bg-gray-100"
+                  >
+                    Reset Answer
+                  </button>
+
+                  {/* Placeholder checkboxes, purely UI like in your screenshot */}
+                  <label className="text-sm text-gray-700 flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      className="form-checkbox"
+                      checked={reviewLaterIds.has(
+                        shuffledQuestions[currentIndex].id
+                      )}
+                      onChange={(e) => {
+                        const updated = new Set(reviewLaterIds);
+                        const qId = shuffledQuestions[currentIndex].id;
+                        if (e.target.checked) {
+                          updated.add(qId);
+                        } else {
+                          updated.delete(qId);
+                        }
+                        setReviewLaterIds(updated);
+                      }}
+                    />
+                    Review later
+                  </label>
+
+                  {/* <label className="text-sm text-gray-700 flex items-center gap-2">
+                    <input type="checkbox" className="form-checkbox" />
+                    Leave Feedback
+                  </label> */}
+                </div>
+              </div>
+
+              {/* Navigation */}
+              <div className="flex justify-between items-center w-full max-w-[95%] mt-4">
+                <div className="flex space-x-4">
+                  <button
+                    onClick={goToPrev}
+                    disabled={currentIndex === 0}
+                    className={`w-36 px-4 py-3 rounded text-white text-sm font-semibold transition ${
+                      currentIndex === 0
+                        ? "bg-gray-300 cursor-not-allowed text-gray-600"
+                        : "bg-blue-700 hover:bg-blue-800"
+                    }`}
+                  >
+                    Previous
+                  </button>
+
+                  <button
+                    onClick={goToNext}
+                    disabled={currentIndex === shuffledQuestions.length - 1}
+                    className={`w-36 px-4 py-3 rounded text-white text-sm font-semibold transition ${
+                      currentIndex === shuffledQuestions.length - 1
+                        ? "bg-gray-300 cursor-not-allowed text-gray-600"
+                        : "bg-blue-700 hover:bg-blue-800"
+                    }`}
+                  >
+                    Next
+                  </button>
+                </div>
+
+                <button
+                  onClick={handleSubmitExam}
+                  className="w-36 px-4 py-3 rounded bg-blue-700 hover:bg-blue-800 text-white text-sm font-semibold transition"
+                >
+                  Submit
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {submitted && (
+        <div className="text-center my-14 max-w-[50%] mx-auto">
+          <div className="text-2xl font-semibold text-[#30608E]">
+            Your score: {score} / {shuffledQuestions.length}
+          </div>
+        </div>
+      )}
 
       {showSummary && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">

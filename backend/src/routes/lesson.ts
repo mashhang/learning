@@ -5,7 +5,7 @@ import { deleteFile } from "../utils/deleteFile";
 import { Multer } from "multer";
 
 const prisma = new PrismaClient();
-const API_URL = process.env.API_URL || "http://192.168.1.11:5001"; // ✅ Use backend env
+const API_URL = process.env.API_URL || "http://192.168.1.4:5001"; // ✅ Use backend env
 
 // ✅ Extend Express Request type to include `user`
 declare module global {
