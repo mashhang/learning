@@ -2,12 +2,13 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { InlineMath } from "react-katex";
+import "katex/dist/katex.min.css";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 export default function AddLesson() {
   const [title, setTitle] = useState("");
-  const [content, setContent] = useState("");
   const [chapterId, setChapterId] = useState("");
   const [media, setMedia] = useState<File | null>(null);
   const [chapters, setChapters] = useState<{ id: string; title: string }[]>([]);
@@ -22,6 +23,14 @@ export default function AddLesson() {
     },
   ]);
   const router = useRouter();
+  const [pages, setPages] = useState([
+    { content: "", media: null as File | null },
+  ]);
+
+  const addPage = () => setPages([...pages, { content: "", media: null }]);
+
+  const removePage = (index: number) =>
+    setPages(pages.filter((_, i) => i !== index));
 
   useEffect(() => {
     fetch(`${API_URL}/api/chapters`)
@@ -95,10 +104,23 @@ export default function AddLesson() {
     // ✅ Use FormData to send text + file data
     const formData = new FormData();
     formData.append("title", title);
-    formData.append("content", content);
+    // formData.append("content", content);
     formData.append("chapterId", chapterId);
-    if (media) formData.append("media", media);
+    // if (media) formData.append("media", media);
     formData.append("questions", JSON.stringify(questions));
+    const pagesWithFilename = pages.map((page, index) => ({
+      content: page.content,
+      order: index + 1,
+      filename: page.media?.name || null,
+    }));
+
+    formData.append("pages", JSON.stringify(pagesWithFilename));
+
+    pages.forEach((page) => {
+      if (page.media) {
+        formData.append("pageMedias", page.media);
+      }
+    });
 
     const res = await fetch(`${API_URL}/api/lessons`, {
       method: "POST",
@@ -122,28 +144,6 @@ export default function AddLesson() {
     <div className="p-6">
       <h1 className="text-2xl font-bold mb-4">Add Lesson</h1>
       <form onSubmit={handleSubmit}>
-        <input
-          type="text"
-          placeholder="Lesson Title"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          className="border p-2 w-full mb-2"
-        />
-        <textarea
-          placeholder="Lesson Content"
-          value={content}
-          onChange={(e) => setContent(e.target.value)}
-          className="border p-2 w-full mb-2 h-80"
-        />
-
-        {/* ✅ File Upload Field */}
-        <input
-          type="file"
-          accept="image/*,video/*"
-          onChange={handleFileChange}
-          className="border p-2 w-full mb-2"
-        />
-
         {/* ✅ Select Chapter */}
         <select
           value={chapterId}
@@ -157,6 +157,83 @@ export default function AddLesson() {
             </option>
           ))}
         </select>
+
+        <h2 className="text-xl font-bold mt-4">Lesson Pages</h2>
+        <input
+          type="text"
+          placeholder="Lesson Title"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          className="border p-2 w-full mb-2"
+        />
+        {pages.map((page, i) => (
+          <div key={i} className="border p-4 mb-4 rounded">
+            <label className="block mb-1 font-medium">
+              Page {i + 1} Content
+            </label>
+
+            <textarea
+              value={page.content}
+              onChange={(e) => {
+                const updated = [...pages];
+                updated[i].content = e.target.value;
+                setPages(updated);
+              }}
+              className="border p-2 w-full mb-2"
+              placeholder="Page Content"
+            />
+
+            <label className="block mb-1 font-medium">Optional Media</label>
+            <input
+              type="file"
+              accept="image/*,video/*"
+              onChange={(e) => {
+                const updated = [...pages];
+                updated[i].media = e.target.files?.[0] || null;
+                setPages(updated);
+              }}
+              className="border p-2 w-full mb-2"
+            />
+
+            <button
+              type="button"
+              className="text-red-500"
+              onClick={() => removePage(i)}
+            >
+              Remove Page
+            </button>
+          </div>
+        ))}
+        <button
+          type="button"
+          className="bg-blue-500 text-white p-2 rounded mb-4"
+          onClick={addPage}
+        >
+          + Add Page
+        </button>
+
+        {/* ORIGNAKL FORMMMMMMMMMMMMMMMMMMMMMMM */}
+        {/* <input
+          type="text"
+          placeholder="Lesson Title"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          className="border p-2 w-full mb-2"
+        />
+        <textarea
+          placeholder="Lesson Content"
+          value={content}
+          onChange={(e) => setContent(e.target.value)}
+          className="border p-2 w-full mb-2 h-80"
+        />
+
+        {/* ✅ File Upload Field 
+        <input
+          type="file"
+          accept="image/*,video/*"
+          onChange={handleFileChange}
+          className="border p-2 w-full mb-2"
+        /> */}
 
         {/* ✅ Questions Section */}
         <h2 className="text-xl font-bold mt-4">Questions</h2>
@@ -180,15 +257,20 @@ export default function AddLesson() {
 
             {/* Question Text or Image Upload */}
             {!q.questionImage ? (
-              <input
-                type="text"
-                placeholder="Enter Question"
-                value={q.question}
-                onChange={(e) =>
-                  handleQuestionChange(qIndex, "question", e.target.value)
-                }
-                className="border p-2 w-full mb-2"
-              />
+              <>
+                <input
+                  type="text"
+                  placeholder="Enter question with LaTeX (e.g. \\frac{1}{3})"
+                  value={q.question}
+                  onChange={(e) =>
+                    handleQuestionChange(qIndex, "question", e.target.value)
+                  }
+                  className="border p-2 w-full"
+                />
+                <div className="bg-gray-100 p-2 rounded mb-2">
+                  <InlineMath>{q.question}</InlineMath>
+                </div>
+              </>
             ) : (
               <img
                 src={URL.createObjectURL(q.questionImage)}
@@ -228,28 +310,37 @@ export default function AddLesson() {
                   className="border p-2 w-full mb-2"
                 />
               ) : (
-                <input
-                  type="text"
-                  key={cIndex}
-                  placeholder={`Choice ${cIndex + 1}`}
-                  value={choice}
-                  onChange={(e) =>
-                    handleChoiceChange(qIndex, cIndex, e.target.value)
-                  }
-                  className="border p-2 w-full mb-2"
-                />
+                <div className="key={cIndex} mb-2">
+                  <input
+                    type="text"
+                    placeholder={`Choice ${cIndex + 1}`}
+                    value={choice}
+                    onChange={(e) =>
+                      handleChoiceChange(qIndex, cIndex, e.target.value)
+                    }
+                    className="border p-2 w-full "
+                  />
+                  <div className="bg-gray-100 p-2 rounded mb-5">
+                    <InlineMath>{choice}</InlineMath>
+                  </div>
+                </div>
               )
             )}
 
-            <input
-              type="text"
-              placeholder="Correct Answer"
-              value={q.correctAnswer}
-              onChange={(e) =>
-                handleQuestionChange(qIndex, "correctAnswer", e.target.value)
-              }
-              className="border p-2 w-full mb-2"
-            />
+            <>
+              <input
+                type="text"
+                placeholder="Correct Answer"
+                value={q.correctAnswer}
+                onChange={(e) =>
+                  handleQuestionChange(qIndex, "correctAnswer", e.target.value)
+                }
+                className="border p-2 w-full"
+              />
+              <div className="bg-gray-100 p-2 rounded mb-2">
+                <InlineMath>{q.correctAnswer}</InlineMath>
+              </div>
+            </>
 
             <button
               type="button"

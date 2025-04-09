@@ -34,6 +34,8 @@ import { userRouter } from "./src/routes/user";
 // import { markDiagnosticTaken } from "./src/routes/user";
 import diagnosticRoutes from "./src/routes/diagnostic";
 
+import uploadRouter from "./src/routes/upload";
+
 dotenv.config();
 const app = express();
 
@@ -54,6 +56,8 @@ app.use("/api/user", userRouter);
 // Serve uploaded files publicly
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
+app.use("/api", uploadRouter);
+
 // ✅ AUTH ROUTES
 app.post("/api/auth/register", registerUser); // Takes (req, res)
 app.get("/api/auth/verify-email", verifyEmail);
@@ -73,30 +77,18 @@ app.get("/api/lessons/:id", getLessonById);
 app.post(
   "/api/lessons",
   authenticateUser,
-  upload.single("media"),
-  createLesson
-);
-app.put(
-  "/api/lessons/:id",
-  authenticateUser,
   upload.fields([
     { name: "media", maxCount: 1 },
-    { name: "questionImages", maxCount: 100 },
-    { name: "choiceImages", maxCount: 100 },
+    { name: "questionImages", maxCount: 1000 },
+    { name: "choiceImages", maxCount: 1000 },
+    { name: "pageMedias", maxCount: 1000 },
   ]),
-  updateLesson
+  createLesson
 );
+app.put("/api/lessons/:id", authenticateUser, upload.any(), updateLesson);
 app.delete("/api/lessons/:id", authenticateUser, deleteLesson); // ✅ Now correctly includes `authenticateUser`
 
-// ✅ USERS ROUTE
-// app.get("/api/users", authenticateUser, userRouter);
-// app.get("/api/user/:id", userRouter); // ✅ Get a user by ID
-
-// ✅ CORRECT
-// app.patch("/api/user/:id/diagnostic", markDiagnosticTaken);
-//Register diagnostic routes
 app.use("/api/diagnostic", diagnosticRoutes);
-
 app.use("/api/progress", progressRoutes); // ✅ use router, not raw handler
 
 app.listen(5001, () => console.log("✅ Backend running on port 5001"));

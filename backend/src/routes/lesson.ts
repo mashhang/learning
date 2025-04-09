@@ -5,7 +5,7 @@ import { deleteFile } from "../utils/deleteFile";
 import { Multer } from "multer";
 
 const prisma = new PrismaClient();
-const API_URL = process.env.API_URL || "http://192.168.1.24:5001"; // ✅ Use backend env
+const API_URL = process.env.API_URL || "http://192.168.1.11:5001"; // ✅ Use backend env
 
 // ✅ Extend Express Request type to include `user`
 declare module global {
@@ -35,6 +35,9 @@ export const getLessons: RequestHandler = async (_req, res) => {
             isChoiceImage: true,
           },
         },
+        pages: {
+          orderBy: { order: "asc" }, // ✅ ensure consistent ordering
+        },
       },
       // orderBy: { title: "asc" },
     });
@@ -52,26 +55,34 @@ export const getLessons: RequestHandler = async (_req, res) => {
       lessons.map((lesson) => ({
         id: lesson.id,
         title: lesson.title,
-        content: lesson.content,
         chapterId: lesson.chapterId,
         chapterTitle: lesson.chapter?.title || "Unassigned",
-        media: lesson.media
-          ? `${API_URL}${lesson.media.startsWith("/") ? "" : "/"}${
-              lesson.media
-            }`
-          : null,
+        media:
+          lesson.media && !lesson.media.startsWith("http")
+            ? `${API_URL}${lesson.media.startsWith("/") ? "" : "/"}${
+                lesson.media
+              }`
+            : lesson.media || null,
         questions: lesson.questions.map((q) => ({
           id: q.id,
           question: q.question,
-          questionImage: q.questionImage
-            ? `${API_URL}${q.questionImage.startsWith("/") ? "" : "/"}${
-                q.questionImage
-              }`
-            : null,
+          questionImage:
+            q.questionImage && !q.questionImage.startsWith("http")
+              ? `${API_URL}${q.questionImage.startsWith("/") ? "" : "/"}${
+                  q.questionImage
+                }`
+              : q.questionImage || null,
           choices: q.choices,
           correctAnswer: q.correctAnswer,
           isChoiceImage: q.isChoiceImage,
         })),
+        pages: Array.isArray(lesson.pages)
+          ? lesson.pages.map((p) => ({
+              content: p.content,
+              media: p.media,
+              order: p.order,
+            }))
+          : [],
       }))
     );
   } catch (error) {
@@ -93,15 +104,9 @@ export const getLessonById: RequestHandler = async (
     const lesson = await prisma.lesson.findUnique({
       where: { id: lessonId },
       include: {
-        questions: {
-          select: {
-            id: true,
-            question: true,
-            questionImage: true,
-            choices: true,
-            correctAnswer: true,
-            isChoiceImage: true,
-          },
+        questions: true,
+        pages: {
+          orderBy: { order: "asc" },
         },
       },
     });
@@ -113,14 +118,33 @@ export const getLessonById: RequestHandler = async (
     // ✅ Add full URL to questionImage
     const questionsWithURL = lesson.questions.map((q) => ({
       ...q,
-      questionImage: q.questionImage
-        ? `${API_URL}${q.questionImage.startsWith("/") ? "" : "/"}${
-            q.questionImage
-          }`
-        : null,
+      questionImage:
+        q.questionImage && !q.questionImage.startsWith("http")
+          ? `${API_URL}${q.questionImage.startsWith("/") ? "" : "/"}${
+              q.questionImage
+            }`
+          : q.questionImage || null,
     }));
 
-    res.status(200).json({ ...lesson, questions: questionsWithURL });
+    // 🆕 Map media URL on lesson.pages
+    const pagesWithMediaURL = lesson.pages.map((p) => ({
+      content: p.content,
+      media: p.media
+        ? p.media.startsWith("/uploads/")
+          ? `${API_URL}${p.media}`
+          : `${API_URL}/uploads/${p.media}`
+        : null,
+      order: p.order,
+      serverFilename: p.media?.split("/").pop() || null, // 👈 ADD THIS LINE
+    }));
+
+    console.log("Loaded pages:", lesson.pages);
+
+    res.status(200).json({
+      ...lesson,
+      questions: questionsWithURL,
+      pages: pagesWithMediaURL, // ✅ return updated pages
+    });
   } catch (error) {
     console.error("Error fetching lesson:", error);
     res.status(500).json({ error: "Internal Server Error" });
@@ -135,38 +159,30 @@ export const updateLesson = async (
   res: Response
 ): Promise<void> => {
   try {
-    const lessonId = req.params.id;
-
     if (!req.user || req.user.role !== "ADMIN") {
       res
         .status(403)
         .json({ error: "Forbidden: Only admins can update lessons" });
-      return;
     }
 
+    const { title, content, chapterId } = req.body;
+    const questions = req.body.questions ? JSON.parse(req.body.questions) : [];
+    const lessonId = req.params.id;
+
     const files = req.files as {
-      media?: Express.Multer.File[];
-      questionImages?: Express.Multer.File[];
-      choiceImages?: Express.Multer.File[];
+      [key: string]: Express.Multer.File[];
     };
 
     const media = files?.media?.[0]?.filename
       ? `/uploads/${files.media[0].filename}`
       : undefined;
 
-    const questions = req.body.questions ? JSON.parse(req.body.questions) : [];
-    const { title, content, chapterId } = req.body;
-
     const updateData: {
       title?: string;
       content?: string;
       media?: string;
       chapterId?: string;
-    } = {
-      title,
-      content,
-      chapterId,
-    };
+    } = { title, content, chapterId };
     if (media) updateData.media = media;
 
     const updatedLesson = await prisma.lesson.update({
@@ -174,51 +190,146 @@ export const updateLesson = async (
       data: updateData,
     });
 
-    await prisma.question.deleteMany({ where: { lessonId } });
+    // ✅ Update Pages with Upsert
+    const { pages } = req.body;
+    const uploadedPageMediaFiles = files?.pageMedias || [];
 
-    let qImgIndex = 0;
-    let cImgIndex = 0;
+    if (pages) {
+      const parsedPages = typeof pages === "string" ? JSON.parse(pages) : pages;
 
-    if (Array.isArray(questions)) {
-      for (const q of questions) {
-        let questionImagePath: string | null = null;
+      // Get all existing pages from DB
+      const existingPages = await prisma.lessonPage.findMany({
+        where: { lessonId },
+      });
 
-        // ✅ If a new question image is uploaded
-        if (files?.questionImages?.[qImgIndex]) {
-          questionImagePath = `/uploads/${files.questionImages[qImgIndex].filename}`;
-          qImgIndex++;
-        } else if (typeof q.questionImage === "string") {
-          questionImagePath = q.questionImage; // 🟢 Keep the existing image
-        }
+      // Determine which pages were removed
+      const idsFromClient = parsedPages.map((p: any) => p.id).filter(Boolean);
+      const deletedPages = existingPages.filter(
+        (p) => !idsFromClient.includes(p.id)
+      );
 
-        let choices = q.choices;
+      // Delete removed pages
+      await prisma.lessonPage.deleteMany({
+        where: {
+          lessonId,
+          order: {
+            in: deletedPages.map((p) => p.order),
+          },
+        },
+      });
 
-        // If choiceImages are used
-        if (q.isChoiceImage === true && Array.isArray(q.choices)) {
-          choices = q.choices.map((_c: string, index: number) => {
-            const file = files?.choiceImages?.[cImgIndex];
-            cImgIndex++;
-            return file ? `/uploads/${file.filename}` : "";
-          });
-        }
+      for (let i = 0; i < parsedPages.length; i++) {
+        const p = parsedPages[i];
 
-        await prisma.question.create({
-          data: {
+        const uploadedFile = uploadedPageMediaFiles[i]; // Match by index instead
+        const savedFilename = uploadedFile?.filename;
+
+        const mediaPath = savedFilename
+          ? `/uploads/${savedFilename}`
+          : p.filename
+          ? `/uploads/${p.filename.replace("/uploads/", "")}`
+          : null;
+
+        await prisma.lessonPage.upsert({
+          where: {
+            lessonId_order: {
+              lessonId,
+              order: p.order ?? i + 1,
+            },
+          },
+          update: {
+            content: p.content,
+            media: mediaPath,
+          },
+          create: {
             lessonId,
-            question: q.question || null,
-            questionImage: questionImagePath || null,
-            choices,
-            correctAnswer: q.correctAnswer,
-            isChoiceImage: q.isChoiceImage || false,
+            content: p.content,
+            media: mediaPath,
+            order: p.order ?? i + 1,
           },
         });
       }
     }
 
-    res.status(200).json({ message: "Lesson updated", updatedLesson });
+    // ✅ Upsert Questions
+    let qImgIndex = 0;
+    let cImgIndex = 0;
+
+    for (const q of questions) {
+      let questionImagePath: string | null = null;
+
+      if (files?.questionImages?.[qImgIndex]) {
+        questionImagePath = `/uploads/${files.questionImages[qImgIndex].filename}`;
+        qImgIndex++;
+      } else if (typeof q.questionImage === "string") {
+        questionImagePath = q.questionImage;
+      }
+
+      let choices = q.choices;
+      if (q.isChoiceImage && Array.isArray(choices)) {
+        choices = choices.map((_c: string, index: number) => {
+          const file = files?.choiceImages?.[cImgIndex];
+          cImgIndex++;
+          return file ? `/uploads/${file.filename}` : _c;
+        });
+      }
+
+      await prisma.question.upsert({
+        where: {
+          id: q.id || "", // ensure ID is passed from frontend
+        },
+        update: {
+          question: q.question || null,
+          questionImage: questionImagePath,
+          choices,
+          correctAnswer: q.correctAnswer,
+          isChoiceImage: q.isChoiceImage || false,
+        },
+        create: {
+          lessonId,
+          question: q.question || null,
+          questionImage: questionImagePath,
+          choices,
+          correctAnswer: q.correctAnswer,
+          isChoiceImage: q.isChoiceImage || false,
+        },
+      });
+    }
+
+    const updated = await prisma.lesson.findUnique({
+      where: { id: lessonId },
+      include: {
+        questions: true,
+        pages: {
+          orderBy: { order: "asc" },
+        },
+      },
+    });
+
+    // Include full media URLs and serverFilename again
+    const pagesWithMediaURL =
+      updated?.pages.map((p) => ({
+        content: p.content,
+        media: p.media
+          ? p.media.startsWith("/uploads/")
+            ? `${API_URL}${p.media}`
+            : `${API_URL}/uploads/${p.media}`
+          : null,
+        order: p.order,
+        serverFilename: p.media?.split("/").pop() || null,
+      })) || [];
+
+    res.status(200).json({
+      ...updated,
+      pages: pagesWithMediaURL,
+    });
   } catch (error) {
     console.error("Error updating lesson:", error);
-    res.status(500).json({ error: "Internal Server Error" });
+    if (error instanceof Error) {
+      res.status(500).json({ error: error.message });
+    } else {
+      res.status(500).json({ error: "Internal Server Error" });
+    }
   }
 };
 
@@ -256,105 +367,109 @@ export const createLesson: RequestHandler = async (
   res: Response
 ) => {
   try {
+    if (!req.user || req.user.role !== "ADMIN") {
+      res
+        .status(403)
+        .json({ error: "Forbidden: Only admins can create lessons" });
+    }
+
     const files = req.files as {
       media?: Express.Multer.File[];
       questionImages?: Express.Multer.File[];
       choiceImages?: Express.Multer.File[];
+      pageMedias?: Express.Multer.File[];
     };
+
+    const { title, chapterId } = req.body;
+    const questions = JSON.parse(req.body.questions || "[]");
+    const pages = JSON.parse(req.body.pages || "[]");
+
+    // if (!title || !content || !chapterId) {
+    if (!title || !chapterId) {
+      res
+        .status(400)
+        .json({ error: "Title, content, and chapterId are required" });
+    }
+
+    if (pages.length === 0) {
+      console.error("Something went wrong");
+      res.status(500).json({ error: "Add at least one page" });
+    }
+
+    // Optional: Use first page's content as fallback
+    // const fallbackContent = pages[0].content || "";
+    const uploadedPageMediaFiles = files?.pageMedias || [];
 
     const media = files?.media?.[0]?.filename
       ? `/uploads/${files.media[0].filename}`
       : null;
 
-    const questions = req.body.questions ? JSON.parse(req.body.questions) : [];
-
-    const { title, content, chapterId } = req.body;
-    // const media = req.file ? `/uploads/${req.file.filename}` : null; // ✅ Store File URL
-
-    if (!req.user || req.user.role !== "ADMIN") {
-      res
-        .status(403)
-        .json({ error: "Forbidden: Only admins can create lessons" });
-      return;
-    }
-
-    if (!title || !content || !chapterId) {
-      res
-        .status(400)
-        .json({ error: "Title, content, and chapterId are required" });
-      return;
-    }
-
-    let qImgIndex = 0;
-    let cImgIndex = 0;
-
     const createdLesson = await prisma.lesson.create({
       data: {
         title,
-        content,
         chapterId,
         media,
       },
     });
 
-    if (Array.isArray(questions)) {
-      for (const q of questions) {
-        let questionImagePath: string | null = null;
-
-        if (q.questionImage === true && files?.questionImages?.[qImgIndex]) {
-          questionImagePath = `/uploads/${files.questionImages[qImgIndex].filename}`;
-          qImgIndex++;
-        }
-
-        let choices = q.choices;
-
-        if (q.isChoiceImage === true && Array.isArray(q.choices)) {
-          choices = q.choices.map((_c: string) => {
-            const file = files?.choiceImages?.[cImgIndex];
-            cImgIndex++;
-            return file ? `/uploads/${file.filename}` : "";
-          });
-        }
-
-        await prisma.question.create({
-          data: {
-            lessonId: createdLesson.id,
-            question: q.question || null,
-            questionImage: questionImagePath,
-            choices,
-            correctAnswer: q.correctAnswer,
-            isChoiceImage: q.isChoiceImage || false,
-          },
-        });
-      }
+    // ✅ Safely create lesson pages
+    if (Array.isArray(pages) && pages.length > 0) {
+      await prisma.lessonPage.createMany({
+        data: pages.map((p: any, i: number) => ({
+          lessonId: createdLesson.id,
+          content: p.content,
+          media: uploadedPageMediaFiles[i]
+            ? `/uploads/${uploadedPageMediaFiles[i].filename}`
+            : null,
+          order: p.order,
+        })),
+      });
     }
 
-    // const lesson = await prisma.lesson.create({
-    //   data: {
-    //     title,
-    //     content,
-    //     chapterId,
-    //     media,
-    //     questions: {
-    //       create: Array.isArray(questions)
-    //         ? questions.map((q: any) => ({
-    //             question: q.question || null,
-    //             questionImage: q.questionImage || null, // ✅ Handle question image if provided
-    //             choices: q.choices,
-    //             correctAnswer: q.correctAnswer,
-    //             isChoiceImage: q.isChoiceImage || false, // ✅ Handle image flag
-    //           }))
-    //         : [],
-    //     },
-    //   },
-    //   include: { questions: true },
-    // });
+    // ✅ Questions
+    let qImgIndex = 0;
+    let cImgIndex = 0;
+
+    for (const q of questions) {
+      let questionImagePath = null;
+
+      if (q.questionImage === true && files?.questionImages?.[qImgIndex]) {
+        questionImagePath = `/uploads/${files.questionImages[qImgIndex].filename}`;
+        qImgIndex++;
+      }
+
+      let choices = q.choices;
+      if (q.isChoiceImage && Array.isArray(choices)) {
+        choices = choices.map((_c: any) => {
+          const file = files?.choiceImages?.[cImgIndex];
+          cImgIndex++;
+          return file ? `/uploads/${file.filename}` : "";
+        });
+      }
+
+      await prisma.question.create({
+        data: {
+          lessonId: createdLesson.id,
+          question: q.question || null,
+          questionImage: questionImagePath,
+          choices,
+          correctAnswer: q.correctAnswer,
+          isChoiceImage: q.isChoiceImage || false,
+        },
+      });
+    }
 
     res
       .status(201)
       .json({ message: "Lesson created successfully!", createdLesson });
   } catch (error) {
-    console.error("Error creating lesson:", error);
+    console.error(
+      "❌ Error creating lesson:",
+      error instanceof Error ? error.message : error
+    );
+    if (error instanceof Error) {
+      console.error(error.stack);
+    }
     res.status(500).json({ error: "Internal Server Error" });
   }
 };

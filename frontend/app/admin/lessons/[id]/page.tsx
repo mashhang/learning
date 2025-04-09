@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
+import { InlineMath } from "react-katex";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
 
@@ -15,16 +16,29 @@ type Question = {
   correctAnswer: string;
 };
 
+type LessonPage = {
+  content: string;
+  media: File | null;
+  existingMedia?: string | null;
+  serverFilename?: string | null; // 👈 NEW
+};
+
 export default function EditLesson() {
   const router = useRouter();
   const { id } = useParams();
 
-  const [lesson, setLesson] = useState({
+  const [lesson, setLesson] = useState<{
+    title: string;
+    chapterId: string;
+    media: string;
+    questions: Question[];
+    pages: LessonPage[];
+  }>({
     title: "",
-    content: "",
     chapterId: "",
-    media: "", // ✅ Keep existing media file
-    questions: [] as Question[],
+    media: "",
+    questions: [],
+    pages: [{ content: "", media: null, existingMedia: null }],
   });
 
   const [selectedFile, setSelectedFile] = useState<File | null>(null); // ✅ Track file upload
@@ -33,38 +47,46 @@ export default function EditLesson() {
   useEffect(() => {
     if (!id) return;
 
-    // Fetch all chapters
+    // Fetch chapters
     fetch(`${API_URL}/api/chapters`)
       .then((res) => res.json())
       .then((data) => setChapters(data))
       .catch((error) => console.error("Error fetching chapters:", error));
 
+    // Fetch the lesson
     fetch(`${API_URL}/api/lessons/${id}`)
       .then((res) => res.json())
       .then((data) => {
         if (!data.error) {
+          // ✅ Parse questions correctly
+          const parsedQuestions = Array.isArray(data.questions)
+            ? data.questions.map((q: any) => ({
+                ...q,
+                isChoiceImage: q.choices.some((c: string) =>
+                  c.startsWith("/uploads/")
+                ),
+                questionImage: q.questionImage?.startsWith("/uploads/")
+                  ? q.questionImage
+                  : null,
+                choiceImages: q.choices.map((c: string) =>
+                  c.startsWith("/uploads/") ? c : null
+                ),
+              }))
+            : [];
+
+          // ✅ Then set the lesson
           setLesson({
             title: data.title || "",
-            content: data.content || "",
             chapterId: data.chapterId || "",
             media: data.media || "",
-            questions: Array.isArray(data.questions)
-              ? data.questions.map((q: any) => ({
-                  ...q,
-                  isChoiceImage: q.choices.some((c: string) =>
-                    c.startsWith("/uploads/")
-                  ),
-                  questionImage:
-                    typeof q.question === "string" &&
-                    q.question.startsWith("/uploads/")
-                      ? q.question
-                      : null,
-
-                  choiceImages: q.choices.map((c: string) =>
-                    c.startsWith("/uploads/") ? c : null
-                  ),
-                }))
-              : [],
+            questions: parsedQuestions,
+            pages:
+              data.pages?.map((p: any) => ({
+                content: p.content,
+                existingMedia: p.media || null,
+                serverFilename: p.serverFilename || null, // ✅ coming from backend
+                // media: null, // Optional: preload preview if needed
+              })) || [],
           });
         } else {
           alert("Lesson not found.");
@@ -81,6 +103,31 @@ export default function EditLesson() {
       media: prevLesson.media, // ✅ Preserve existing file
       questions: prevLesson.questions, // ✅ Preserve existing questions
     }));
+  };
+
+  const handlePreUpload = async (file: File, pageIndex: number) => {
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+      const res = await fetch(`${API_URL}/api/upload`, {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        const updatedPages = [...lesson.pages];
+        updatedPages[pageIndex].existingMedia = `${API_URL}${data.url}`;
+        updatedPages[pageIndex].serverFilename = data.filename;
+        updatedPages[pageIndex].media = null; // Don't resend file during PUT
+        setLesson({ ...lesson, pages: updatedPages });
+      } else {
+        alert("Upload failed");
+      }
+    } catch (err) {
+      console.error("Upload error:", err);
+    }
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -146,7 +193,31 @@ export default function EditLesson() {
 
     const formData = new FormData();
     formData.append("title", lesson.title);
-    formData.append("content", lesson.content);
+    // ✅ Attach filename reference to each page
+    const pagesWithFilename = lesson.pages.map((page, index) => ({
+      content: page.content,
+      order: index + 1,
+      filename: page.serverFilename || null, // fallback to existing UUID filename
+    }));
+
+    formData.append("pages", JSON.stringify(pagesWithFilename));
+
+    // ✅ Upload media files separately
+    lesson.pages.forEach((page) => {
+      if (page.media) {
+        // new file selected
+        formData.append("pageMedias", page.media);
+      }
+      //else if (page.existingMedia) {
+      //   // fallback: create a dummy File object to match filename logic
+      //   const dummyFile = new File(
+      //     [],
+      //     page.existingMedia.split("/").pop() || ""
+      //   );
+      //   formData.append("pageMedias", dummyFile);
+      // }
+    });
+
     if (selectedFile) formData.append("media", selectedFile);
 
     lesson.questions.forEach((q, index) => {
@@ -193,51 +264,93 @@ export default function EditLesson() {
           className="border p-2 w-full mb-2"
           placeholder="Lesson Title"
         />
-        <select
-          value={lesson.chapterId}
-          onChange={(e) =>
-            setLesson((prev) => ({ ...prev, chapterId: e.target.value }))
-          }
-          className="border p-2 w-full mb-2"
-        >
-          <option value="">Select Chapter</option>
-          {chapters.map((chapter) => (
-            <option key={chapter.id} value={chapter.id}>
-              {chapter.title}
-            </option>
-          ))}
-        </select>
-        <textarea
-          value={lesson.content}
-          onChange={(e) => handleLessonChange("content", e.target.value)}
-          className="border p-2 w-full mb-2 h-80"
-          placeholder="Lesson Content"
-        />
 
-        {/* ✅ Display existing file */}
-        {lesson.media && (
-          <div className="mb-4">
-            <p>Current Media:</p>
-            {lesson.media.endsWith(".mp4") ? (
-              <video controls className="w-full">
-                <source src={`${API_URL}${lesson.media}`} type="video/mp4" />
-              </video>
-            ) : (
-              <img
-                src={`${API_URL}${lesson.media}`}
-                alt="Lesson media"
-                className="max-w-4xl"
+        <h2 className="text-xl font-bold mt-4">Lesson Pages</h2>
+        {lesson.pages.map((page, i) => (
+          <div key={i} className="border p-4 mb-4 rounded">
+            <label className="block mb-1 font-medium">
+              Page {i + 1} Content
+            </label>
+
+            <>
+              <textarea
+                value={page.content}
+                onChange={(e) => {
+                  const updated = [...lesson.pages];
+                  updated[i].content = e.target.value;
+                  setLesson({ ...lesson, pages: updated });
+                }}
+                className="border p-2 w-full mb-2"
               />
-            )}
-          </div>
-        )}
+              <div className="bg-gray-100 p-2 rounded">
+                <InlineMath>{page.content}</InlineMath>
+              </div>
+            </>
 
-        {/* ✅ File input */}
-        <input
-          type="file"
-          onChange={handleFileChange}
-          className="border p-2 w-full mb-2"
-        />
+            <label className="block mb-1 font-medium">Optional Media</label>
+            <input
+              type="file"
+              accept="image/*,video/*"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) {
+                  handlePreUpload(file, i);
+                }
+              }}
+              className="border p-2 w-full mb-2"
+            />
+
+            {page.existingMedia && (
+              <>
+                <p className="text-sm text-green-600 mb-2">
+                  Existing file:{" "}
+                  <code>{page.existingMedia?.split("/").pop()}</code>
+                </p>
+                {page.existingMedia.endsWith(".mp4") ? (
+                  <video controls className="mb-2 w-64">
+                    <source
+                      src={
+                        page.existingMedia.startsWith("http")
+                          ? page.existingMedia
+                          : `${API_URL}${page.existingMedia}`
+                      }
+                      type="video/mp4"
+                    />
+                  </video>
+                ) : (
+                  <img
+                    src={encodeURI(page.existingMedia)}
+                    alt="Page media"
+                    className="w-32 mb-2 rounded border"
+                  />
+                )}
+              </>
+            )}
+
+            <button
+              type="button"
+              className="text-red-500"
+              onClick={() => {
+                const updated = lesson.pages.filter((_, index) => index !== i);
+                setLesson({ ...lesson, pages: updated });
+              }}
+            >
+              Remove Page
+            </button>
+          </div>
+        ))}
+        <button
+          type="button"
+          className="bg-blue-500 text-white p-2 rounded mb-4"
+          onClick={() =>
+            setLesson({
+              ...lesson,
+              pages: [...lesson.pages, { content: "", media: null }],
+            })
+          }
+        >
+          + Add Page
+        </button>
 
         <h2 className="text-xl font-bold mt-4">Edit Questions</h2>
         {lesson.questions.map((q, qIndex) => (
@@ -267,15 +380,20 @@ export default function EditLesson() {
 
             {/* Question Text or Image */}
             {!q.questionImage ? (
-              <input
-                type="text"
-                placeholder="Enter Question"
-                value={q.question}
-                onChange={(e) =>
-                  handleQuestionChange(qIndex, "question", e.target.value)
-                }
-                className="border p-2 w-full mb-2"
-              />
+              <>
+                <input
+                  type="text"
+                  placeholder="Enter Question"
+                  value={q.question}
+                  onChange={(e) =>
+                    handleQuestionChange(qIndex, "question", e.target.value)
+                  }
+                  className="border p-2 w-full mb-2"
+                />
+                <div className="bg-gray-100 p-2 rounded">
+                  <InlineMath>{q.question}</InlineMath>
+                </div>
+              </>
             ) : (
               <img
                 src={URL.createObjectURL(q.questionImage)}
@@ -351,58 +469,45 @@ export default function EditLesson() {
                 );
               } else {
                 return (
-                  <input
-                    key={cIndex}
-                    type="text"
-                    placeholder={`Choice ${cIndex + 1}`}
-                    value={choice}
-                    onChange={(e) =>
-                      handleChoiceChange(qIndex, cIndex, e.target.value)
-                    }
-                    className="border p-2 w-full mb-2"
-                  />
+                  <div key={cIndex} className="-mb-2">
+                    <input
+                      type="text"
+                      placeholder={`Choice ${cIndex + 1}`}
+                      value={choice}
+                      onChange={(e) =>
+                        handleChoiceChange(qIndex, cIndex, e.target.value)
+                      }
+                      className="border p-2 w-full"
+                    />
+                    <div className="bg-gray-100 p-2 rounded mb-5">
+                      <InlineMath>{choice}</InlineMath>
+                    </div>
+                  </div>
                 );
               }
             })}
 
             {/* Correct Answer */}
             {!q.isChoiceImage && (
-              <input
-                type="text"
-                placeholder="Correct Answer"
-                value={q.correctAnswer}
-                onChange={(e) =>
-                  handleQuestionChange(qIndex, "correctAnswer", e.target.value)
-                }
-                className="border p-2 w-full mb-2"
-              />
-            )}
-
-            {/* Render correct image selector (if image choices enabled) */}
-            {/* {q.isChoiceImage &&
-              q.choiceImages?.map((img, cIndex) => (
-                <div key={cIndex} className="flex items-center gap-2 mb-2">
-                  <input
-                    type="radio"
-                    name={`correctImage-${qIndex}`}
-                    onChange={() =>
-                      handleQuestionChange(
-                        qIndex,
-                        "correctAnswer",
-                        `image-${cIndex}`
-                      )
-                    }
-                    checked={q.correctAnswer === `image-${cIndex}`}
-                  />
-                  {img && (
-                    <img
-                      src={URL.createObjectURL(img)}
-                      alt={`Choice ${cIndex + 1}`}
-                      className="w-24 h-auto rounded border"
-                    />
-                  )}
+              <>
+                <input
+                  type="text"
+                  placeholder="Correct Answer"
+                  value={q.correctAnswer}
+                  onChange={(e) =>
+                    handleQuestionChange(
+                      qIndex,
+                      "correctAnswer",
+                      e.target.value
+                    )
+                  }
+                  className="border p-2 w-full"
+                />
+                <div className="bg-gray-100 p-2 rounded mb-2">
+                  <InlineMath>{q.correctAnswer}</InlineMath>
                 </div>
-              ))} */}
+              </>
+            )}
 
             <button
               type="button"

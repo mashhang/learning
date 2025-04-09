@@ -15,6 +15,21 @@ const handler: RequestHandler = async (req, res) => {
   try {
     const newProgress = parseFloat((currentPage / totalPages).toFixed(2));
 
+    // ✅ Check if progress entry exists first
+    const existing = await prisma.userLessonPriority.findUnique({
+      where: {
+        userId_lessonId: {
+          userId,
+          lessonId,
+        },
+      },
+    });
+
+    if (!existing) {
+      res.status(404).json({ error: "Progress row not found. Cannot update." });
+    }
+
+    // ✅ Proceed to update
     await prisma.userLessonPriority.update({
       where: {
         userId_lessonId: {

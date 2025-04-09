@@ -1,6 +1,7 @@
 import multer from "multer";
 import path from "path";
 import fs from "fs";
+import crypto from "crypto";
 
 // ✅ Ensure `uploads/` directory exists
 const uploadDir = path.join(process.cwd(), "uploads");
@@ -14,18 +15,32 @@ const storage = multer.diskStorage({
     cb(null, uploadDir); // ✅ Save files in 'uploads' directory
   },
   filename: (req, file, cb) => {
-    cb(null, `${Date.now()}-${file.originalname}`); // ✅ Unique filename
+    cb(null, `${crypto.randomUUID()}-${file.originalname}`); // ✅ Unique filename
   },
 });
 
+const allowedTypes = ["image/jpeg", "image/png", "video/mp4"];
+
 // ✅ Filter for images and videos
 const fileFilter = (req: any, file: Express.Multer.File, cb: any) => {
-  const allowedMimeTypes = ["image/jpeg", "image/png", "video/mp4"];
-  if (allowedMimeTypes.includes(file.mimetype)) {
-    cb(null, true);
-  } else {
-    cb(new Error("Invalid file type. Only JPG, PNG, and MP4 are allowed."));
+  if (!file || !file.mimetype) {
+    return cb(null, false); // ✅ no file, skip silently
   }
+
+  // ⛔ skip invalid empty browser files that come as octet-stream
+  if (file.mimetype === "application/octet-stream") {
+    return cb(null, false); // ✅ do not throw, just ignore silently
+  }
+
+  if (allowedTypes.includes(file.mimetype)) {
+    return cb(null, true); // ✅ accept valid files
+  }
+
+  console.log("❌ Rejected file with mimetype:", file.mimetype);
+  return cb(
+    new Error("Invalid file type. Only JPG, PNG, and MP4 are allowed."),
+    false
+  );
 };
 
 // ✅ Initialize Multer
