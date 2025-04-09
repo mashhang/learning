@@ -33,7 +33,7 @@ import {
 import { userRouter } from "./src/routes/user";
 // import { markDiagnosticTaken } from "./src/routes/user";
 import diagnosticRoutes from "./src/routes/diagnostic";
-
+// import userLessonPriorityRoutes from "./src/routes/userLessonPriority";
 import uploadRouter from "./src/routes/upload";
 
 dotenv.config();
@@ -55,7 +55,7 @@ app.use(express.json());
 app.use("/api/user", userRouter);
 // Serve uploaded files publicly
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
-
+// app.use("/api", userLessonPriorityRoutes); // ✅ Add this line
 app.use("/api", uploadRouter);
 
 // ✅ AUTH ROUTES

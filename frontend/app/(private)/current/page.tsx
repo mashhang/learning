@@ -54,6 +54,21 @@ export default function CurrentLesson() {
       setLesson(fullLesson || null);
 
       setTotalPages(fullLesson?.pages?.length || 1);
+
+      // 🆕 Load stored current page
+      try {
+        const progressRes = await fetch(
+          `${API_URL}/api/progress/${user.id}/${fullLesson.id}`
+        );
+        if (progressRes.ok) {
+          const { currentPage } = await progressRes.json();
+          if (currentPage && !isNaN(currentPage)) {
+            setCurrentPage(currentPage); // 🧠 Resume where left off
+          }
+        }
+      } catch (err) {
+        console.error("Failed to load saved page progress", err);
+      }
     };
     fetchLessons();
   }, [lessonId, user]);
@@ -99,8 +114,8 @@ export default function CurrentLesson() {
   let pageMedia = lesson?.pages?.[currentPage - 1]?.media || null;
 
   // ✅ Ensure no double URL prefix
-  if (pageMedia?.startsWith("http") && pageMedia.includes(`${API_URL}`)) {
-    pageMedia = pageMedia.replace(`${API_URL}${API_URL}`, `${API_URL}`);
+  if (pageMedia && !pageMedia.startsWith("http")) {
+    pageMedia = `${API_URL}${pageMedia.startsWith("/") ? "" : "/"}${pageMedia}`;
   }
 
   return (

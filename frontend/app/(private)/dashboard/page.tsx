@@ -14,6 +14,8 @@ export default function Dashboard() {
   const [hasTakenDiagnostic, setHasTakenDiagnostic] = useState<boolean | null>(
     null
   );
+  const [currentLesson, setCurrentLesson] = useState<any>(null);
+  const [nextLessons, setNextLessons] = useState<any[]>([]);
 
   useEffect(() => {
     if (!user) return;
@@ -26,6 +28,40 @@ export default function Dashboard() {
 
     fetchUserData();
   }, [user]);
+
+  // ✅ 2. Once diagnostic is confirmed, fetch lesson priorities
+  useEffect(() => {
+    if (!hasTakenDiagnostic || !user?.id) return;
+
+    const fetchLessons = async () => {
+      try {
+        const res = await fetch(
+          `${API_URL}/api/diagnostic/${user.id}/prioritized-lessons`
+        );
+
+        const data = await res.json();
+
+        if (data.length > 0) {
+          const current = data.find((l: any) => l.progress < 1);
+          const next = data
+            .filter(
+              (l: any) => l.progress < 1 && l.lessonId !== current?.lessonId
+            )
+            .slice(0, 2);
+
+          setCurrentLesson(current || null);
+          setNextLessons(next);
+        } else {
+          setCurrentLesson(null);
+          setNextLessons([]);
+        }
+      } catch (err) {
+        console.error("❌ Failed to fetch lesson priorities", err);
+      }
+    };
+
+    fetchLessons();
+  }, [hasTakenDiagnostic, user]);
 
   useEffect(() => {
     const currentDate = new Date();
@@ -105,22 +141,36 @@ export default function Dashboard() {
                   </h1>
 
                   <div className="mx-12 mt-3">
-                    <p className="font-bold text-xl">
-                      Lesson 5:
-                      <span> Algebra Basics</span>
-                    </p>
-                    <p className="text-xl">
-                      Progress:
-                      <span> 75% completed</span>
-                    </p>
-
-                    {/* Progress Bar */}
-                    <div className="w-full bg-[#C8C8C8] rounded-full h-3 mt-7">
-                      <div
-                        className="bg-[#30608E] h-3 rounded-full transition-all duration-500"
-                        style={{ width: `75%` }}
-                      ></div>
-                    </div>
+                    {currentLesson ? (
+                      <>
+                        <p className="font-bold text-xl">
+                          {currentLesson?.title
+                            ? `Lesson: ${currentLesson.title}`
+                            : "Untitled"}
+                        </p>
+                        <p className="text-xl">
+                          Progress:{" "}
+                          <span>
+                            {Math.round(currentLesson.progress * 100)}%
+                            completed
+                          </span>
+                        </p>
+                        <div className="w-full bg-[#C8C8C8] rounded-full h-3 mt-7">
+                          <div
+                            className="bg-[#30608E] h-3 rounded-full transition-all duration-500"
+                            style={{
+                              width: `${Math.round(
+                                currentLesson.progress * 100
+                              )}%`,
+                            }}
+                          ></div>
+                        </div>
+                      </>
+                    ) : (
+                      <p className="text-center text-gray-500">
+                        No current lesson found
+                      </p>
+                    )}
                   </div>
                 </div>
                 <div className="w-full h-[200px] bg-white border-black border-[1px] col-span-2 row-span-3 col-start-1 row-start-5 rounded-xl py-2 shadow-custom">
@@ -148,23 +198,22 @@ export default function Dashboard() {
                   </h1>
 
                   <div className="mx-12 mt-3">
-                    <p className="font-bold text-xl">
-                      Lesson 7:
-                      <span> Quadratic Equations</span>
-                    </p>
-                    <p className="text-lg">
-                      Scheduled for:
-                      <span> November 20</span>
-                    </p>
-
-                    <p className="font-bold text-xl mt-3">
-                      Lesson 8:
-                      <span> Polynomials</span>
-                    </p>
-                    <p className="text-lg">
-                      Scheduled for:
-                      <span> November 25</span>
-                    </p>
+                    {nextLessons.length > 0 ? (
+                      nextLessons.map((lesson) => (
+                        <div key={lesson.lessonId} className="mt-2">
+                          <p className="font-bold text-xl">
+                            Lesson: {lesson.title}
+                          </p>
+                          <p className="text-lg text-gray-700">
+                            Progress: {Math.round(lesson.progress * 100)}%
+                          </p>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-center text-gray-500">
+                        No next lessons found
+                      </p>
+                    )}
                   </div>
                 </div>
                 <div className="w-full h-[200px] bg-white border-black border-[1px] col-span-2 row-span-3 col-start-3 row-start-5 rounded-xl py-2 shadow-custom">

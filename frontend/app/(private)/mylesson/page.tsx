@@ -9,22 +9,22 @@ import { useRouter } from "next/navigation";
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 type PrioritizedLesson = {
-  lesson: {
-    id: string;
-    title: string;
-    content: string;
-    // progress: number;
-    chapter: { title: string };
-  };
+  lessonId: string;
+  title: string;
+  chapterId: string;
+  chapterTitle?: string;
   progress: number;
   priority: number;
-  updatedAt: string; // ✅ add this
+  updatedAt: string;
 };
 
 export default function MyLessons() {
   const { isSidebarOpen } = useSidebar();
   const { user } = useAuth();
   const [lessons, setLessons] = useState<PrioritizedLesson[]>([]);
+  const [showAllCurrent, setShowAllCurrent] = useState(false);
+  const [showAllUpcoming, setShowAllUpcoming] = useState(false);
+  const [showAllPast, setShowAllPast] = useState(false);
 
   useEffect(() => {
     if (!user?.id) return;
@@ -44,16 +44,28 @@ export default function MyLessons() {
     fetchLessons();
   }, [user]);
 
-  const currentLesson = lessons.find((l) => l.progress < 1); // first incomplete
-  const upcomingLessons = lessons
-    .filter((l) => l.progress < 1 && l.lesson.id !== currentLesson?.lesson.id)
-    .slice(0, 3); // limit to 3
+  const currentLessons = lessons.filter(
+    (l) => l.progress > 0 && l.progress < 1
+  );
+  const visibleCurrent = showAllCurrent
+    ? currentLessons
+    : currentLessons.slice(0, 1);
+
+  const upcomingLessons = lessons.filter(
+    (l) =>
+      l.progress === 0 && !currentLessons.some((c) => c.lessonId === l.lessonId)
+  );
+  const visibleUpcoming = showAllUpcoming
+    ? upcomingLessons
+    : upcomingLessons.slice(0, 2);
+
   const pastLessons = lessons
     .filter((l) => l.progress === 1)
     .sort(
       (a, b) =>
         new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
     );
+  const visiblePast = showAllPast ? pastLessons : pastLessons.slice(0, 1);
 
   return (
     <ProtectedRoute>
@@ -72,39 +84,67 @@ export default function MyLessons() {
               Current Lesson
             </h1>
 
-            {currentLesson && (
+            {visibleCurrent.map((l, i) => (
               <LessonCard
-                lesson={currentLesson.lesson}
-                progress={currentLesson.progress} // ✅ pass progress
-                index={0}
+                key={l.lessonId}
+                lesson={{ id: l.lessonId, title: l.title, content: "" }}
+                progress={l.progress}
+                index={i}
               />
+            ))}
+
+            {currentLessons.length > 2 && (
+              <button
+                onClick={() => setShowAllCurrent(!showAllCurrent)}
+                className="mt-2 text-blue-600 underline"
+              >
+                {showAllCurrent ? "See less" : "See more"}
+              </button>
             )}
 
             <h1 className="text-[#30608E] text-[18px] font-semibold mt-16">
               Upcoming Lessons
             </h1>
 
-            {upcomingLessons.map((l, i) => (
+            {visibleUpcoming.map((l, i) => (
               <LessonCard
-                key={l.lesson.id}
-                lesson={l.lesson}
-                progress={l.progress} // ✅ pass progress
-                index={i + 1}
+                key={l.lessonId}
+                lesson={{ id: l.lessonId, title: l.title, content: "" }}
+                progress={l.progress}
+                index={i}
               />
             ))}
+
+            {upcomingLessons.length > 2 && (
+              <button
+                onClick={() => setShowAllUpcoming(!showAllUpcoming)}
+                className="mt-2 text-blue-600 underline"
+              >
+                {showAllUpcoming ? "See less" : "See more"}
+              </button>
+            )}
 
             <h1 className="text-[#30608E] text-[18px] font-semibold mt-16">
               Past Lessons
             </h1>
 
-            {pastLessons.map((l, i) => (
+            {visiblePast.map((l, i) => (
               <LessonCard
-                key={l.lesson.id}
-                lesson={l.lesson}
+                key={l.lessonId}
+                lesson={{ id: l.lessonId, title: l.title, content: "" }}
                 progress={l.progress}
-                index={i + 1}
+                index={i}
               />
             ))}
+
+            {pastLessons.length > 2 && (
+              <button
+                onClick={() => setShowAllPast(!showAllPast)}
+                className="mt-2 text-blue-600 underline"
+              >
+                {showAllPast ? "See less" : "See more"}
+              </button>
+            )}
           </div>
         </div>
       </div>

@@ -25,11 +25,6 @@ export const getUsers: RequestHandler = async (_req, res) => {
 export const getUserById: RequestHandler = async (req, res) => {
   try {
     const userId = req.params.id;
-
-    // const user = await prisma.user.findUnique({
-    //   where: { id: userId },
-    //   select: { id: true, name: true, email: true, createdAt: true },
-    // });
     const user = await prisma.user.findUnique({
       where: { id: userId },
       select: {

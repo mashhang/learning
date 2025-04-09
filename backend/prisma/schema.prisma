@@ -67,6 +67,8 @@ model UserLessonPriority {
   lessonId  String
   priority  Float // Computed priority value
   progress  Float    @default(0.0) // ✅ Track per-user progress here
+  currentPage Int?     // 👈 ✅ Track user page progress
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
