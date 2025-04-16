@@ -9,7 +9,13 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL;
 export default function LessonsAdmin() {
   const { token } = useAuth();
   const [lessons, setLessons] = useState<
-    { id: string; title: string; chapterId: string; chapterTitle: string }[]
+    {
+      id: string;
+      title: string;
+      chapterId: string;
+      chapterTitle: string;
+      status: string; // ✅ Add this line
+    }[]
   >([]);
   const [chapters, setChapters] = useState<{ id: string; title: string }[]>([]);
   const [selectedChapter, setSelectedChapter] = useState<string>("All");
@@ -84,6 +90,7 @@ export default function LessonsAdmin() {
           <tr className="border bg-gray-200">
             <th className="p-2 text-left">Title</th>
             <th className="p-2 text-left">Chapter</th>
+            <th className="p-2 text-left">Status</th> {/* ✅ Add this */}
             <th className="p-2 text-left">Actions</th>
           </tr>
         </thead>
@@ -99,6 +106,17 @@ export default function LessonsAdmin() {
                 <td className="p-2 border">{lesson.title}</td>
                 <td className="p-2 text-left border">{lesson.chapterTitle}</td>
                 <td className="p-2 text-left border">
+                  {lesson.status === "published" ? (
+                    <span className="bg-green-100 text-green-700 px-2 py-1 rounded text-sm">
+                      🟢 Published
+                    </span>
+                  ) : (
+                    <span className="bg-yellow-100 text-yellow-700 px-2 py-1 rounded text-sm">
+                      📝 Draft
+                    </span>
+                  )}
+                </td>
+                <td className="p-2 text-left border">
                   <Link
                     href={`/admin/lessons/${lesson.id}`}
                     className="text-blue-600"
@@ -111,6 +129,13 @@ export default function LessonsAdmin() {
                     className="text-red-600 ml-2"
                   >
                     Delete
+                  </Link>
+                  |{" "}
+                  <Link
+                    href={`/admin/lessons/${lesson.id}/exercises`}
+                    className="text-green-600 ml-2"
+                  >
+                    Exercises
                   </Link>
                 </td>
               </tr>

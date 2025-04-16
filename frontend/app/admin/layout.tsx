@@ -41,6 +41,9 @@ export default function AdminLayout({
               <a href="/admin/lessons">Lessons</a>
             </li>
             <li className="mb-2">
+              <a href="/admin/assessments">Assessments</a>
+            </li>
+            <li className="mb-2">
               <a href="/admin/users">Users</a>
             </li>
             <li className="mb-4">

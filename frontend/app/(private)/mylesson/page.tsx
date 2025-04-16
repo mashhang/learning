@@ -8,7 +8,7 @@ import { useRouter } from "next/navigation";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
-type PrioritizedLesson = {
+type OrderedLesson = {
   lessonId: string;
   title: string;
   chapterId: string;
@@ -21,7 +21,7 @@ type PrioritizedLesson = {
 export default function MyLessons() {
   const { isSidebarOpen } = useSidebar();
   const { user } = useAuth();
-  const [lessons, setLessons] = useState<PrioritizedLesson[]>([]);
+  const [lessons, setLessons] = useState<OrderedLesson[]>([]);
   const [showAllCurrent, setShowAllCurrent] = useState(false);
   const [showAllUpcoming, setShowAllUpcoming] = useState(false);
   const [showAllPast, setShowAllPast] = useState(false);
@@ -30,31 +30,32 @@ export default function MyLessons() {
     if (!user?.id) return;
 
     const fetchLessons = async () => {
-      const res = await fetch(
-        `${API_URL}/api/diagnostic/${user.id}/prioritized-lessons`,
-        {
-          cache: "no-store", // ✅ force fresh data
-        }
-      );
+      const res = await fetch(`${API_URL}/api/progress/ordered/${user.id}`, {
+        cache: "no-store", // ✅ force fresh data
+      });
       const data = await res.json();
-      console.log("🧪 Prioritized Lessons", data);
-      setLessons(data);
+      console.log("🧪 Ordered Lessons", data);
+      setLessons(
+        data.map((l: any) => ({
+          ...l,
+          lessonId: l.lessonId || l.id, // ✅ fallback to `id`
+        }))
+      );
     };
 
     fetchLessons();
   }, [user]);
 
   const startedLessons = lessons.filter(
-    (l) => l.progress > 0 && l.progress < 1
+    (l) => l.progress !== undefined && l.progress > 0 && l.progress < 1
   );
 
-  let currentLessons: PrioritizedLesson[] = [];
+  let currentLessons: OrderedLesson[] = [];
 
   if (startedLessons.length > 0) {
-    // If there are lessons in progress, those are current
     currentLessons = startedLessons;
   } else {
-    // If none are started, promote the top-priority unstarted lesson
+    // ✅ Only include the nextAvailable if nothing is in progress yet
     const nextAvailable = lessons.find((l) => l.progress === 0);
     if (nextAvailable) currentLessons = [nextAvailable];
   }
@@ -96,66 +97,88 @@ export default function MyLessons() {
               Current Lesson
             </h1>
 
-            {visibleCurrent.map((l, i) => (
-              <LessonCard
-                key={l.lessonId}
-                lesson={{ id: l.lessonId, title: l.title, content: "" }}
-                progress={l.progress}
-                index={i}
-              />
-            ))}
+            {visibleCurrent.length === 0 ? (
+              <p className="text-gray-500 italic mt-2">
+                No current lessons yet.
+              </p>
+            ) : (
+              <>
+                {visibleCurrent.map((l, i) => (
+                  <LessonCard
+                    key={l.lessonId}
+                    lesson={{ id: l.lessonId, title: l.title, content: "" }}
+                    progress={l.progress}
+                    index={i}
+                  />
+                ))}
 
-            {currentLessons.length > 2 && (
-              <button
-                onClick={() => setShowAllCurrent(!showAllCurrent)}
-                className="float-right mt-2 text-[#8f8f8f] underline hover:text-[#383838] transition"
-              >
-                {showAllCurrent ? "See less" : "See more"}
-              </button>
+                {currentLessons.length > 1 && (
+                  <button
+                    onClick={() => setShowAllCurrent(!showAllCurrent)}
+                    className="float-right mt-2 text-[#8f8f8f] underline hover:text-[#383838] transition"
+                  >
+                    {showAllCurrent ? "See less" : "See more"}
+                  </button>
+                )}
+              </>
             )}
 
             <h1 className="text-[#30608E] text-[18px] font-semibold mt-16">
               Upcoming Lessons
             </h1>
 
-            {visibleUpcoming.map((l, i) => (
-              <LessonCard
-                key={l.lessonId}
-                lesson={{ id: l.lessonId, title: l.title, content: "" }}
-                progress={l.progress}
-                index={i}
-              />
-            ))}
+            {visibleUpcoming.length === 0 ? (
+              <p className="text-gray-500 italic mt-2">No upcoming lessons.</p>
+            ) : (
+              <>
+                {visibleUpcoming.map((l, i) => (
+                  <LessonCard
+                    key={l.lessonId}
+                    lesson={{ id: l.lessonId, title: l.title, content: "" }}
+                    progress={l.progress}
+                    index={i}
+                  />
+                ))}
 
-            {upcomingLessons.length > 2 && (
-              <button
-                onClick={() => setShowAllUpcoming(!showAllUpcoming)}
-                className="float-right mt-2 text-[#8f8f8f] underline hover:text-[#383838] transition"
-              >
-                {showAllUpcoming ? "See less" : "See more"}
-              </button>
+                {upcomingLessons.length > 2 && (
+                  <button
+                    onClick={() => setShowAllUpcoming(!showAllUpcoming)}
+                    className="float-right mt-2 text-[#8f8f8f] underline hover:text-[#383838] transition"
+                  >
+                    {showAllUpcoming ? "See less" : "See more"}
+                  </button>
+                )}
+              </>
             )}
 
             <h1 className="text-[#30608E] text-[18px] font-semibold mt-16">
               Past Lessons
             </h1>
 
-            {visiblePast.map((l, i) => (
-              <LessonCard
-                key={l.lessonId}
-                lesson={{ id: l.lessonId, title: l.title, content: "" }}
-                progress={l.progress}
-                index={i}
-              />
-            ))}
+            {visiblePast.length === 0 ? (
+              <p className="text-gray-500 italic mt-2">
+                No lessons completed yet.
+              </p>
+            ) : (
+              <>
+                {visiblePast.map((l, i) => (
+                  <LessonCard
+                    key={l.lessonId}
+                    lesson={{ id: l.lessonId, title: l.title, content: "" }}
+                    progress={l.progress}
+                    index={i}
+                  />
+                ))}
 
-            {pastLessons.length > 2 && (
-              <button
-                onClick={() => setShowAllPast(!showAllPast)}
-                className="float-right mt-2 text-[#8f8f8f] underline hover:text-[#383838] transition"
-              >
-                {showAllPast ? "See less" : "See more"}
-              </button>
+                {pastLessons.length > 2 && (
+                  <button
+                    onClick={() => setShowAllPast(!showAllPast)}
+                    className="float-right mt-2 text-[#8f8f8f] underline hover:text-[#383838] transition"
+                  >
+                    {showAllPast ? "See less" : "See more"}
+                  </button>
+                )}
+              </>
             )}
           </div>
         </div>
@@ -187,6 +210,8 @@ function LessonCard({
     buttonLabel = "Start Over";
   } else if (isStarted) {
     buttonLabel = "Continue Lesson";
+  } else if (isNew) {
+    buttonLabel = "Take Pre-Assessment";
   }
 
   return (
@@ -208,7 +233,12 @@ function LessonCard({
 
         <button
           className="text-[14px] w-36 h-12 mt-4 bg-[#30608E] text-white rounded-md hover:bg-[#254a6d] transition"
-          onClick={() => router.push(`/current?id=${lesson.id}`)}
+          // onClick={() => router.push(`/current?id=${lesson.id}`)}
+          onClick={() =>
+            progress === 0
+              ? router.push(`/pre-assessment?id=${lesson.id}`)
+              : router.push(`/current?id=${lesson.id}`)
+          }
         >
           {buttonLabel}
         </button>

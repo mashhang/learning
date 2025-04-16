@@ -31,10 +31,10 @@ import {
 } from "./src/routes/lesson";
 
 import { userRouter } from "./src/routes/user";
-// import { markDiagnosticTaken } from "./src/routes/user";
 import diagnosticRoutes from "./src/routes/diagnostic";
-// import userLessonPriorityRoutes from "./src/routes/userLessonPriority";
 import uploadRouter from "./src/routes/upload";
+import assessmentRoutes from "./src/routes/assessment";
+import exerciseRoutes from "./src/routes/exercise";
 
 dotenv.config();
 const app = express();
@@ -79,15 +79,17 @@ app.post(
   authenticateUser,
   upload.fields([
     { name: "media", maxCount: 1 },
-    { name: "questionImages", maxCount: 1000 },
-    { name: "choiceImages", maxCount: 1000 },
-    { name: "pageMedias", maxCount: 1000 },
+    { name: "questionImages", maxCount: 5000 },
+    { name: "choiceImages", maxCount: 5000 },
+    { name: "pageMedias", maxCount: 5000 },
   ]),
   createLesson
 );
 app.put("/api/lessons/:id", authenticateUser, upload.any(), updateLesson);
 app.delete("/api/lessons/:id", authenticateUser, deleteLesson); // ✅ Now correctly includes `authenticateUser`
 
+app.use("/api", exerciseRoutes);
+app.use("/api/assessment", assessmentRoutes);
 app.use("/api/diagnostic", diagnosticRoutes);
 app.use("/api/progress", progressRoutes); // ✅ use router, not raw handler
 

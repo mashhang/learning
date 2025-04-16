@@ -36,7 +36,7 @@ export default function Dashboard() {
     const fetchLessons = async () => {
       try {
         const res = await fetch(
-          `${API_URL}/api/diagnostic/${user.id}/prioritized-lessons`
+          `${API_URL}/api/progress/ordered/${user.id}` // Your API endpoint
         );
 
         const data = await res.json();

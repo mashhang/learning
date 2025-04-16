@@ -16,7 +16,7 @@ export default function UsersAdmin() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch(`${API_URL}/api/users`, {
+    fetch(`${API_URL}/api/user`, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",

@@ -26,6 +26,7 @@ type LessonPage = {
 export default function EditLesson() {
   const router = useRouter();
   const { id } = useParams();
+  const [status, setStatus] = useState("DRAFT");
 
   const [lesson, setLesson] = useState<{
     title: string;
@@ -88,6 +89,7 @@ export default function EditLesson() {
                 // media: null, // Optional: preload preview if needed
               })) || [],
           });
+          setStatus(data.status || "DRAFT");
         } else {
           alert("Lesson not found.");
           router.push("/admin/lessons");
@@ -234,6 +236,7 @@ export default function EditLesson() {
     });
     formData.append("questions", JSON.stringify(lesson.questions));
     formData.append("chapterId", lesson.chapterId);
+    formData.append("status", status);
 
     const res = await fetch(`${API_URL}/api/lessons/${id}`, {
       method: "PUT",
@@ -254,7 +257,7 @@ export default function EditLesson() {
   };
 
   return (
-    <div className="p-6">
+    <div className="p-6 overflow-x-hidden max-w-[1610px]">
       <h1 className="text-2xl font-bold mb-4">Edit Lesson</h1>
       <form onSubmit={handleUpdate} encType="multipart/form-data">
         <input
@@ -264,6 +267,15 @@ export default function EditLesson() {
           className="border p-2 w-full mb-2"
           placeholder="Lesson Title"
         />
+
+        <select
+          value={status}
+          onChange={(e) => setStatus(e.target.value)}
+          className="border p-2 w-full bg-white"
+        >
+          <option value="DRAFT">Draft</option>
+          <option value="PUBLISHED">Published</option>
+        </select>
 
         <h2 className="text-xl font-bold mt-4">Lesson Pages</h2>
         {lesson.pages.map((page, i) => (
@@ -282,7 +294,7 @@ export default function EditLesson() {
                 }}
                 className="border p-2 w-full mb-2"
               />
-              <div className="bg-gray-100 p-2 rounded">
+              <div className="bg-gray-100 p-2 rounded break-words">
                 <InlineMath>{page.content}</InlineMath>
               </div>
             </>
@@ -384,7 +396,7 @@ export default function EditLesson() {
                 <input
                   type="text"
                   placeholder="Enter Question"
-                  value={q.question}
+                  value={q.question ?? ""}
                   onChange={(e) =>
                     handleQuestionChange(qIndex, "question", e.target.value)
                   }
@@ -473,7 +485,7 @@ export default function EditLesson() {
                     <input
                       type="text"
                       placeholder={`Choice ${cIndex + 1}`}
-                      value={choice}
+                      value={choice ?? ""}
                       onChange={(e) =>
                         handleChoiceChange(qIndex, cIndex, e.target.value)
                       }
@@ -518,6 +530,10 @@ export default function EditLesson() {
             </button>
           </div>
         ))}
+
+        <p className="text-sm text-gray-600 mb-2">
+          Total Question: {lesson.questions.length}
+        </p>
 
         <button
           type="button"

@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/app/context/AuthContext";
-import { InlineMath, BlockMath } from "react-katex";
+import { InlineMath } from "react-katex";
 import "katex/dist/katex.min.css";
 
 type Question = {
@@ -87,6 +87,18 @@ export default function DiagnosticExam() {
     [key: string]: string | null;
   }>({});
 
+  const [questionStartTime, setQuestionStartTime] = useState<number>(
+    Date.now()
+  );
+  const [timedAnswers, setTimedAnswers] = useState<
+    {
+      questionId: string;
+      lessonId: string;
+      timeTaken: number;
+      isCorrect: boolean;
+    }[]
+  >([]);
+
   // Score
   const [showSummary, setShowSummary] = useState(false);
   const [score, setScore] = useState(0);
@@ -106,8 +118,16 @@ export default function DiagnosticExam() {
       document.body.style.overflow = "auto";
     };
   }, [showSummary]);
+
   //
   const handleSubmitExam = async () => {
+    const unanswered = shuffledQuestions.some((q) => !selectedAnswers[q.id]);
+
+    if (unanswered) {
+      alert("Please answer all questions before submitting.");
+      return;
+    }
+
     let totalQuestions = 0;
     let correctCount = 0;
 
@@ -152,6 +172,10 @@ export default function DiagnosticExam() {
     setScore(percentage);
 
     // Submit to backend
+    // Record last question before submit
+    recordTimeForCurrentQuestion();
+    console.log("📤 Submitting timedAnswers:", timedAnswers);
+
     if (user?.id) {
       try {
         const res = await fetch(`${API_URL}/api/diagnostic/submit`, {
@@ -161,14 +185,14 @@ export default function DiagnosticExam() {
           },
           body: JSON.stringify({
             userId: user.id,
-            results: lessonResults,
+            results: timedAnswers,
           }),
         });
 
         const data = await res.json();
-        console.log("Diagnostic Submitted:", data);
+        console.log("✅ Diagnostic Submitted:", data);
       } catch (error) {
-        console.error("Error submitting diagnostic:", error);
+        console.error("❌ Error submitting diagnostic:", error);
       }
     }
 
@@ -237,13 +261,90 @@ export default function DiagnosticExam() {
     }
   }, [lessons]);
 
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "ArrowRight") {
+        goToNext();
+      } else if (e.key === "ArrowLeft") {
+        goToPrev();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [currentIndex, shuffledQuestions]);
+
+  useEffect(() => {
+    const handleBlur = () => {
+      alert("You left the exam window. The exam will now reset.");
+      location.reload(); // Force full reload
+    };
+
+    window.addEventListener("blur", handleBlur);
+
+    return () => {
+      window.removeEventListener("blur", handleBlur);
+    };
+  }, []);
+
+  const recordTimeForCurrentQuestion = () => {
+    const current = shuffledQuestions[currentIndex];
+    const endTime = Date.now();
+    const timeTaken = Math.floor((endTime - questionStartTime) / 1000); // seconds
+
+    setTimedAnswers((prev) => {
+      const existing = prev.find((a) => a.questionId === current.id);
+
+      if (existing) {
+        const updated = prev.map((a) =>
+          a.questionId === current.id
+            ? {
+                ...a,
+                timeTaken: a.timeTaken + timeTaken,
+              }
+            : a
+        );
+
+        console.log("⏱️ Time updated:", {
+          questionId: current.id,
+          lessonId: current.lessonId,
+          addedTime: timeTaken,
+          totalTime: existing.timeTaken + timeTaken,
+          isCorrect: existing.isCorrect,
+        });
+
+        return updated;
+      } else {
+        const selected = selectedAnswers[current.id];
+        const isCorrect = selected === current.correctAnswer;
+
+        const newEntry = {
+          questionId: current.id,
+          lessonId: current.lessonId,
+          timeTaken,
+          isCorrect,
+        };
+
+        console.log("🆕 Time recorded:", newEntry);
+
+        return [...prev, newEntry];
+      }
+    });
+
+    setQuestionStartTime(Date.now());
+  };
+
   const goToNext = () => {
+    recordTimeForCurrentQuestion();
     if (currentIndex < shuffledQuestions.length - 1) {
       setCurrentIndex(currentIndex + 1);
     }
   };
 
   const goToPrev = () => {
+    recordTimeForCurrentQuestion();
     if (currentIndex > 0) {
       setCurrentIndex(currentIndex - 1);
     }
@@ -295,20 +396,28 @@ export default function DiagnosticExam() {
                 {shuffledQuestions.map((question, index) => {
                   const isCurrent = currentIndex === index;
                   const isReviewLater = reviewLaterIds.has(question.id);
+                  const hasAnswer =
+                    selectedAnswers[question.id] !== null &&
+                    selectedAnswers[question.id] !== undefined;
 
                   return (
                     <button
                       key={index}
                       onClick={() => setCurrentIndex(index)}
                       className={`w-8 h-8 text-sm rounded-full border text-center transition
-                        ${isCurrent ? "bg-blue-600 text-white font-bold" : ""}
-                        ${isReviewLater ? "bg-red-500 text-white" : ""}
-                        ${
-                          !isCurrent && !isReviewLater
-                            ? "bg-white hover:bg-blue-100 text-gray-700 border-gray-300"
-                            : ""
-                        }
-                      `}
+        ${isCurrent ? "bg-blue-600 text-white font-bold" : ""}
+        ${isReviewLater ? "bg-red-500 text-white" : ""}
+        ${
+          !isCurrent && !isReviewLater && hasAnswer
+            ? "bg-green-500 text-white"
+            : ""
+        }
+        ${
+          !isCurrent && !isReviewLater && !hasAnswer
+            ? "bg-white hover:bg-blue-100 text-gray-700 border-gray-300"
+            : ""
+        }
+      `}
                     >
                       {index + 1}
                     </button>
@@ -365,7 +474,7 @@ export default function DiagnosticExam() {
 
                 {/* Question text */}
                 {shuffledQuestions[currentIndex].question && (
-                  <p className="mt-2 text-gray-800 text-base whitespace-pre-line leading-relaxed">
+                  <p className="mt-2 text-gray-800 text-base whitespace-pre-line leading-relaxed select-none">
                     <InlineMath>
                       {shuffledQuestions[currentIndex].question}
                     </InlineMath>
@@ -395,7 +504,7 @@ export default function DiagnosticExam() {
                     (choice, index) => (
                       <label
                         key={index}
-                        className={`flex items-center space-x-3 cursor-pointer border px-4 py-3 rounded-md ${
+                        className={`flex items-center space-x-3 cursor-pointer border px-4 py-3 rounded-md select-none ${
                           selectedAnswers[
                             shuffledQuestions[currentIndex].id
                           ] === choice

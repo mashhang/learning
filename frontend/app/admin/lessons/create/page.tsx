@@ -121,6 +121,7 @@ export default function AddLesson() {
         formData.append("pageMedias", page.media);
       }
     });
+    formData.append("status", status);
 
     const res = await fetch(`${API_URL}/api/lessons`, {
       method: "POST",

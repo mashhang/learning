@@ -24,6 +24,8 @@ model User {
   verificationToken  String?
   hasTakenDiagnostic Boolean              @default(false) // ✅ Add this
   lessonPriorities   UserLessonPriority[]
+  diagnosticAnswers  DiagnosticAnswer[] // ✅ Add this line
+  assessmentAnswers  AssessmentAnswer[]
 }
 
 enum Role {
@@ -31,60 +33,129 @@ enum Role {
   ADMIN
 }
 
+enum LessonStatus {
+  DRAFT
+  PUBLISHED
+}
+
 model Chapter {
   id      String   @id @default(uuid())
   title   String
+  order   Int // ✅ NEW: defines display order of chapters
   lessons Lesson[]
 }
 
+enum AssessmentType {
+  PRE
+  POST
+}
+
+enum DifficultyLevel {
+  EASY
+  MEDIUM
+  HARD
+}
+
 model Lesson {
-  id               String               @id @default(uuid())
-  title            String
-  media            String? // ✅ Stores image or video URLs (nullable)
-  chapterId        String
-  chapter          Chapter              @relation(fields: [chapterId], references: [id], onDelete: Cascade)
-  questions        Question[]
-  createdAt        DateTime             @default(now())
-  updatedAt        DateTime             @updatedAt
-  lessonPriorities UserLessonPriority[]
-  pages     LessonPage[] // ⬅️ add this relation
+  id                String               @id @default(uuid())
+  title             String
+  order             Int // ✅ NEW: defines order within chapter
+  media             String? // ✅ Stores image or video URLs (nullable)
+  chapterId         String
+  chapter           Chapter              @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+  questions         Question[]
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+  lessonPriorities  UserLessonPriority[] @relation("LessonToPriority")
+  pages             LessonPage[] // ⬅️ add this relation
+  diagnosticAnswers DiagnosticAnswer[] // ✅ Add this line
+  status            LessonStatus         @default(DRAFT) // 👈 add this
+  assessmentAnswers AssessmentAnswer[]
+  exampleExercises  ExampleExercise[]
 }
 
 model Question {
-  id            String   @id @default(uuid())
-  lessonId      String
-  lesson        Lesson   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
-  question      String?
-  questionImage String? // ✅ image file path
-  choices       String[] // Array of choices
-  isChoiceImage Boolean  @default(false) // ✅ whether choices are images
-  correctAnswer String
+  id                String             @id @default(uuid())
+  lessonId          String
+  lesson            Lesson             @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  question          String?
+  questionImage     String? // ✅ image file path
+  choices           String[] // Array of choices
+  isChoiceImage     Boolean            @default(false) // ✅ whether choices are images
+  correctAnswer     String
+  diagnosticAnswers DiagnosticAnswer[] // ✅ Add this line
+  assessmentAnswers AssessmentAnswer[]
 }
 
 model UserLessonPriority {
-  id        String   @id @default(uuid())
-  userId    String
-  lessonId  String
-  priority  Float // Computed priority value
-  progress  Float    @default(0.0) // ✅ Track per-user progress here
-  currentPage Int?     // 👈 ✅ Track user page progress
+  id          String @id @default(uuid())
+  userId      String
+  lessonId    String
+  priority    Float // Computed priority value
+  progress    Float  @default(0.0) // ✅ Track per-user progress here
+  currentPage Int? // 👈 ✅ Track user page progress
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  lesson Lesson @relation("LessonToPriority", fields: [lessonId], references: [id], onDelete: Cascade)
 
   @@unique([userId, lessonId]) // Prevent duplicates
 }
 
 model LessonPage {
-  id        String   @id @default(uuid())
-  content   String   // markdown or html
-  media     String?  // optional image or video
-  order     Int      // page order in the lesson
-  lessonId  String
-  lesson    Lesson   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  id       String  @id @default(uuid())
+  content  String // markdown or html
+  media    String? // optional image or video
+  order    Int // page order in the lesson
+  lessonId String
+  lesson   Lesson  @relation(fields: [lessonId], references: [id], onDelete: Cascade)
 
   @@unique([lessonId, order]) // ✅ required for upsert to work
+}
+
+model DiagnosticAnswer {
+  id         String   @id @default(uuid())
+  userId     String
+  questionId String
+  lessonId   String
+  timeTaken  Int // in seconds
+  isCorrect  Boolean
+  createdAt  DateTime @default(now())
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  lesson   Lesson   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+}
+
+model AssessmentAnswer {
+  id         String         @id @default(uuid())
+  userId     String
+  lessonId   String
+  questionId String
+  timeTaken  Int
+  isCorrect  Boolean
+  type       AssessmentType
+  createdAt  DateTime       @default(now())
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lesson   Lesson   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+}
+
+
+model ExampleExercise {
+  id          String   @id @default(uuid())
+  lessonId    String
+  lesson      Lesson   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  question     String   // Markdown or HTML (for question/problem statement)
+  choices     String[] // Multiple choice options
+  correctAnswer String
+  explanation String? // Why the answer is correct or incorrect
+  skillTag    String?  // Optional: "mapping", "domain", etc.
+  difficulty  DifficultyLevel @default(MEDIUM)
+  isChoiceImage Boolean @default(false)
+  questionImage String? // optional image for the exercise
+  createdAt   DateTime @default(now())
 }

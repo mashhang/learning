@@ -50,17 +50,6 @@ const Navbar: React.FC<NavbarProps> = ({
   const profileRef = useRef<HTMLDivElement | null>(null);
   const modalRef = useRef<HTMLDivElement | null>(null);
 
-  // useEffect(() => {
-  //   // Fetch the first lesson
-  //   fetch("http://localhost:5001/api/lessons")
-  //     .then((res) => res.json())
-  //     .then((data) => {
-  //       if (data.length > 0) {
-  //         setFirstLessonId(data[0].id); // ✅ Set first lesson ID
-  //       }
-  //     })
-  //     .catch((error) => console.error("Error fetching lessons:", error));
-  // }, []);
   useEffect(() => {
     if (!user?.id) return;
 
@@ -106,7 +95,8 @@ const Navbar: React.FC<NavbarProps> = ({
       icon: <LibraryBig strokeWidth={1.25} />,
       label: "Current Lessons",
       // href: firstLessonId ? `/current?id=${firstLessonId}` : "/current", // ✅ Dynamically link
-      href: firstLessonId ? `/current?id=${firstLessonId}` : "/current", // ✅ Use dynamic top-priority lesson
+      // href: firstLessonId ? `/current?id=${firstLessonId}` : "/current", // ✅ Use dynamic top-priority lesson
+      href: firstLessonId ? `/current?id=${firstLessonId}` : "#", // safer fallback
     },
     // {
     //   icon: <Backpack strokeWidth={1.25} />,

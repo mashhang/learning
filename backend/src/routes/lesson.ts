@@ -1,11 +1,11 @@
 import { Request, Response, NextFunction, RequestHandler } from "express";
-import { PrismaClient, User } from "@prisma/client";
+import { PrismaClient, User, Prisma } from "@prisma/client";
 import { AuthenticatedRequest } from "../types/express";
 import { deleteFile } from "../utils/deleteFile";
 import { Multer } from "multer";
 
 const prisma = new PrismaClient();
-const API_URL = process.env.API_URL || "http://192.168.1.4:5001"; // ✅ Use backend env
+const API_URL = process.env.API_URL || "http://192.168.1.6:5001"; // ✅ Use backend env
 
 // ✅ Extend Express Request type to include `user`
 declare module global {
@@ -83,6 +83,7 @@ export const getLessons: RequestHandler = async (_req, res) => {
               order: p.order,
             }))
           : [],
+        status: lesson.status, // ✅ Add this line
       }))
     );
   } catch (error) {
@@ -165,7 +166,7 @@ export const updateLesson = async (
         .json({ error: "Forbidden: Only admins can update lessons" });
     }
 
-    const { title, content, chapterId } = req.body;
+    const { title, content, chapterId, status } = req.body;
     const questions = req.body.questions ? JSON.parse(req.body.questions) : [];
     const lessonId = req.params.id;
 
@@ -177,18 +178,24 @@ export const updateLesson = async (
       ? `/uploads/${files.media[0].filename}`
       : undefined;
 
-    const updateData: {
-      title?: string;
-      content?: string;
-      media?: string;
-      chapterId?: string;
-    } = { title, content, chapterId };
-    if (media) updateData.media = media;
+    const updateData: Prisma.LessonUpdateInput = {
+      title,
+      status,
+    };
 
+    if (media) updateData.media = media;
+    if (chapterId) {
+      updateData.chapter = {
+        connect: { id: chapterId },
+      };
+    }
     const updatedLesson = await prisma.lesson.update({
       where: { id: lessonId },
       data: updateData,
     });
+
+    if (media) updateData.media = media;
+    if (status) updateData.status = status; // ✅ ADD THIS LINE
 
     // ✅ Update Pages with Upsert
     const { pages } = req.body;
@@ -320,7 +327,8 @@ export const updateLesson = async (
       })) || [];
 
     res.status(200).json({
-      ...updated,
+      ...updatedLesson,
+      status: updatedLesson?.status, // ✅ manually ensure it's included
       pages: pagesWithMediaURL,
     });
   } catch (error) {
@@ -380,7 +388,7 @@ export const createLesson: RequestHandler = async (
       pageMedias?: Express.Multer.File[];
     };
 
-    const { title, chapterId } = req.body;
+    const { title, chapterId, status } = req.body;
     const questions = JSON.parse(req.body.questions || "[]");
     const pages = JSON.parse(req.body.pages || "[]");
 
@@ -404,14 +412,21 @@ export const createLesson: RequestHandler = async (
       ? `/uploads/${files.media[0].filename}`
       : null;
 
+    // Automatically determine order (e.g., next lesson number)
+    const existingLessons = await prisma.lesson.findMany({
+      where: { chapterId },
+    });
+    const nextOrder = existingLessons.length + 1;
+
     const createdLesson = await prisma.lesson.create({
       data: {
         title,
         chapterId,
         media,
+        status,
+        order: nextOrder,
       },
     });
-
     // ✅ Safely create lesson pages
     if (Array.isArray(pages) && pages.length > 0) {
       await prisma.lessonPage.createMany({
