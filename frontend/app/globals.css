@@ -1,3 +1,39 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+.animate-keypad {
+  animation: slide-reveal 0.2s ease-out forwards;
+}
+
+@keyframes slide-reveal {
+  from {
+    opacity: 0;
+    transform: scaleY(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scaleY(1);
+  }
+}
+
+.animate-keypadExit {
+  animation: slide-hide 0.2s ease-in-out forwards;
+}
+
+@keyframes slide-hide {
+  from {
+    opacity: 1;
+    transform: scaleY(1);
+  }
+  to {
+    opacity: 0;
+    transform: scaleY(0.8);
+  }
+}
+
+/* ✅ Hide both MathLive toggle icons */
+math-field::part(virtual-keyboard-toggle),
+math-field::part(menu-toggle) {
+  display: none !important;
+}

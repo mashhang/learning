@@ -8,35 +8,213 @@ import ReactMarkdown from "react-markdown";
 import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
 import "katex/dist/katex.min.css"; // Import KaTeX styles
+import Image from "next/image";
+import { useAuth } from "@/app/context/AuthContext";
+import AssessmentQuiz from "@/app/components/AssessmentQuiz";
+
+type LessonPage = {
+  content: string;
+  media?: string | null;
+};
 
 type Lesson = {
   id: string;
+  lessonId: string; // ✅ this is now returned
   title: string;
-  content: string; // Markdown content
   chapterId: string;
+  chapterTitle: string;
+  progress: number;
+  updatedAt?: string | null;
+  pages: LessonPage[];
 };
+
+type ExampleExercise = {
+  id: string;
+  question: string;
+  choices: string[];
+  correctAnswer: string;
+  difficulty: "EASY" | "MEDIUM" | "HARD";
+  skillTag?: string;
+  explanation: string;
+};
+
+// const [resolvedLessonId, setResolvedLessonId] = useState<string | null>(null);
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
 
 export default function CurrentLesson() {
   const [lesson, setLesson] = useState<Lesson | null>(null);
   const [lessons, setLessons] = useState<Lesson[]>([]);
+  const [currentPage, setCurrentPage] = useState(1); //
+  const [totalPages, setTotalPages] = useState(1); //
   const searchParams = useSearchParams();
   const lessonId = searchParams.get("id");
   const router = useRouter();
   const { isSidebarOpen, sidebarWidth } = useSidebar();
+  const { user } = useAuth();
+  const [showPreAssessment, setShowPreAssessment] = useState(false);
+  const [showPostAssessment, setShowPostAssessment] = useState(false);
+  const [currentPageLoaded, setCurrentPageLoaded] = useState(false);
+  const [exerciseIndex, setExerciseIndex] = useState(0);
+  const [showSummary, setShowSummary] = useState(false);
+
+  const [selectedAnswers, setSelectedAnswers] = useState<{
+    [index: number]: string;
+  }>({});
+  const [answerResults, setAnswerResults] = useState<{
+    [index: number]: boolean;
+  }>({});
+  const [score, setScore] = useState(0);
+
+  const handleChoiceClick = (
+    exerciseIndex: number,
+    choice: string,
+    correctAnswer: string
+  ) => {
+    if (selectedAnswers[exerciseIndex]) return; // Already answered
+
+    const isCorrect = choice === correctAnswer;
+
+    setSelectedAnswers((prev) => ({ ...prev, [exerciseIndex]: choice }));
+    setAnswerResults((prev) => ({ ...prev, [exerciseIndex]: isCorrect }));
+
+    if (isCorrect) {
+      setScore((prev) => prev + 1);
+    }
+  };
 
   useEffect(() => {
-    fetch("http://localhost:5001/api/lessons")
+    if (!user?.id) return;
+
+    const fetchLessons = async () => {
+      try {
+        const res = await fetch(`${API_URL}/api/lessons`);
+        const data = await res.json();
+        setLessons(data);
+
+        const targetLesson = lessonId
+          ? data.find((l: Lesson) => l.id === lessonId)
+          : await fetch(
+              `${API_URL}/api/user/${user.id}/top-priority-lesson`
+            ).then((r) => r.json());
+
+        const fullLesson = data.find((l: Lesson) => l.id === targetLesson.id);
+        setLesson(fullLesson || null);
+        setTotalPages(fullLesson?.pages?.length || 1);
+
+        if (fullLesson?.id) {
+          const progressRes = await fetch(
+            `${API_URL}/api/progress/${user.id}/${fullLesson.id}`
+          );
+          if (progressRes.ok) {
+            const { currentPage } = await progressRes.json();
+            if (currentPage && !isNaN(currentPage)) {
+              setCurrentPage(currentPage);
+            }
+          }
+        }
+
+        // Determine pre/post assessment visibility
+        if (currentPage === 1 && fullLesson.progress === 0) {
+          router.push(`/pre-assessment?id=${fullLesson.id}`);
+        } else if (
+          currentPage === fullLesson.pages.length &&
+          fullLesson.progress < 1
+        ) {
+          setShowPostAssessment(true);
+        }
+
+        setCurrentPageLoaded(true);
+      } catch (err) {
+        console.error("Error loading lesson:", err);
+      }
+    };
+
+    fetchLessons();
+  }, [lessonId, user]);
+
+  const [exercises, setExercises] = useState<ExampleExercise[]>([]);
+
+  useEffect(() => {
+    if (!lesson?.id) return;
+
+    fetch(`${API_URL}/api/exercises/${lesson.id}`)
       .then((res) => res.json())
       .then((data) => {
-        setLessons(data);
-        const currentLesson = data.find((l: Lesson) => l.id === lessonId);
-        setLesson(currentLesson || null);
-      })
-      .catch((error) => console.error("Error fetching lessons:", error));
-  }, [lessonId, router]);
+        setExercises(data);
+        setExerciseIndex(0); // Reset when lesson changes
+      });
+  }, [lesson?.id]);
 
-  if (!lesson) {
+  useEffect(() => {
+    if (!lesson || !user?.id) return;
+
+    const updateProgress = async () => {
+      const progress = parseFloat((currentPage / totalPages).toFixed(2));
+      try {
+        const res = await fetch(`${API_URL}/api/progress`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            userId: user.id,
+            lessonId: lesson.id, // ✅ Correct property
+            currentPage,
+            totalPages,
+          }),
+        });
+
+        if (!res.ok) {
+          const err = await res.json();
+          console.error("Progress update failed:", err.error);
+        }
+      } catch (err) {
+        console.error("Network error while updating progress:", err);
+      }
+    };
+
+    updateProgress();
+  }, [currentPage, lesson, totalPages, user]);
+
+  if (!lesson || lesson.pages.length === 0) {
     return <p className="text-center mt-5 text-lg">Loading lesson...</p>;
+  }
+
+  const currentIndex = lessons.findIndex((l) => l.id === lesson?.id);
+  const checkAnswer = (index: number, correctAnswer: string) => {
+    const isCorrect = selectedAnswers[index] === correctAnswer;
+    setAnswerResults((prev) => ({ ...prev, [index]: isCorrect }));
+  };
+
+  const contentToRender = lesson?.pages?.[currentPage - 1]?.content || "";
+  let pageMedia = lesson?.pages?.[currentPage - 1]?.media || null;
+
+  // ✅ Ensure no double URL prefix
+  if (pageMedia && !pageMedia.startsWith("http")) {
+    pageMedia = `${API_URL}${pageMedia.startsWith("/") ? "" : "/"}${pageMedia}`;
+  }
+
+  if (showPreAssessment && lesson) {
+    return (
+      <AssessmentQuiz
+        type="PRE"
+        lesson={lesson}
+        onFinish={() => {
+          router.push(`/pre-assessment?id=${lesson.id}`);
+        }}
+      />
+    );
+  }
+
+  if (showPostAssessment && lesson) {
+    return (
+      <AssessmentQuiz
+        type="POST"
+        lesson={lesson}
+        onFinish={() => {
+          router.push(`/post-assessment?id=${lesson.id}`);
+        }}
+      />
+    );
   }
 
   return (
@@ -48,20 +226,73 @@ export default function CurrentLesson() {
           width: isSidebarOpen ? `calc(100% - ${sidebarWidth})` : "100%",
         }}
       >
-        <div className="max-w-[90%] mx-auto mt-8 p-8 bg-white rounded-lg shadow-md">
-          <h1 className="text-3xl font-bold text-center my-4">
-            {lesson.title}
-          </h1>
-          {/*  */}
+        {/* Navigation Buttons */}
+        <div className="flex justify-between mt-11 py-3 px-5 bg-[#D9D9D9]">
+          {currentPage > 1 ? (
+            <button
+              onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+              className="text-[13px] py-2 px-4 bg-[#30608E] text-white rounded-md"
+            >
+              Previous Page
+            </button>
+          ) : (
+            <div className="py-2 px-12"></div>
+          )}
+
+          <h1 className="text-lg my-auto">{lesson.title}</h1>
+
+          {currentPage < totalPages ? (
+            <button
+              onClick={() =>
+                setCurrentPage((prev) => Math.min(totalPages, prev + 1))
+              }
+              className="text-[13px] py-2 px-4 bg-[#30608E] text-white rounded-md"
+            >
+              Next Page
+            </button>
+          ) : (
+            <button
+              onClick={() => router.push(`/post-assessment?id=${lesson.id}`)}
+              className="text-[13px] py-2 px-4 bg-green-600 hover:bg-green-700 text-white rounded-md"
+            >
+              Take Post-Assessment
+            </button>
+          )}
+        </div>
+
+        <div className="max-w-full mx-auto max-h-full bg-white">
+          {/* ✅ Display Media (Image or Video) */}
+          {pageMedia && (
+            <div className="flex justify-center mb-6">
+              {pageMedia.endsWith(".mp4") ? (
+                <video controls className="max-w-full h-auto rounded-lg">
+                  <source src={pageMedia} type="video/mp4" />
+                  Your browser does not support the video tag.
+                </video>
+              ) : (
+                <Image
+                  src={pageMedia}
+                  alt="Lesson Media"
+                  width={800}
+                  height={800}
+                  className="w-full h-auto rounded-lg select-none"
+                  draggable="false"
+                  priority
+                  unoptimized
+                />
+              )}
+            </div>
+          )}
+
           {/* Markdown Renderer */}
           <div className="prose max-w-none text-lg leading-relaxed">
             <ReactMarkdown
-              children={lesson.content}
+              children={contentToRender}
               remarkPlugins={[remarkMath]}
               rehypePlugins={[rehypeKatex]}
               components={{
                 p: ({ node, children }) => (
-                  <p className="text-gray-700">{children}</p>
+                  <p className="text-gray-700 mb-4">{children}</p>
                 ),
                 strong: ({ node, children }) => (
                   <strong className="text-red-500">{children}</strong>
@@ -87,46 +318,277 @@ export default function CurrentLesson() {
             />
           </div>
 
-          {/* Navigation Buttons */}
-          <div className="flex justify-between mt-6">
-            {lessons[lessons.findIndex((l) => l.id === lesson.id) - 1] ? (
-              <button
-                onClick={() =>
-                  router.push(
-                    `/current?id=${
-                      lessons[lessons.findIndex((l) => l.id === lesson.id) - 1]
-                        .id
-                    }`
-                  )
-                }
-                className="text-[14px] py-2 px-4 bg-[#30608E] text-white rounded-md"
-              >
-                Previous Lesson
-              </button>
-            ) : (
-              <div></div>
-            )}
+          {/* 🧠 Example Exercises */}
+          {exercises.length > 0 && (
+            <>
+              {currentPage <= totalPages && exercises[currentPage - 1] && (
+                <ExerciseCard
+                  exercise={exercises[currentPage - 1]}
+                  index={currentPage - 1}
+                  total={exercises.length}
+                  onNext={() => setCurrentPage((prev) => prev + 1)}
+                  onPrev={() => setCurrentPage((prev) => prev - 1)}
+                  selectedAnswers={selectedAnswers}
+                  setSelectedAnswers={setSelectedAnswers}
+                  answerResults={answerResults}
+                  setAnswerResults={setAnswerResults}
+                  score={score}
+                  setScore={setScore}
+                />
+              )}
 
-            {lessons[lessons.findIndex((l) => l.id === lesson.id) + 1] ? (
-              <button
-                onClick={() =>
-                  router.push(
-                    `/current?id=${
-                      lessons[lessons.findIndex((l) => l.id === lesson.id) + 1]
-                        .id
-                    }`
-                  )
-                }
-                className="text-[14px] py-2 px-4 bg-[#30608E] text-white rounded-md"
-              >
-                Next Lesson
-              </button>
-            ) : (
-              <div></div>
-            )}
-          </div>
+              {currentPage > totalPages && exercises[currentPage - 1] && (
+                <ExerciseCard
+                  exercise={exercises[currentPage - 1]}
+                  index={currentPage - 1}
+                  total={exercises.length}
+                  onNext={() => setCurrentPage((prev) => prev + 1)}
+                  onPrev={() => setCurrentPage((prev) => prev - 1)}
+                  selectedAnswers={selectedAnswers}
+                  setSelectedAnswers={setSelectedAnswers}
+                  answerResults={answerResults}
+                  setAnswerResults={setAnswerResults}
+                  score={score}
+                  setScore={setScore}
+                />
+              )}
+            </>
+          )}
+
+          {currentPage === totalPages && (
+            <div className="flex flex-col items-center mt-6">
+              {/* Check if there are exercises for the last page */}
+              {exercises.length === 0 || !exercises[currentPage - 1] ? (
+                <button
+                  className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded"
+                  onClick={() => setShowSummary(true)}
+                >
+                  ✅ View Summary & Score
+                </button>
+              ) : (
+                <div className="flex gap-4">
+                  <button
+                    className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded"
+                    onClick={async () => {
+                      const excludeIds = Object.keys(selectedAnswers); // use selected indices as IDs
+                      const res = await fetch(
+                        `${API_URL}/api/exercises/${lesson?.id}/unanswered`,
+                        {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({ excludeIds }),
+                        }
+                      );
+
+                      if (res.ok) {
+                        const newExercises = await res.json();
+                        setExercises((prev) => [...prev, ...newExercises]);
+                        alert("✅ New exercises added!");
+                      } else {
+                        alert("⚠️ Failed to load more exercises.");
+                      }
+                    }}
+                  >
+                    ➕ Generate More Exercises
+                  </button>
+                  <button
+                    className="bg-gray-600 hover:bg-gray-700 text-white px-6 py-3 rounded"
+                    onClick={() => setShowSummary(true)}
+                  >
+                    🚫 Skip & View Summary
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
+
+      {showSummary && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+          <div className="bg-white p-6 rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <h2 className="text-2xl font-bold text-center mb-4">
+              📝 Exercise Summary
+            </h2>
+
+            <p className="mb-2">
+              Total Exercises Taken: {Object.keys(selectedAnswers).length}
+            </p>
+            <p className="mb-2">
+              ✅ Correct: {Object.values(answerResults).filter((x) => x).length}
+            </p>
+            <p className="mb-4">
+              ❌ Incorrect:{" "}
+              {Object.values(answerResults).filter((x) => !x).length}
+            </p>
+
+            <p className="font-bold mb-3">
+              Overall Score:{" "}
+              {Math.round(
+                (Object.values(answerResults).filter((x) => x).length /
+                  Object.keys(selectedAnswers).length) *
+                  100 || 0
+              )}
+              %
+            </p>
+
+            <ul className="text-sm space-y-3">
+              {exercises.map((ex, i) =>
+                selectedAnswers[ex.id] ? (
+                  <li key={ex.id} className="border p-3 rounded">
+                    <p className="font-medium mb-1">
+                      Q{i + 1}: {ex.question}
+                    </p>
+                    <p>
+                      Your answer:{" "}
+                      <span
+                        className={`font-semibold ${
+                          answerResults[ex.id]
+                            ? "text-green-600"
+                            : "text-red-600"
+                        }`}
+                      >
+                        {selectedAnswers[ex.id]}
+                      </span>{" "}
+                      | Correct:{" "}
+                      <span className="text-blue-600">{ex.correctAnswer}</span>
+                    </p>
+                    {ex.explanation && (
+                      <p className="text-gray-600 mt-1">💡 {ex.explanation}</p>
+                    )}
+                  </li>
+                ) : null
+              )}
+            </ul>
+
+            <div className="text-center mt-6">
+              <button
+                className="bg-blue-600 text-white px-6 py-2 rounded"
+                onClick={() => setShowSummary(false)}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </ProtectedRoute>
+  );
+}
+
+function ExerciseCard({
+  exercise,
+  index,
+  total,
+  onNext,
+  onPrev,
+  selectedAnswers,
+  setSelectedAnswers,
+  answerResults,
+  setAnswerResults,
+  score,
+  setScore,
+}) {
+  useEffect(() => {
+    setSelected(selectedAnswers[exercise.id] || null);
+  }, [exercise.id, selectedAnswers]);
+
+  const [selected, setSelected] = useState<string | null>(
+    selectedAnswers[exercise.id] || null
+  );
+
+  const handleChoice = (choice: string) => {
+    if (selected) return;
+
+    const isCorrect = choice === exercise.correctAnswer;
+
+    setSelected(choice);
+    setSelectedAnswers((prev) => ({ ...prev, [exercise.id]: choice }));
+    setAnswerResults((prev) => ({ ...prev, [exercise.id]: isCorrect }));
+
+    if (isCorrect) {
+      setScore((prev) => prev + 1);
+    }
+  };
+
+  const isCorrect = selected === exercise.correctAnswer;
+
+  return (
+    <div className="bg-white shadow-md rounded-md p-4 mb-6 border border-gray-200 select-none">
+      <h3 className="font-semibold text-md mb-4">
+        Exercise {index + 1}: {exercise.question}
+      </h3>
+
+      <div className="grid grid-cols-2 gap-6">
+        {/* Left Column: Question Choices */}
+        <div>
+          {exercise.choices.map((choice, i) => (
+            <button
+              key={i}
+              onClick={() => handleChoice(choice)}
+              disabled={!!selected}
+              className={`block w-full text-left p-2 my-1 border rounded transition-all
+              ${
+                selected && choice === exercise.correctAnswer
+                  ? "bg-green-100 border-green-500"
+                  : ""
+              }
+              ${
+                selected &&
+                choice === selected &&
+                choice !== exercise.correctAnswer
+                  ? "bg-red-100 border-red-500"
+                  : ""
+              }
+              ${
+                !selected
+                  ? "bg-gray-50 hover:bg-blue-50 hover:border-blue-300 border-gray-300"
+                  : ""
+              }`}
+            >
+              {choice}
+            </button>
+          ))}
+        </div>
+
+        {/* Right Column: Feedback */}
+        <div className="text-sm pt-1">
+          {selected && (
+            <div className="text-sm flex items-start space-x-2 text-left">
+              <div>
+                {isCorrect ? (
+                  <p className="text-green-600 font-medium">✅ Correct!</p>
+                ) : (
+                  <p className="text-red-600 font-medium">
+                    ❌ Incorrect. The correct answer is:{" "}
+                    <strong>{exercise.correctAnswer}</strong>
+                  </p>
+                )}
+
+                {/* Explanation Section */}
+                {exercise.explanation && (
+                  <div className="mt-2 bg-gray-100 p-3 rounded border-l-4 border-blue-500">
+                    <p className="font-semibold text-blue-700 mb-1">
+                      Explanation:
+                    </p>
+                    <p className="text-gray-700">{exercise.explanation}</p>
+                  </div>
+                )}
+
+                {/* Next Button */}
+                {/* {index < total - 1 && (
+                  <button
+                    onClick={onNext}
+                    className="mt-4 px-4 py-2 bg-blue-600 text-white rounded"
+                  >
+                    Next Exercise
+                  </button>
+                )} */}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
   );
 }

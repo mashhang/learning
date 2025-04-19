@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
+
 export default function UpdateChapter() {
   const router = useRouter();
   const { id } = useParams();
@@ -11,7 +13,7 @@ export default function UpdateChapter() {
   useEffect(() => {
     if (!id) return;
 
-    fetch(`http://localhost:5001/api/chapters/${id}`)
+    fetch(`${API_URL}/api/chapters/${id}`)
       .then((res) => res.json())
       .then((data) => {
         if (data.error) {
@@ -34,7 +36,7 @@ export default function UpdateChapter() {
       return;
     }
 
-    const res = await fetch(`http://localhost:5001/api/chapters/${id}`, {
+    const res = await fetch(`${API_URL}/api/chapters/${id}`, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",

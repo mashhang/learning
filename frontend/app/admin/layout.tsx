@@ -40,8 +40,14 @@ export default function AdminLayout({
             <li className="mb-2">
               <a href="/admin/lessons">Lessons</a>
             </li>
-            <li className="mb-4">
+            <li className="mb-2">
+              <a href="/admin/assessments">Assessments</a>
+            </li>
+            <li className="mb-2">
               <a href="/admin/users">Users</a>
+            </li>
+            <li className="mb-4">
+              <a href="/admin/announcements">Announcements</a>
             </li>
           </ul>
         </nav>
@@ -55,7 +61,9 @@ export default function AdminLayout({
         </button>
       </aside>
 
-      <main className="flex-1 p-6">{children}</main>
+      <main className="flex-1 p-6 max-w-screen overflow-hidden">
+        {children}
+      </main>
     </div>
   );
 }

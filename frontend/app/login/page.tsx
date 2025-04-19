@@ -12,9 +12,12 @@ export default function Login() {
   const { login } = useAuth();
   const router = useRouter();
 
+  const API_URL = process.env.NEXT_PUBLIC_API_URL;
+
   const handleLogin = async () => {
     try {
-      const res = await fetch("http://localhost:5001/api/auth/login", {
+      const res = await fetch(`${API_URL}/api/auth/login`, {
+        // ✅ Use API_URL
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
@@ -47,7 +50,12 @@ export default function Login() {
       <input
         type="email"
         placeholder="Enter your email"
-        onChange={(e) => setEmail(e.target.value)}
+        onChange={(e) => {
+          const email = e.target.value;
+          if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email === "") {
+            setEmail(email); // ✅ Only update state if it's a valid email
+          }
+        }}
         className="border-black border-[1px] rounded-xl text-[18px] py-2 px-2 mt-16 mb-5"
       />
       <input
