@@ -122,6 +122,7 @@ router.post("/submit", async (req, res) => {
     // Step 4: If no priorities could be computed
     if (priorities.length === 0) {
       res.status(400).json({ error: "No priorities could be calculated." });
+      return;
     }
 
     // Step 5: Save computed priorities
