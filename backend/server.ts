@@ -1,7 +1,7 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
-import upload from "./src/middleware/upload"; // ✅ Import upload middleware
+import upload from "./src/middleware/upload.js"; // ✅ Import upload middleware
 import path from "path";
 import { fileURLToPath } from "url";
 import progressRoutes from "./src/routes/progress";
