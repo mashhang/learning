@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "baseUrl": "./",
+    "baseUrl": ".",
     "target": "ES2020",
     "module": "ESNext",
     "moduleResolution": "node",
@@ -12,7 +12,8 @@
     "resolveJsonModule": true,
     "types": ["node"],
     "paths": {
-      "@routes/*": ["src/routes/*"]
+      "@routes/*": ["src/routes/*"], // ✅ Add this
+      "@middleware/*": ["src/middleware/*"]
     }
   },
   "include": ["src", "server.ts"]
