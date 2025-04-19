@@ -10,11 +10,7 @@
     "skipLibCheck": true,
     "outDir": "dist",
     "resolveJsonModule": true,
-    "types": ["node"],
-    "paths": {
-      "@routes/*": ["src/routes/*"], // ✅ Add this
-      "@middleware/*": ["src/middleware/*"]
-    }
+    "types": ["node"]
   },
   "include": ["src", "server.ts"]
 }
