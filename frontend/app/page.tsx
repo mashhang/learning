@@ -1,8 +1,6 @@
 "use client";
 
 import Image from "next/image";
-import { learning, sci, alm, ilt } from "@/public/landingPage";
-import DealBG from "@/public/cardDeal/dealbg.svg";
 import { FaCheck } from "react-icons/fa";
 import { useRouter } from "next/navigation";
 
@@ -33,7 +31,7 @@ export default function Page() {
 
           <div>
             <Image
-              src={learning}
+              src="/landingPage/learning.svg"
               alt="Learning"
               className="w-[100%] h-[100%] relative md:my-0 my-10"
             />
@@ -54,7 +52,7 @@ export default function Page() {
           <div className="flex flex-row justify-between">
             <div className="w-[310px] text-center flex flex-col">
               <Image
-                src={sci}
+                src="/landingPage/sci.svg"
                 alt="Seamless Curriculum Integration"
                 className="w-[100px] h-[100px] md:my-0 self-center"
               />
@@ -71,7 +69,7 @@ export default function Page() {
 
             <div className="w-[310px] text-center flex flex-col">
               <Image
-                src={alm}
+                src="/landingPage/alm.svg"
                 alt="Adaptive Learning Modules"
                 className="w-[100px] h-[100px] md:my-0 self-center"
               />
@@ -88,7 +86,7 @@ export default function Page() {
 
             <div className="w-[310px] text-center flex flex-col">
               <Image
-                src={ilt}
+                src="/landingPage/ilt.svg"
                 alt="Interactive Learning Tools"
                 className="w-[100px] h-[100px] md:my-0 self-center"
               />
@@ -144,7 +142,7 @@ export default function Page() {
           </div>
 
           <Image
-            src={DealBG}
+            src="/cardDeal/dealbg.svg"
             alt="Background"
             className="absolute w-[50%] h-[50%] mt-[-500px] ml-36 z-[-1]"
           />
