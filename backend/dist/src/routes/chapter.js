@@ -1,4 +1,4 @@
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient } from "@prisma/client"; // ✅ OK
 const prisma = new PrismaClient();
 /**
  * ✅ GET ALL CHAPTERS

@@ -10,7 +10,8 @@
     "@types/nodemailer": "^6.4.17",
     "prisma": "^6.3.1",
     "ts-node-dev": "^2.0.0",
-    "tsc-alias": "^1.8.15"
+    "tsc-alias": "^1.8.15",
+    "typescript": "^5.8.3"
   },
   "scripts": {
     "dev": "tsx watch server.ts",

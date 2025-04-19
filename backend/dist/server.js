@@ -6,27 +6,9 @@ import path from "path";
 import { fileURLToPath } from "url";
 import progressRoutes from "./src/routes/progress";
 import questionRoutes from "./src/routes/question"; // ✅ adjust path if needed
-import {
-  registerUser,
-  loginUser,
-  getProfile,
-  authenticateUser,
-  verifyEmail,
-} from "./src/routes/auth";
-import {
-  getChapters,
-  getChapterById,
-  createChapter,
-  updateChapter,
-  deleteChapter,
-} from "./src/routes/chapter"; // ✅ Import chapter routes
-import {
-  getLessons,
-  getLessonById,
-  createLesson,
-  updateLesson,
-  deleteLesson,
-} from "./src/routes/lesson";
+import { registerUser, loginUser, getProfile, authenticateUser, verifyEmail, } from "./src/routes/auth";
+import { getChapters, getChapterById, createChapter, updateChapter, deleteChapter, } from "./src/routes/chapter"; // ✅ Import chapter routes
+import { getLessons, getLessonById, createLesson, updateLesson, deleteLesson, } from "./src/routes/lesson";
 import { userRouter } from "./src/routes/user";
 import diagnosticRoutes from "./src/routes/diagnostic";
 import uploadRouter from "./src/routes/upload";
@@ -38,12 +20,10 @@ const app = express();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 // app.use(cors());
-app.use(
-  cors({
+app.use(cors({
     origin: "*", // ✅ Temporarily allow all origins (change later for security)
     credentials: true, // ✅ Allow cookies & auth headers
-  })
-);
+}));
 app.use(express.json());
 app.use("/api/user", userRouter);
 // Serve uploaded files publicly
@@ -64,17 +44,12 @@ app.delete("/api/chapters/:id", deleteChapter);
 // ✅ LESSON ROUTES
 app.get("/api/lessons", getLessons);
 app.get("/api/lessons/:id", getLessonById);
-app.post(
-  "/api/lessons",
-  authenticateUser,
-  upload.fields([
+app.post("/api/lessons", authenticateUser, upload.fields([
     { name: "media", maxCount: 1 },
     { name: "questionImages", maxCount: 5000 },
     { name: "choiceImages", maxCount: 5000 },
     { name: "pageMedias", maxCount: 5000 },
-  ]),
-  createLesson
-);
+]), createLesson);
 app.put("/api/lessons/:id", authenticateUser, upload.any(), updateLesson);
 app.delete("/api/lessons/:id", authenticateUser, deleteLesson); // ✅ Now correctly includes `authenticateUser`
 app.use("/api", questionRoutes);
