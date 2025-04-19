@@ -1,5 +1,6 @@
 {
   "compilerOptions": {
+    "baseUrl": "./",
     "target": "ES2020",
     "module": "ESNext",
     "moduleResolution": "node",
@@ -9,7 +10,10 @@
     "skipLibCheck": true,
     "outDir": "dist",
     "resolveJsonModule": true,
-    "types": ["node"]
+    "types": ["node"],
+    "paths": {
+      "@routes/*": ["src/routes/*"]
+    }
   },
   "include": ["src", "server.ts"]
 }
