@@ -15,7 +15,7 @@
   },
   "scripts": {
     "dev": "tsx watch server.ts",
-    "build": "tsc && tsc-alias",
+    "build": "tsc",
     "start": "node dist/server.js"
   },
   "dependencies": {

@@ -3,9 +3,9 @@ import cors from "cors";
 import dotenv from "dotenv";
 import path from "path";
 import { fileURLToPath } from "url";
-import upload from "@middleware/upload.js"; // ✅ Import upload middleware
-import progressRoutes from "@routes/progress.js";
-import questionRoutes from "@routes/question.js"; // ✅ adjust path if needed
+import upload from "./src/middleware/upload.js"; // ✅ Import upload middleware
+import progressRoutes from "./src/routes/progress.js";
+import questionRoutes from "./src/routes/question.js"; // ✅ adjust path if needed
 
 import {
   registerUser,
@@ -13,7 +13,7 @@ import {
   getProfile,
   authenticateUser,
   verifyEmail,
-} from "@routes/auth.js";
+} from "./src/routes/auth.js";
 
 import {
   getChapters,
@@ -21,7 +21,7 @@ import {
   createChapter,
   updateChapter,
   deleteChapter,
-} from "@routes/chapter.js"; // ✅ Import chapter routes
+} from "./src/routes/chapter.js"; // ✅ Import chapter routes
 
 import {
   getLessons,
@@ -29,13 +29,13 @@ import {
   createLesson,
   updateLesson,
   deleteLesson,
-} from "@routes/lesson.js";
+} from "./src/routes/lesson.js";
 
-import { userRouter } from "@routes/user.js";
-import diagnosticRoutes from "@routes/diagnostic.js";
-import uploadRouter from "@routes/upload.js";
-import assessmentRoutes from "@routes/assessment.js";
-import exerciseRoutes from "@routes/exercise.js";
+import { userRouter } from "./src/routes/user.js";
+import diagnosticRoutes from "./src/routes/diagnostic.js";
+import uploadRouter from "./src/routes/upload.js";
+import assessmentRoutes from "./src/routes/assessment.js";
+import exerciseRoutes from "./src/routes/exercise.js";
 
 dotenv.config();
 const app = express();
