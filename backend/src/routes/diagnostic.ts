@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { prioritizeLessons } from "../utils/lessonPriority";
+import { prioritizeLessons } from "../utils/lessonPriority.js";
 import { PrismaClient } from "@prisma/client";
 
 const router = Router();

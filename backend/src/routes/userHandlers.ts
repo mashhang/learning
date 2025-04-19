@@ -67,11 +67,13 @@ export const markDiagnosticTaken: RequestHandler = async (req, res) => {
 };
 
 // Get Top Priority Lesson
-export const getTopPriorityLesson = async (req: Request, res: Response) => {
+export const getTopPriorityLesson = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
     const { userId } = req.params;
 
-    // ✅ Add pages in the include
     const topLesson = await prisma.userLessonPriority.findFirst({
       where: { userId },
       include: {
@@ -79,7 +81,7 @@ export const getTopPriorityLesson = async (req: Request, res: Response) => {
           include: {
             chapter: true,
             pages: {
-              orderBy: { order: "asc" }, // ✅ add ordering
+              orderBy: { order: "asc" },
             },
           },
         },
@@ -88,10 +90,11 @@ export const getTopPriorityLesson = async (req: Request, res: Response) => {
     });
 
     if (!topLesson) {
-      return res.status(404).json({ error: "No prioritized lesson found" });
+      res.status(404).json({ error: "No prioritized lesson found" });
+      return;
     }
 
-    res.status(200).json(topLesson.lesson); // ✅ now includes pages
+    res.status(200).json(topLesson.lesson);
   } catch (error) {
     console.error("Top lesson error:", error);
     res.status(500).json({ error: "Server error" });

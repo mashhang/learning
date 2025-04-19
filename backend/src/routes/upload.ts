@@ -1,7 +1,7 @@
 // ✅ Step 1: Backend /api/upload route
 // File: backend/src/routes/upload.ts
 import express, { Request, Response } from "express";
-import upload from "../middleware/upload";
+import upload from "../middleware/upload.js";
 
 const router = express.Router();
 

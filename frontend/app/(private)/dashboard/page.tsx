@@ -5,7 +5,7 @@ import ProtectedRoute from "@/app/components/ProtectedRoute";
 import { useSidebar } from "@/app/context/SidebarContext";
 import { useAuth } from "@/app/context/AuthContext";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
 
 export default function Dashboard() {
   const [formattedDate, setFormattedDate] = useState("");
