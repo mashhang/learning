@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
+// import { NextRequest, NextResponse } from "next/server";
+// import { PrismaClient } from "@prisma/client";
 
-const prisma = new PrismaClient();
+// const prisma = new PrismaClient();
 
 // export async function PUT(
 //   req: NextRequest,
@@ -34,36 +34,36 @@ const prisma = new PrismaClient();
 //   }
 // }
 
-export async function PUT(req: NextRequest) {
-  // Extract 'id' from the request's URL path
-  const { pathname } = req.nextUrl;
-  const id = pathname.split("/").pop()!; // Extracting the 'id' from the URL
+// export async function PUT(req: NextRequest) {
+//   // Extract 'id' from the request's URL path
+//   const { pathname } = req.nextUrl;
+//   const id = pathname.split("/").pop()!; // Extracting the 'id' from the URL
 
-  try {
-    // Extract title and content from the request body
-    const { title, content } = await req.json();
+//   try {
+//     // Extract title and content from the request body
+//     const { title, content } = await req.json();
 
-    // Check if the lesson exists
-    const existingLesson = await prisma.lesson.findUnique({
-      where: { id },
-    });
+//     // Check if the lesson exists
+//     const existingLesson = await prisma.lesson.findUnique({
+//       where: { id },
+//     });
 
-    if (!existingLesson) {
-      return NextResponse.json({ error: "Lesson not found" }, { status: 404 });
-    }
+//     if (!existingLesson) {
+//       return NextResponse.json({ error: "Lesson not found" }, { status: 404 });
+//     }
 
-    // Update the lesson
-    const updatedLesson = await prisma.lesson.update({
-      where: { id },
-      data: { title, content },
-    });
+//     // Update the lesson
+//     const updatedLesson = await prisma.lesson.update({
+//       where: { id },
+//       data: { title, content },
+//     });
 
-    return NextResponse.json(updatedLesson);
-  } catch (error) {
-    console.error("Update Lesson Error:", error);
-    return NextResponse.json(
-      { error: "Internal Server Error" },
-      { status: 500 }
-    );
-  }
-}
+//     return NextResponse.json(updatedLesson);
+//   } catch (error) {
+//     console.error("Update Lesson Error:", error);
+//     return NextResponse.json(
+//       { error: "Internal Server Error" },
+//       { status: 500 }
+//     );
+//   }
+// }
