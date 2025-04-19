@@ -61,7 +61,9 @@ export default function AdminLayout({
         </button>
       </aside>
 
-      <main className="flex-1 p-6">{children}</main>
+      <main className="flex-1 p-6 max-w-screen overflow-hidden">
+        {children}
+      </main>
     </div>
   );
 }

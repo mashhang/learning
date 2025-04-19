@@ -74,27 +74,23 @@ router.post("/submit", async (req, res) => {
     console.log("📨 Incoming submission for user:", userId);
     console.log("📊 Total results:", results.length);
 
-    // 🧽 Delete old records
-    await prisma.diagnosticAnswer.deleteMany({ where: { userId } });
-    const deleted = await prisma.userLessonPriority.deleteMany({
-      where: { userId },
-    });
-    console.log("🗑️ Deleted old priorities:", deleted.count);
+    // Step 1: Preprocess data for insert
+    const diagnosticData = results.map((r: any) => ({
+      userId,
+      questionId: r.questionId,
+      lessonId: r.lessonId,
+      timeTaken: r.timeTaken,
+      isCorrect: r.isCorrect,
+    }));
 
-    // 💾 Save all diagnostic answers
-    for (const r of results) {
-      await prisma.diagnosticAnswer.create({
-        data: {
-          userId,
-          questionId: r.questionId,
-          lessonId: r.lessonId,
-          timeTaken: r.timeTaken,
-          isCorrect: r.isCorrect,
-        },
-      });
-    }
+    // Step 2: Bulk delete + insert in one transaction
+    await prisma.$transaction([
+      prisma.diagnosticAnswer.deleteMany({ where: { userId } }),
+      prisma.userLessonPriority.deleteMany({ where: { userId } }),
+      prisma.diagnosticAnswer.createMany({ data: diagnosticData }),
+    ]);
 
-    // 🧠 Group and compute priorities
+    // Step 3: Compute lesson priorities
     const lessonMap: Record<
       string,
       { scores: number[]; total: number; correct: number }
@@ -102,11 +98,9 @@ router.post("/submit", async (req, res) => {
 
     for (const r of results) {
       const score = r.timeTaken / maxExpectedTime + (r.isCorrect ? 0 : 1);
-
       if (!lessonMap[r.lessonId]) {
         lessonMap[r.lessonId] = { scores: [], total: 0, correct: 0 };
       }
-
       lessonMap[r.lessonId].scores.push(score);
       lessonMap[r.lessonId].total++;
       if (r.isCorrect) lessonMap[r.lessonId].correct++;
@@ -125,11 +119,12 @@ router.post("/submit", async (req, res) => {
       };
     });
 
+    // Step 4: If no priorities could be computed
     if (priorities.length === 0) {
       res.status(400).json({ error: "No priorities could be calculated." });
     }
 
-    // ✅ Save computed priorities to UserLessonPriority
+    // Step 5: Save computed priorities
     await prisma.userLessonPriority.createMany({
       data: priorities.map((p) => ({
         userId,
@@ -141,36 +136,11 @@ router.post("/submit", async (req, res) => {
       })),
     });
 
-    // 🟢 Update user flag
+    // Step 6: Mark user as having taken diagnostic
     await prisma.user.update({
       where: { id: userId },
       data: { hasTakenDiagnostic: true },
     });
-
-    // 🧾 Debug logs
-    const sortedPriorities = [...priorities].sort(
-      (a, b) => b.priority - a.priority
-    );
-
-    const lessons = await prisma.lesson.findMany({
-      where: {
-        id: { in: sortedPriorities.map((p) => p.lessonId) },
-      },
-      select: { id: true, title: true },
-    });
-
-    const lessonTitleMap = Object.fromEntries(
-      lessons.map((l) => [l.id, l.title])
-    );
-
-    console.log("🧠 Computed Lesson Priorities (sorted):");
-    sortedPriorities.forEach((p, i) =>
-      console.log(
-        `#${i + 1}: ${lessonTitleMap[p.lessonId] || "Untitled"} (ID: ${
-          p.lessonId
-        }) → Priority: ${p.priority}`
-      )
-    );
 
     res.status(200).json({ message: "Diagnostic submitted", priorities });
   } catch (err) {

@@ -4,7 +4,7 @@ import { PrismaClient } from "@prisma/client";
 const router = Router();
 const prisma = new PrismaClient();
 
-const API_URL = process.env.API_URL || "http://192.168.1.6:5001";
+const API_URL = process.env.API_URL || "http://192.168.1.10:5001";
 
 /**
  * PATCH /api/progress

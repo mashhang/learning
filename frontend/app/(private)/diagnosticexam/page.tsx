@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/app/context/AuthContext";
 import { InlineMath } from "react-katex";
-import "katex/dist/katex.min.css";
+import DiagnosticResultSummary from "@/app/components/DiagnosticResultSummary";
 
 type Question = {
   id: string;
@@ -18,7 +18,6 @@ type Question = {
 type Lesson = {
   id: string;
   title: string;
-  content: string;
   chapterId: string;
   chapterTitle: string;
   questions: Question[];
@@ -40,214 +39,53 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL;
 export default function DiagnosticExam() {
   const router = useRouter();
   const { user } = useAuth();
+  const questionRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
+  // ---------- State Declarations ----------
   const [lessons, setLessons] = useState<Lesson[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [shuffledQuestions, setShuffledQuestions] = useState<
-    (Question & {
-      lessonId: string;
-      lessonTitle: string;
-      chapterTitle: string;
-    })[]
+    QuestionWithLessonInfo[]
   >([]);
 
   const [reviewLaterIds, setReviewLaterIds] = useState<Set<string>>(new Set());
   const [showProgressDropdown, setShowProgressDropdown] = useState(false);
-  const [showScrollTop, setShowScrollTop] = useState(false);
-
-  const groupedLessons = lessons.reduce(
-    (acc: Record<string, Lesson[]>, lesson) => {
-      if (!acc[lesson.chapterTitle]) {
-        acc[lesson.chapterTitle] = [];
-      }
-      acc[lesson.chapterTitle].push(lesson);
-      return acc;
-    },
-    {}
-  );
-
-  const scrollToTop = () => {
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  };
-
-  useEffect(() => {
-    const handleScroll = () => {
-      if (window.scrollY > 300) {
-        setShowScrollTop(true);
-      } else {
-        setShowScrollTop(false);
-      }
-    };
-
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
 
   const [selectedAnswers, setSelectedAnswers] = useState<{
     [key: string]: string | null;
   }>({});
-
   const [questionStartTime, setQuestionStartTime] = useState<number>(
     Date.now()
   );
-  const [timedAnswers, setTimedAnswers] = useState<
-    {
-      questionId: string;
-      lessonId: string;
-      timeTaken: number;
-      isCorrect: boolean;
-    }[]
-  >([]);
+  const [correctCount, setCorrectCount] = useState(0);
+  const [totalCount, setTotalCount] = useState(0);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Score
-  const [showSummary, setShowSummary] = useState(false);
+  const [timedAnswers, setTimedAnswers] = useState<any[]>([]);
   const [score, setScore] = useState(0);
   const [strengths, setStrengths] = useState<TopicPerformance[]>([]);
   const [weaknesses, setWeaknesses] = useState<TopicPerformance[]>([]);
-
   const [submitted, setSubmitted] = useState(false);
+  const [showSummary, setShowSummary] = useState(false);
+  const [chartData, setChartData] = useState<
+    { name: string; strength: number; weakness: number }[]
+  >([]);
 
+  // ---------- Fetch lessons ----------
   useEffect(() => {
-    if (showSummary) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "auto";
-    }
-
-    return () => {
-      document.body.style.overflow = "auto";
-    };
-  }, [showSummary]);
-
-  //
-  const handleSubmitExam = async () => {
-    const unanswered = shuffledQuestions.some((q) => !selectedAnswers[q.id]);
-
-    if (unanswered) {
-      alert("Please answer all questions before submitting.");
-      return;
-    }
-
-    let totalQuestions = 0;
-    let correctCount = 0;
-
-    const topicStats: Record<string, { correct: number; total: number }> = {};
-    const lessonResults: {
-      lessonId: string;
-      score: number;
-      isCompleted: boolean;
-    }[] = [];
-
-    lessons.forEach((lesson) => {
-      const questions = lesson.questions;
-      let correct = 0;
-
-      questions.forEach((q) => {
-        totalQuestions++;
-        const selected = selectedAnswers[q.id];
-        const isCorrect = selected === q.correctAnswer;
-        if (isCorrect) correct++;
-      });
-
-      const score =
-        questions.length === 0 ? 0 : (correct / questions.length) * 100;
-      const isCompleted = correct === questions.length;
-
-      lessonResults.push({
-        lessonId: lesson.id,
-        score,
-        isCompleted,
-      });
-
-      correctCount += correct;
-
-      topicStats[lesson.id] = {
-        correct,
-        total: questions.length,
-      };
-    });
-
-    // Save score
-    const percentage = Math.round((correctCount / totalQuestions) * 100);
-    setScore(percentage);
-
-    // Submit to backend
-    // Record last question before submit
-    recordTimeForCurrentQuestion();
-    console.log("📤 Submitting timedAnswers:", timedAnswers);
-
-    if (user?.id) {
-      try {
-        const res = await fetch(`${API_URL}/api/diagnostic/submit`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            userId: user.id,
-            results: timedAnswers,
-          }),
-        });
-
-        const data = await res.json();
-        console.log("✅ Diagnostic Submitted:", data);
-      } catch (error) {
-        console.error("❌ Error submitting diagnostic:", error);
-      }
-    }
-
-    // Classify strengths & weaknesses
-    const strong: TopicPerformance[] = [];
-    const weak: TopicPerformance[] = [];
-
-    lessons.forEach((lesson) => {
-      const stats = topicStats[lesson.id];
-      if (!stats) return;
-
-      const entry = {
-        title: lesson.title,
-        chapter: lesson.chapterTitle,
-      };
-
-      if (stats.correct === stats.total) {
-        strong.push(entry);
-      } else {
-        weak.push(entry);
-      }
-    });
-
-    setStrengths(strong);
-    setWeaknesses(weak);
-    setShowSummary(true);
-    setSubmitted(true);
-  };
-
-  // Utility function to group by chapter
-  const groupByChapter = (topics: TopicPerformance[]) => {
-    return topics.reduce((acc, topic) => {
-      if (!acc[topic.chapter]) acc[topic.chapter] = [];
-      acc[topic.chapter].push(topic.title);
-      return acc;
-    }, {} as Record<string, string[]>);
-  };
-
-  const groupedStrengths = groupByChapter(strengths);
-  const groupedWeaknesses = groupByChapter(weaknesses);
-
-  useEffect(() => {
-    fetch(`${API_URL}/api/lessons`) // ✅ Fetch all lessons with questions
+    fetch(`${API_URL}/api/lessons`)
       .then((res) => res.json())
       .then((data) => setLessons(data))
       .catch((error) => console.error("Error fetching lessons:", error));
   }, []);
 
+  // ---------- Flatten and shuffle all questions once lessons are loaded ----------
   useEffect(() => {
     if (lessons.length > 0) {
-      const allQuestions: QuestionWithLessonInfo[] = [];
-
+      const all: QuestionWithLessonInfo[] = [];
       lessons.forEach((lesson) => {
         lesson.questions.forEach((q) => {
-          allQuestions.push({
+          all.push({
             ...q,
             lessonId: lesson.id,
             lessonTitle: lesson.title,
@@ -255,131 +93,220 @@ export default function DiagnosticExam() {
           });
         });
       });
+      setShuffledQuestions(all.sort(() => Math.random() - 0.5));
 
-      const shuffled = allQuestions.sort(() => Math.random() - 0.5);
-      setShuffledQuestions(shuffled);
+      // ✅ Limit to first 5 random questions only
+      // const limited = all.sort(() => Math.random() - 0.5).slice(0, 5);
+      // setShuffledQuestions(limited);
     }
   }, [lessons]);
 
+  // ---------- Scroll into view on sidebar jump ----------
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "ArrowRight") {
-        goToNext();
-      } else if (e.key === "ArrowLeft") {
-        goToPrev();
+    const ref = questionRefs.current[currentIndex];
+    if (ref) {
+      ref.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+        inline: "center",
+      });
+    }
+  }, [currentIndex]);
+
+  // ---------- Developer shortcut: Shift+D to auto-answer all ----------
+  useEffect(() => {
+    const handleDevKey = (e: KeyboardEvent) => {
+      if (e.shiftKey && e.key === "D") {
+        console.log("🧪 Developer mode: Auto-selecting answers...");
+
+        // Pick first non-empty choice for each question
+        const autoAnswers: { [key: string]: string } = {};
+        shuffledQuestions.forEach((q) => {
+          const firstValidChoice = q.choices.find((c) => c && c.trim() !== "");
+          if (firstValidChoice) {
+            autoAnswers[q.id] = firstValidChoice;
+          }
+        });
+
+        setSelectedAnswers(autoAnswers);
+        // alert("🧪 Auto-answered all questions.");
       }
     };
 
-    window.addEventListener("keydown", handleKeyDown);
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
+    window.addEventListener("keydown", handleDevKey);
+    return () => window.removeEventListener("keydown", handleDevKey);
+  }, [shuffledQuestions]);
+
+  // ---------- Keyboard navigation: ArrowLeft / ArrowRight ----------
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "ArrowRight") goToNext();
+      else if (e.key === "ArrowLeft") goToPrev();
     };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
   }, [currentIndex, shuffledQuestions]);
 
+  // ---------- Prevent tab switch (blur) if exam not yet submitted ----------
   useEffect(() => {
     const handleBlur = () => {
-      alert("You left the exam window. The exam will now reset.");
-      location.reload(); // Force full reload
+      if (!isSubmitting && !submitted) {
+        alert("You left the exam window. The exam will now reset.");
+        location.reload();
+      }
     };
 
     window.addEventListener("blur", handleBlur);
+    return () => window.removeEventListener("blur", handleBlur);
+  }, [isSubmitting, submitted]); // ✅ Listen to both
 
-    return () => {
-      window.removeEventListener("blur", handleBlur);
-    };
-  }, []);
-
+  // ---------- Track time and store result per question ----------
   const recordTimeForCurrentQuestion = () => {
     const current = shuffledQuestions[currentIndex];
-    const endTime = Date.now();
-    const timeTaken = Math.floor((endTime - questionStartTime) / 1000); // seconds
-
+    const timeTaken = Math.floor((Date.now() - questionStartTime) / 1000);
     setTimedAnswers((prev) => {
       const existing = prev.find((a) => a.questionId === current.id);
-
       if (existing) {
-        const updated = prev.map((a) =>
+        return prev.map((a) =>
           a.questionId === current.id
-            ? {
-                ...a,
-                timeTaken: a.timeTaken + timeTaken,
-              }
+            ? { ...a, timeTaken: a.timeTaken + timeTaken }
             : a
         );
-
-        console.log("⏱️ Time updated:", {
-          questionId: current.id,
-          lessonId: current.lessonId,
-          addedTime: timeTaken,
-          totalTime: existing.timeTaken + timeTaken,
-          isCorrect: existing.isCorrect,
-        });
-
-        return updated;
       } else {
-        const selected = selectedAnswers[current.id];
-        const isCorrect = selected === current.correctAnswer;
-
-        const newEntry = {
-          questionId: current.id,
-          lessonId: current.lessonId,
-          timeTaken,
-          isCorrect,
-        };
-
-        console.log("🆕 Time recorded:", newEntry);
-
-        return [...prev, newEntry];
+        return [
+          ...prev,
+          {
+            questionId: current.id,
+            lessonId: current.lessonId,
+            timeTaken,
+            isCorrect: selectedAnswers[current.id] === current.correctAnswer,
+          },
+        ];
       }
     });
-
     setQuestionStartTime(Date.now());
   };
 
-  const goToNext = () => {
-    recordTimeForCurrentQuestion();
-    if (currentIndex < shuffledQuestions.length - 1) {
-      setCurrentIndex(currentIndex + 1);
+  // ---------- Submit Exam ----------
+  const handleSubmitExam = async () => {
+    if (shuffledQuestions.some((q) => !selectedAnswers[q.id])) {
+      alert("Please answer all questions before submitting.");
+      return;
+    }
+
+    setIsSubmitting(true); // 🔵 Start loading
+
+    try {
+      let total = 0,
+        correct = 0;
+      const topicStats: Record<string, { correct: number; total: number }> = {};
+
+      // Compute score and topic stats
+      lessons.forEach((lesson) => {
+        const stats = { correct: 0, total: lesson.questions.length };
+        lesson.questions.forEach((q) => {
+          if (selectedAnswers[q.id] === q.correctAnswer) stats.correct++;
+        });
+        topicStats[lesson.id] = stats;
+        total += stats.total;
+        correct += stats.correct;
+      });
+
+      const percent = Math.round((correct / total) * 100);
+      setScore(percent);
+      setCorrectCount(correct);
+      setTotalCount(total);
+
+      recordTimeForCurrentQuestion();
+
+      if (user?.id) {
+        await fetch(`${API_URL}/api/diagnostic/submit`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ userId: user.id, results: timedAnswers }),
+        });
+      }
+
+      // Group performance
+      const strong: TopicPerformance[] = [];
+      const weak: TopicPerformance[] = [];
+
+      lessons.forEach((lesson) => {
+        const stat = topicStats[lesson.id];
+        const entry = { title: lesson.title, chapter: lesson.chapterTitle };
+        (stat.correct === stat.total ? strong : weak).push(entry);
+      });
+
+      setStrengths(strong);
+      setWeaknesses(weak);
+
+      const allChapters = new Set([...strong, ...weak].map((e) => e.chapter));
+      const chart = Array.from(allChapters).map((chapter) => ({
+        name: chapter,
+        strength: strong.filter((s) => s.chapter === chapter).length,
+        weakness: weak.filter((w) => w.chapter === chapter).length,
+      }));
+
+      setChartData(chart);
+      setSubmitted(true);
+      setShowSummary(true);
+    } catch (error) {
+      console.error("Submission failed", error);
+      alert("An error occurred while submitting your exam.");
+    } finally {
+      setIsSubmitting(false); // 🔵 Stop loading
     }
   };
 
-  const goToPrev = () => {
-    recordTimeForCurrentQuestion();
-    if (currentIndex > 0) {
-      setCurrentIndex(currentIndex - 1);
-    }
-  };
-
-  if (lessons.length === 0) {
-    return (
-      <p className=" text-gray-500 flex flex-col justify-center items-center h-screen">
-        Loading questions...
-      </p>
-    );
+  // ---------- Group topics by chapter for summary display ----------
+  function groupByChapter(topics: TopicPerformance[]) {
+    return topics.reduce((acc: Record<string, string[]>, topic) => {
+      if (!acc[topic.chapter]) acc[topic.chapter] = [];
+      acc[topic.chapter].push(topic.title);
+      return acc;
+    }, {});
   }
 
-  // ✅ Handle Answer Selection
+  const groupedStrengths = groupByChapter(strengths);
+  const groupedWeaknesses = groupByChapter(weaknesses);
+
+  // ---------- Answer selection ----------
   const handleAnswerClick = (questionId: string, choice: string) => {
-    setSelectedAnswers((prev) => ({ ...prev, [questionId]: choice }));
+    setSelectedAnswers((prev) => ({
+      ...prev,
+      [questionId]: choice,
+    }));
   };
 
-  const handleBackToDashboard = () => {
-    router.push("/dashboard");
+  // ---------- Navigation ----------
+  const goToNext = () => {
+    recordTimeForCurrentQuestion();
+    if (currentIndex < shuffledQuestions.length - 1)
+      setCurrentIndex(currentIndex + 1);
   };
+  const goToPrev = () => {
+    recordTimeForCurrentQuestion();
+    if (currentIndex > 0) setCurrentIndex(currentIndex - 1);
+  };
+
+  const handleBackToDashboard = () => router.push("/dashboard");
 
   return (
-    <div className="h-screen w-screen flex overflow-hidden pt-20">
-      {/* Sidebar - independently scrollable */}
+    // Root container with fixed header offset and horizontal layout
+    <div className="relative h-screen flex overflow-hidden pt-20">
+      {/* Sidebar (Left) - Exam Toolbar */}
       <div className="w-64 border-r overflow-y-auto h-full px-4">
         <h2 className="text-sm font-semibold text-gray-700 mb-4">
           Exam Toolbar
         </h2>
         <ul className="space-y-2 text-sm">
+          {/* Static item for visual section header */}
           <li className="flex items-center gap-2 text-[#1A3D6D] font-medium cursor-pointer hover:underline">
             <span>📄</span>
             Exam Question Details
           </li>
 
+          {/* Dropdown toggle for question progress pills */}
           <li className="text-[#1A3D6D] font-medium">
             <div
               onClick={() => setShowProgressDropdown((prev) => !prev)}
@@ -390,7 +317,7 @@ export default function DiagnosticExam() {
               <span>{showProgressDropdown ? "▲" : "▼"}</span>
             </div>
 
-            {/* Compact pills */}
+            {/* Question pills: Jump to question */}
             {showProgressDropdown && (
               <div className="grid grid-cols-6 gap-3 p-2 mt-2">
                 {shuffledQuestions.map((question, index) => {
@@ -403,6 +330,9 @@ export default function DiagnosticExam() {
                   return (
                     <button
                       key={index}
+                      ref={(el) => {
+                        questionRefs.current[index] = el; // ✅ No return
+                      }}
                       onClick={() => setCurrentIndex(index)}
                       className={`w-8 h-8 text-sm rounded-full border text-center transition
         ${isCurrent ? "bg-blue-600 text-white font-bold" : ""}
@@ -429,20 +359,18 @@ export default function DiagnosticExam() {
         </ul>
       </div>
 
-      {/* Main Exam Content (no scroll) */}
+      {/* Main Exam Content (Right) */}
       <div className="flex-1 overflow-y-hidden">
         <div className="flex-1 overflow-hidden">
+          {/* Top Header:  Title and Progress */}
           <div className="flex justify-between items-center mb-6  px-10">
-            {/* Title on the left */}
             <h1 className="text-3xl font-bold text-[#30608E]">
+              {/* Title */}
               Diagnostic Exam
             </h1>
 
-            {/* Centered Question Info and Progress */}
+            {/* Center progress bar */}
             <div className="flex flex-col items-center flex-grow text-center">
-              {/* <span className="text-sm font-semibold text-gray-800">
-            Question {currentIndex + 1}
-          </span> */}
               <span className="text-sm text-gray-500">
                 Exam Question Progress ({currentIndex + 1}/
                 {shuffledQuestions.length})
@@ -459,20 +387,20 @@ export default function DiagnosticExam() {
               </div>
             </div>
 
-            {/* Spacer on the right to balance flex layout */}
+            {/* Spacer to align layout */}
             <div className="w-[180px]" />
           </div>
 
-          {/* ✅ Stacked Layout (Vertical) */}
+          {/* Question Viewer */}
           {shuffledQuestions.length > 0 && (
             <div className="flex flex-col items-center gap-6 mt-10">
               <div className="bg-white border rounded-lg p-6 shadow-md w-full max-w-[95%] mx-auto">
-                {/* top label */}
+                {/* Question Count Label */}
                 <div className="text-left text-sm font-semibold mb-4 text-gray-700">
                   Question {currentIndex + 1} of {shuffledQuestions.length}
                 </div>
 
-                {/* Question text */}
+                {/* Question Text */}
                 {shuffledQuestions[currentIndex].question && (
                   <p className="mt-2 text-gray-800 text-base whitespace-pre-line leading-relaxed select-none">
                     <InlineMath>
@@ -481,7 +409,7 @@ export default function DiagnosticExam() {
                   </p>
                 )}
 
-                {/* Question image */}
+                {/* Question Image (if any) */}
                 {shuffledQuestions[currentIndex].questionImage && (
                   <div className="my-4">
                     <img
@@ -498,10 +426,11 @@ export default function DiagnosticExam() {
                   </div>
                 )}
 
-                {/* Choices */}
+                {/* Answer Choices */}
                 <div className="mt-6 space-y-3">
-                  {shuffledQuestions[currentIndex].choices.map(
-                    (choice, index) => (
+                  {shuffledQuestions[currentIndex].choices
+                    .filter((choice) => choice && choice.trim() !== "")
+                    .map((choice, index) => (
                       <label
                         key={index}
                         className={`flex items-center space-x-3 cursor-pointer border px-4 py-3 rounded-md select-none ${
@@ -533,11 +462,10 @@ export default function DiagnosticExam() {
                           <InlineMath>{choice}</InlineMath>
                         </span>
                       </label>
-                    )
-                  )}
+                    ))}
                 </div>
 
-                {/* Optional footer like 'Reset Answer', 'Review Later' etc. */}
+                {/* Reset + Review Later controls */}
                 <div className="flex items-center mt-6 space-x-6">
                   <button
                     onClick={() =>
@@ -551,7 +479,6 @@ export default function DiagnosticExam() {
                     Reset Answer
                   </button>
 
-                  {/* Placeholder checkboxes, purely UI like in your screenshot */}
                   <label className="text-sm text-gray-700 flex items-center gap-2">
                     <input
                       type="checkbox"
@@ -580,8 +507,9 @@ export default function DiagnosticExam() {
                 </div>
               </div>
 
-              {/* Navigation */}
+              {/* Navigation & Submit Buttons */}
               <div className="flex justify-between items-center w-full max-w-[95%] mt-4">
+                {/* Previous / Next Navigation */}
                 <div className="flex space-x-4">
                   <button
                     onClick={goToPrev}
@@ -608,97 +536,110 @@ export default function DiagnosticExam() {
                   </button>
                 </div>
 
+                {/* Submit Button */}
                 <button
                   onClick={handleSubmitExam}
-                  className="w-36 px-4 py-3 rounded bg-blue-700 hover:bg-blue-800 text-white text-sm font-semibold transition"
+                  disabled={isSubmitting}
+                  className={`w-36 px-4 py-3 rounded text-white text-sm font-semibold transition flex items-center justify-center
+    ${
+      isSubmitting
+        ? "bg-gray-400 cursor-not-allowed"
+        : "bg-blue-700 hover:bg-blue-800"
+    }`}
                 >
-                  Submit
+                  {isSubmitting ? (
+                    <>
+                      <svg
+                        className="animate-spin h-4 w-4 mr-2 text-white"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                      >
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                        />
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8v8z"
+                        />
+                      </svg>
+                      Submitting...
+                    </>
+                  ) : (
+                    "Submit"
+                  )}
                 </button>
               </div>
+
+              {/* Loading Text (optional) */}
+              {isSubmitting && (
+                <div className="mt-4 flex items-center justify-center text-blue-700 font-medium">
+                  <svg
+                    className="animate-spin h-5 w-5 mr-2 text-blue-700"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    />
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8v8z"
+                    />
+                  </svg>
+                  Submitting exam...
+                </div>
+              )}
             </div>
           )}
         </div>
       </div>
 
-      {submitted && (
+      {/* {submitted && (
         <div className="text-center my-14 max-w-[50%] mx-auto">
           <div className="text-2xl font-semibold text-[#30608E]">
             Your score: {score} / {shuffledQuestions.length}
           </div>
         </div>
-      )}
+      )} */}
 
+      {/* Summary Modal Overlay */}
       {showSummary && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
-          <div className="bg-white p-8 rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            <h2 className="text-2xl font-bold text-center mb-4">
-              Exam Summary
-            </h2>
+          <div className="bg-[#fffaf5] p-8 rounded-lg shadow-xl w-full max-w-5xl max-h-[90vh] overflow-y-auto relative">
+            <button
+              onClick={() => setShowSummary(false)}
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-xl"
+            >
+              ✕
+            </button>
 
-            <div className="flex justify-center items-center mb-4">
-              <div className="w-24 h-24 rounded-full bg-red-300 flex items-center justify-center text-2xl font-bold text-white">
-                {score}%
-              </div>
-            </div>
-            <p className="text-center text-gray-600 mb-6">Overall Score</p>
+            {/* Diagnostic Result Component */}
+            <DiagnosticResultSummary
+              score={score}
+              correctCount={correctCount}
+              totalCount={totalCount}
+              strengths={groupedStrengths}
+              weaknesses={groupedWeaknesses}
+              chartData={chartData}
+            />
 
-            {/* Strengths */}
-            <div className="mb-4">
-              <h3 className="text-lg font-semibold text-green-700">
-                Strengths
-              </h3>
-              {Object.keys(groupedStrengths).length > 0 ? (
-                Object.entries(groupedStrengths).map(
-                  ([chapter, lessons], idx) => (
-                    <div key={idx} className="ml-4 mb-2">
-                      <p className="font-semibold text-green-800">{chapter}</p>
-                      <ul className="list-disc list-inside text-sm text-green-800 ml-4">
-                        {lessons.map((title, index) => (
-                          <li key={index}>{title}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  )
-                )
-              ) : (
-                <p className="text-sm text-gray-500">
-                  No strong areas identified.
-                </p>
-              )}
-            </div>
-
-            {/* Weaknesses */}
-            <div className="mb-4">
-              <h3 className="text-lg font-semibold text-red-700">Weaknesses</h3>
-              {Object.keys(groupedWeaknesses).length > 0 ? (
-                Object.entries(groupedWeaknesses).map(
-                  ([chapter, lessons], idx) => (
-                    <div key={idx} className="ml-4 mb-2">
-                      <p className="font-semibold text-red-800">{chapter}</p>
-                      <ul className="list-disc list-inside text-sm text-red-800 ml-4">
-                        {lessons.map((title, index) => (
-                          <li key={index}>{title}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  )
-                )
-              ) : (
-                <p className="text-sm text-gray-500">
-                  No weaknesses identified.
-                </p>
-              )}
-            </div>
-
-            <div className="flex justify-center mt-6 gap-4">
+            <div className="flex justify-center mt-6">
               <button
-                onClick={() => setShowSummary(false)}
-                className="px-4 py-2 bg-gray-300 hover:bg-gray-400 text-gray-800 rounded"
-              >
-                Close
-              </button>
-              <button
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded"
+                className="px-6 py-2 bg-blue-700 hover:bg-blue-800 text-white rounded"
                 onClick={handleBackToDashboard}
               >
                 Continue
@@ -706,15 +647,6 @@ export default function DiagnosticExam() {
             </div>
           </div>
         </div>
-      )}
-      {showScrollTop && (
-        <button
-          onClick={scrollToTop}
-          className="fixed bottom-6 right-12 bg-blue-600 text-white px-4 py-2 rounded-full shadow-lg hover:bg-blue-700 transition z-50"
-          aria-label="Scroll to top"
-        >
-          ↑ Top
-        </button>
       )}
     </div>
   );

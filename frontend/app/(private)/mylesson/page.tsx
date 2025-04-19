@@ -83,16 +83,17 @@ export default function MyLessons() {
   return (
     <ProtectedRoute>
       <div //bg-[#EFEFEF]
-        className="transition-all duration-300 ease-in-out bg-no-repeat bg-cover bg-center bg-fixed"
+        className="transition-all duration-300 ease-in-out bg-no-repeat bg-cover bg-center bg-fixed "
         style={{
           backgroundImage: `url('/bg-mylesson.png')`,
-          marginLeft: isSidebarOpen ? "5.5rem" : "0",
-          width: isSidebarOpen ? `calc(100% - 5.5rem)` : "100%",
+          marginLeft: isSidebarOpen ? "14rem" : "0",
+          width: isSidebarOpen ? `calc(100% - 14rem)` : "100%",
           minHeight: "100vh",
         }}
       >
+        {/*w-[1520px]*/}
         <div className="mt-[46.4px] p-6">
-          <div className="ml-[200px] w-[1520px] mb-10">
+          <div className="  mb-10">
             <h1 className="text-[#30608E] text-[18px] font-semibold">
               Current Lesson
             </h1>

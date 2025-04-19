@@ -5,6 +5,7 @@ import upload from "./src/middleware/upload"; // ✅ Import upload middleware
 import path from "path";
 import { fileURLToPath } from "url";
 import progressRoutes from "./src/routes/progress";
+import questionRoutes from "./src/routes/question"; // ✅ adjust path if needed
 
 import {
   registerUser,
@@ -88,6 +89,7 @@ app.post(
 app.put("/api/lessons/:id", authenticateUser, upload.any(), updateLesson);
 app.delete("/api/lessons/:id", authenticateUser, deleteLesson); // ✅ Now correctly includes `authenticateUser`
 
+app.use("/api", questionRoutes);
 app.use("/api", exerciseRoutes);
 app.use("/api/assessment", assessmentRoutes);
 app.use("/api/diagnostic", diagnosticRoutes);

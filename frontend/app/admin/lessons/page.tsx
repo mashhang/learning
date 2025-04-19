@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/app/context/AuthContext";
+import { useRouter } from "next/navigation";
+import { Trash2 } from "lucide-react";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -89,9 +91,9 @@ export default function LessonsAdmin() {
         <thead>
           <tr className="border bg-gray-200">
             <th className="p-2 text-left">Title</th>
-            <th className="p-2 text-left">Chapter</th>
-            <th className="p-2 text-left">Status</th> {/* ✅ Add this */}
-            <th className="p-2 text-left">Actions</th>
+            <th className="p-2 text-center w-32">Chapter</th>
+            <th className="p-2 text-center w-28">Status</th> {/* ✅ Add this */}
+            <th className="p-2 text-center w-40">Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -102,10 +104,18 @@ export default function LessonsAdmin() {
                 lesson.chapterId === selectedChapter
             )
             .map((lesson) => (
-              <tr key={lesson.id} className="border ">
+              <tr
+                key={lesson.id}
+                className="border cursor-pointer hover:bg-gray-100"
+                onClick={() =>
+                  (window.location.href = `/admin/lessons/${lesson.id}`)
+                }
+              >
                 <td className="p-2 border">{lesson.title}</td>
-                <td className="p-2 text-left border">{lesson.chapterTitle}</td>
-                <td className="p-2 text-left border">
+                <td className="p-2 text-center border">
+                  {lesson.chapterTitle}
+                </td>
+                <td className="p-2 text-center border">
                   {lesson.status === "published" ? (
                     <span className="bg-green-100 text-green-700 px-2 py-1 rounded text-sm">
                       🟢 Published
@@ -116,27 +126,28 @@ export default function LessonsAdmin() {
                     </span>
                   )}
                 </td>
-                <td className="p-2 text-left border">
-                  <Link
-                    href={`/admin/lessons/${lesson.id}`}
-                    className="text-blue-600"
-                  >
-                    Edit
-                  </Link>{" "}
-                  |
-                  <Link
-                    href={`/admin/lessons/delete?id=${lesson.id}`}
-                    className="text-red-600 ml-2"
-                  >
-                    Delete
-                  </Link>
-                  |{" "}
-                  <Link
-                    href={`/admin/lessons/${lesson.id}/exercises`}
-                    className="text-green-600 ml-2"
-                  >
-                    Exercises
-                  </Link>
+                <td
+                  className="p-1 text-center align-middle border"
+                  onClick={(e) => e.stopPropagation()} // prevent triggering row click
+                >
+                  <div className="flex justify-center items-center space-x-2">
+                    <Link
+                      href={`/admin/lessons/${lesson.id}/exercises`}
+                      className="text-green-600 ml-2"
+                    >
+                      Exercises
+                    </Link>
+
+                    <button
+                      onClick={() =>
+                        (window.location.href = `/admin/lessons/delete?id=${lesson.id}`)
+                      }
+                      className="text-red-400 hover:text-red-700 transition"
+                      title="Delete"
+                    >
+                      <Trash2 size={24} />
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))}

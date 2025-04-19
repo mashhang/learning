@@ -5,7 +5,7 @@ import { deleteFile } from "../utils/deleteFile";
 import { Multer } from "multer";
 
 const prisma = new PrismaClient();
-const API_URL = process.env.API_URL || "http://192.168.1.6:5001"; // ✅ Use backend env
+const API_URL = process.env.API_URL || "http://192.168.1.10:5001"; // ✅ Use backend env
 
 // ✅ Extend Express Request type to include `user`
 declare module global {
@@ -43,12 +43,19 @@ export const getLessons: RequestHandler = async (_req, res) => {
     });
 
     // ✅ Sort lessons using natural sorting (Lesson 1, Lesson 2, Lesson 3, etc.)
-    lessons.sort((a, b) =>
-      new Intl.Collator(undefined, {
-        numeric: true,
-        sensitivity: "base",
-      }).compare(a.title, b.title)
-    );
+    lessons.sort((a, b) => {
+      // Extract chapter number from chapter title like "Chapter 1"
+      const chapterA = parseInt(a.chapter?.title?.split(" ")[1] || "0");
+      const chapterB = parseInt(b.chapter?.title?.split(" ")[1] || "0");
+
+      if (chapterA !== chapterB) return chapterA - chapterB;
+
+      // Extract lesson number from title like "Lesson 2: ..."
+      const lessonNumA = parseInt(a.title?.split(" ")[1] || "0");
+      const lessonNumB = parseInt(b.title?.split(" ")[1] || "0");
+
+      return lessonNumA - lessonNumB;
+    });
 
     // Ensure the response includes `chapterId`
     res.status(200).json(

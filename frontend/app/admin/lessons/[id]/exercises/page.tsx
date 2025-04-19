@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
+import { InlineMath } from "react-katex";
 
 type ExampleExercise = {
   id: string;
@@ -102,6 +103,7 @@ export default function ExampleExerciseManager() {
           <p className="font-medium text-gray-700 mb-2">Exercise {index + 1}</p>
 
           {/* Question input */}
+
           <input
             type="text"
             placeholder="Question"
@@ -109,21 +111,29 @@ export default function ExampleExerciseManager() {
             onChange={(e) =>
               handleExerciseChange(index, "question", e.target.value)
             }
-            className="w-full border px-3 py-2 mb-2"
+            className="w-full border px-3 py-2 "
           />
+          <div className="bg-gray-100 p-2 rounded break-words mb-2">
+            <InlineMath>{exercise.question}</InlineMath>
+          </div>
 
           {/* Choices */}
           {exercise.choices.map((choice, cIndex) => (
-            <input
-              key={cIndex}
-              type="text"
-              placeholder={`Choice ${cIndex + 1}`}
-              value={choice}
-              onChange={(e) =>
-                handleChoiceChange(index, cIndex, e.target.value)
-              }
-              className="w-full border px-3 py-2 mb-2"
-            />
+            <div key={cIndex} className="mb-2">
+              <input
+                key={cIndex}
+                type="text"
+                placeholder={`Choice ${cIndex + 1}`}
+                value={choice}
+                onChange={(e) =>
+                  handleChoiceChange(index, cIndex, e.target.value)
+                }
+                className="w-full border px-3 py-2"
+              />
+              <div className="bg-gray-100 p-2 rounded break-words mb-2">
+                <InlineMath>{choice}</InlineMath>
+              </div>
+            </div>
           ))}
 
           {/* Correct Answer */}
@@ -134,8 +144,11 @@ export default function ExampleExerciseManager() {
             onChange={(e) =>
               handleExerciseChange(index, "correctAnswer", e.target.value)
             }
-            className="w-full border px-3 py-2 mb-2"
+            className="w-full border px-3 py-2"
           />
+          <div className="bg-gray-100 p-2 rounded break-words mb-2">
+            <InlineMath>{exercise.correctAnswer}</InlineMath>
+          </div>
 
           {/* Explanation input */}
           <textarea
@@ -144,8 +157,11 @@ export default function ExampleExerciseManager() {
             onChange={(e) =>
               handleExerciseChange(index, "explanation", e.target.value)
             }
-            className="w-full border px-3 py-2 mb-2"
+            className="w-full border px-3 py-2"
           ></textarea>
+          <div className="bg-gray-100 p-2 rounded break-words mb-2">
+            <InlineMath>{exercise.explanation}</InlineMath>
+          </div>
 
           {/* Skill Tag */}
           <input
