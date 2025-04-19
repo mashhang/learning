@@ -52,7 +52,10 @@ export const createChapter = async (req, res) => {
             return;
         }
         const chapter = await prisma.chapter.create({
-            data: { title },
+            data: {
+                title,
+                order: parseInt(req.body.order) || 1, // or another logic for ordering
+            },
         });
         res.status(201).json(chapter);
     }
