@@ -1,5 +1,5 @@
 import { Request, Response, RequestHandler } from "express";
-import { PrismaClient, User } from "@prisma/client";
+import { PrismaClient, User } from "@prisma/client"; // ✅ OK
 
 const prisma = new PrismaClient();
 
@@ -22,7 +22,7 @@ export const getChapters: RequestHandler = async (_req, res): Promise<void> => {
     });
 
     // ✅ Sort lessons using natural sorting (Lesson 1, Lesson 2, Lesson 3, etc.)
-    chapters.sort((a, b) =>
+    chapters.sort((a: { title: string }, b: { title: string }) =>
       new Intl.Collator(undefined, {
         numeric: true,
         sensitivity: "base",
