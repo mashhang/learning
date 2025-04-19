@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction, RequestHandler } from "express";
 import { PrismaClient, User, Prisma } from "@prisma/client";
 import { AuthenticatedRequest } from "../types/express";
-import { deleteFile } from "../utils/deleteFile";
+import { deleteFile } from "../utils/deleteFile.js";
 import { Multer } from "multer";
 
 const prisma = new PrismaClient();

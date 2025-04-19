@@ -4,7 +4,7 @@ import {
   getUserById,
   markDiagnosticTaken,
   getTopPriorityLesson,
-} from "./userHandlers";
+} from "./userHandlers.js";
 
 const router = Router();
 
