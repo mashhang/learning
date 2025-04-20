@@ -34,6 +34,22 @@ type TopicPerformance = {
   chapter: string;
 };
 
+type LessonChartEntry = {
+  name: string;
+  chapter: string;
+  lesson: string;
+  percentage: number;
+};
+
+interface DiagnosticResultSummaryProps {
+  score: number;
+  correctCount: number;
+  totalCount: number;
+  strengths: Record<string, string[]>;
+  weaknesses: Record<string, string[]>;
+  chartData: LessonChartEntry[];
+}
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
 
 export default function DiagnosticExam() {
@@ -50,7 +66,7 @@ export default function DiagnosticExam() {
   >([]);
 
   const [reviewLaterIds, setReviewLaterIds] = useState<Set<string>>(new Set());
-  const [showProgressDropdown, setShowProgressDropdown] = useState(false);
+  const [showProgressDropdown, setShowProgressDropdown] = useState(true);
 
   const [selectedAnswers, setSelectedAnswers] = useState<{
     [key: string]: string | null;
@@ -68,9 +84,7 @@ export default function DiagnosticExam() {
   const [weaknesses, setWeaknesses] = useState<TopicPerformance[]>([]);
   const [submitted, setSubmitted] = useState(false);
   const [showSummary, setShowSummary] = useState(false);
-  const [chartData, setChartData] = useState<
-    { name: string; strength: number; weakness: number }[]
-  >([]);
+  const [chartData, setChartData] = useState<LessonChartEntry[]>([]);
 
   // ---------- Fetch lessons ----------
   useEffect(() => {
@@ -282,14 +296,38 @@ export default function DiagnosticExam() {
       setStrengths(strong);
       setWeaknesses(weak);
 
-      const allChapters = new Set([...strong, ...weak].map((e) => e.chapter));
-      const chart = Array.from(allChapters).map((chapter) => ({
-        name: chapter,
-        strength: strong.filter((s) => s.chapter === chapter).length,
-        weakness: weak.filter((w) => w.chapter === chapter).length,
-      }));
+      const lessonAccuracyMap: Record<
+        string,
+        { chapter: string; lesson: string; total: number; correct: number }
+      > = {};
 
-      setChartData(chart);
+      shuffledQuestions.forEach((q) => {
+        const isCorrect = selectedAnswers[q.id] === q.correctAnswer;
+        const key = `${q.chapterTitle} - ${q.lessonTitle}`;
+        if (!lessonAccuracyMap[key]) {
+          lessonAccuracyMap[key] = {
+            chapter: q.chapterTitle,
+            lesson: q.lessonTitle,
+            total: 0,
+            correct: 0,
+          };
+        }
+        lessonAccuracyMap[key].total++;
+        if (isCorrect) lessonAccuracyMap[key].correct++;
+      });
+
+      const lessonChartData = Object.entries(lessonAccuracyMap).map(
+        ([key, value]) => ({
+          name: key,
+          chapter: value.chapter,
+          lesson: value.lesson,
+          percentage: Math.round((value.correct / value.total) * 100),
+          correct: value.correct,
+          total: value.total,
+        })
+      );
+
+      setChartData(lessonChartData);
       setSubmitted(true);
       setShowSummary(true);
     } catch (error) {

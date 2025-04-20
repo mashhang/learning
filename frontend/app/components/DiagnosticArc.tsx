@@ -44,7 +44,7 @@ export default function DiagnosticArc({
   //   className="absolute top-[-200px] left-0"
   return (
     <div className="relative flex flex-col items-center">
-      <p className="text-sm italic text-[#1A3D6D] absolute top-[-180px]">
+      <p className="text-sm italic text-[#1A3D6D] absolute top-[-25px]">
         overall score
       </p>
       <div className="relative w-[250px] h-[250px]">
@@ -52,7 +52,7 @@ export default function DiagnosticArc({
           width="250"
           height="250"
           viewBox="0 0 250 250"
-          className="absolute top-[-150px] left-0"
+          className="absolute  left-0"
         >
           {/* Outer Background Ring */}
           <circle
@@ -69,7 +69,7 @@ export default function DiagnosticArc({
             cy="125"
             r={radius}
             stroke="#1A3D6D"
-            strokeWidth={20}
+            strokeWidth={24}
             fill="none"
             strokeDasharray={circumference}
             strokeDashoffset={arcOffset}
@@ -86,7 +86,7 @@ export default function DiagnosticArc({
         </svg>
 
         {/* Inner Text */}
-        <div className="absolute top-[-25px] left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center">
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center">
           <div className="text-2xl font-bold text-[#fef9f4]">
             {animatedScore}%
           </div>

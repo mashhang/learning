@@ -133,7 +133,8 @@ export default function Dashboard() {
               </h1>
             </div>
 
-            <div className="max-w-[1520px] h-[500px] mx-auto">
+            {/* max-w-[1520px] */}
+            <div className="max-w-full  xl:max-w-[1520px] p-14 h-[500px] mx-auto">
               <div className="h-full grid grid-cols-4 grid-rows-9 gap-14">
                 <div className="w-full h-[200px] bg-white border-black border-[1px] col-span-2 row-span-3 col-start-1 row-start-1 rounded-xl py-2 shadow-custom">
                   <h1 className="text-center text-[28px] font-medium">
