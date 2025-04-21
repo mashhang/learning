@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { InlineMath } from "react-katex";
 import "katex/dist/katex.min.css";
+import { uploadToSupabase } from "@/app/utils/supabaseUpload";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -108,35 +109,51 @@ export default function AddLesson() {
     formData.append("chapterId", chapterId);
     // if (media) formData.append("media", media);
     formData.append("questions", JSON.stringify(questions));
-    const pagesWithFilename = pages.map((page, index) => ({
-      content: page.content,
-      order: index + 1,
-      filename: page.media?.name || null,
-    }));
 
-    formData.append("pages", JSON.stringify(pagesWithFilename));
+    const pagesWithUrls = await Promise.all(
+      pages.map(async (page, index) => {
+        let uploadedUrl: string | null = null;
 
-    pages.forEach((page) => {
-      if (page.media) {
-        formData.append("pageMedias", page.media);
-      }
-    });
-    formData.append("status", status);
+        if (page.media) {
+          try {
+            uploadedUrl = await uploadToSupabase(page.media);
+          } catch (error) {
+            console.error(
+              `Error uploading media for page ${index + 1}:`,
+              error
+            );
+          }
+        }
+
+        return {
+          content: page.content,
+          order: index + 1,
+          media: uploadedUrl,
+        };
+      })
+    );
 
     const res = await fetch(`${API_URL}/api/lessons`, {
       method: "POST",
       headers: {
-        // "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`, // ✅ Still needs auth, but no 'Content-Type'
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
       },
-      body: formData, // ✅ Send as FormData
-      // JSON.stringify({ title, content, chapterId, questions }),
+      body: JSON.stringify({
+        title,
+        chapterId,
+        status: "DRAFT",
+        questions,
+        pages: pagesWithUrls,
+      }),
     });
 
     if (res.ok) {
       alert("Lesson created successfully!");
       router.push("/admin/lessons");
     } else {
+      const errText = await res.text();
+      console.error("Server response:", errText);
       alert("Failed to create lesson");
     }
   };

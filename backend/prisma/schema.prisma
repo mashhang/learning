@@ -60,7 +60,7 @@ model Lesson {
   id                String               @id @default(uuid())
   title             String
   order             Int // ✅ NEW: defines order within chapter
-  media             String? // ✅ Stores image or video URLs (nullable)
+  media             String? @db.Text // ✅ Stores image or video URLs (nullable)
   chapterId         String
   chapter           Chapter              @relation(fields: [chapterId], references: [id], onDelete: Cascade)
   questions         Question[]

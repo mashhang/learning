@@ -75,17 +75,8 @@ app.delete("/api/chapters/:id", deleteChapter);
 // ✅ LESSON ROUTES
 app.get("/api/lessons", getLessons);
 app.get("/api/lessons/:id", getLessonById);
-app.post(
-  "/api/lessons",
-  authenticateUser,
-  upload.fields([
-    { name: "media", maxCount: 1 },
-    { name: "questionImages", maxCount: 5000 },
-    { name: "choiceImages", maxCount: 5000 },
-    { name: "pageMedias", maxCount: 5000 },
-  ]),
-  createLesson
-);
+app.post("/api/lessons", authenticateUser, createLesson);
+
 app.put("/api/lessons/:id", authenticateUser, upload.any(), updateLesson);
 app.delete("/api/lessons/:id", authenticateUser, deleteLesson); // ✅ Now correctly includes `authenticateUser`
 

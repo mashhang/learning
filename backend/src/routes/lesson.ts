@@ -22,8 +22,6 @@ export const getLessons: RequestHandler = async (_req, res) => {
   try {
     const lessons = await prisma.lesson.findMany({
       include: {
-        // chapter: true, // Include chapter details
-        // questions: true, // Include related questions
         chapter: true, // ✅ include chapter relation
         questions: {
           select: {
@@ -39,7 +37,6 @@ export const getLessons: RequestHandler = async (_req, res) => {
           orderBy: { order: "asc" }, // ✅ ensure consistent ordering
         },
       },
-      // orderBy: { title: "asc" },
     });
 
     // ✅ Sort lessons using natural sorting (Lesson 1, Lesson 2, Lesson 3, etc.)
@@ -388,38 +385,26 @@ export const createLesson: RequestHandler = async (
         .json({ error: "Forbidden: Only admins can create lessons" });
     }
 
-    const files = req.files as {
-      media?: Express.Multer.File[];
-      questionImages?: Express.Multer.File[];
-      choiceImages?: Express.Multer.File[];
-      pageMedias?: Express.Multer.File[];
-    };
-
     const { title, chapterId, status } = req.body;
-    const questions = JSON.parse(req.body.questions || "[]");
-    const pages = JSON.parse(req.body.pages || "[]");
 
-    // if (!title || !content || !chapterId) {
+    const parsedQuestions =
+      typeof req.body.questions === "string"
+        ? JSON.parse(req.body.questions)
+        : req.body.questions || [];
+
+    const parsedPages =
+      typeof req.body.pages === "string"
+        ? JSON.parse(req.body.pages)
+        : req.body.pages || [];
+
     if (!title || !chapterId) {
-      res
-        .status(400)
-        .json({ error: "Title, content, and chapterId are required" });
+      res.status(400).json({ error: "Title and chapterId are required" });
     }
 
-    if (pages.length === 0) {
-      console.error("Something went wrong");
-      res.status(500).json({ error: "Add at least one page" });
+    if (!Array.isArray(parsedPages) || parsedPages.length === 0) {
+      res.status(400).json({ error: "At least one page is required" });
     }
 
-    // Optional: Use first page's content as fallback
-    // const fallbackContent = pages[0].content || "";
-    const uploadedPageMediaFiles = files?.pageMedias || [];
-
-    const media = files?.media?.[0]?.filename
-      ? `/uploads/${files.media[0].filename}`
-      : null;
-
-    // Automatically determine order (e.g., next lesson number)
     const existingLessons = await prisma.lesson.findMany({
       where: { chapterId },
     });
@@ -429,69 +414,41 @@ export const createLesson: RequestHandler = async (
       data: {
         title,
         chapterId,
-        media,
         status,
         order: nextOrder,
       },
     });
-    // ✅ Safely create lesson pages
-    if (Array.isArray(pages) && pages.length > 0) {
-      await prisma.lessonPage.createMany({
-        data: pages.map((p: any, i: number) => ({
-          lessonId: createdLesson.id,
-          content: p.content,
-          media: uploadedPageMediaFiles[i]
-            ? `/uploads/${uploadedPageMediaFiles[i].filename}`
-            : null,
-          order: p.order,
-        })),
-      });
-    }
 
-    // ✅ Questions
-    let qImgIndex = 0;
-    let cImgIndex = 0;
+    // ✅ Save pages using public Supabase URLs directly
+    await prisma.lessonPage.createMany({
+      data: parsedPages.map((p: any, i: number) => ({
+        lessonId: createdLesson.id,
+        content: p.content,
+        media: p.media ?? null, // from Supabase public URL
+        order: p.order ?? i + 1,
+      })),
+    });
 
-    for (const q of questions) {
-      let questionImagePath = null;
-
-      if (q.questionImage === true && files?.questionImages?.[qImgIndex]) {
-        questionImagePath = `/uploads/${files.questionImages[qImgIndex].filename}`;
-        qImgIndex++;
-      }
-
-      let choices = q.choices;
-      if (q.isChoiceImage && Array.isArray(choices)) {
-        choices = choices.map((_c: any) => {
-          const file = files?.choiceImages?.[cImgIndex];
-          cImgIndex++;
-          return file ? `/uploads/${file.filename}` : "";
-        });
-      }
-
+    // ✅ Save questions (optional - image uploads to be migrated later if needed)
+    for (const q of parsedQuestions) {
       await prisma.question.create({
         data: {
           lessonId: createdLesson.id,
           question: q.question || null,
-          questionImage: questionImagePath,
-          choices,
+          questionImage: q.questionImage || null,
+          choices: q.choices,
           correctAnswer: q.correctAnswer,
           isChoiceImage: q.isChoiceImage || false,
         },
       });
     }
 
-    res
-      .status(201)
-      .json({ message: "Lesson created successfully!", createdLesson });
+    res.status(201).json({
+      message: "Lesson created successfully!",
+      createdLesson,
+    });
   } catch (error) {
-    console.error(
-      "❌ Error creating lesson:",
-      error instanceof Error ? error.message : error
-    );
-    if (error instanceof Error) {
-      console.error(error.stack);
-    }
+    console.error("❌ Error creating lesson:", error);
     res.status(500).json({ error: "Internal Server Error" });
   }
 };
