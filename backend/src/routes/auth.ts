@@ -7,8 +7,6 @@ import nodemailer from "nodemailer";
 import { getApiUrl } from "../utils/getApiUrl.js";
 
 const API_URL = getApiUrl();
-// const API_URL = process.env.API_URL || "http://192.168.1.10:5001"; // ✅ Use backend env
-
 const prisma = new PrismaClient();
 const JWT_SECRET = process.env.JWT_SECRET || "default_secret";
 

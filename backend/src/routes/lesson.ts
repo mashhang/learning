@@ -136,13 +136,11 @@ export const getLessonById: RequestHandler = async (
     // 🆕 Map media URL on lesson.pages
     const pagesWithMediaURL = lesson.pages.map((p) => ({
       content: p.content,
-      media: p.media
-        ? p.media.startsWith("http")
-          ? p.media // ✅ already a full Supabase URL
-          : `${API_URL}/uploads/${p.media.replace(/^\/uploads\//, "")}`
-        : null,
+      media: p.media?.startsWith("http")
+        ? p.media // ✅ already full Supabase URL
+        : `${API_URL}/uploads/${p.media?.replace(/^\/uploads\//, "")}`,
       order: p.order,
-      serverFilename: p.media?.split("/").pop() || null, // 👈 ADD THIS LINE
+      serverFilename: p.media?.split("/").pop() || null,
     }));
 
     console.log("Loaded pages:", lesson.pages);
@@ -150,7 +148,10 @@ export const getLessonById: RequestHandler = async (
     res.status(200).json({
       ...lesson,
       questions: questionsWithURL,
-      pages: pagesWithMediaURL, // ✅ return updated pages
+      pages: pagesWithMediaURL.map((p) => ({
+        ...p,
+        existingMedia: p.media, // 👈 add this
+      })),
     });
   } catch (error) {
     console.error("Error fetching lesson:", error);
@@ -237,7 +238,9 @@ export const updateLesson = async (
         const uploadedFile = uploadedPageMediaFiles[i]; // Match by index instead
         const savedFilename = uploadedFile?.filename;
 
-        const mediaPath = savedFilename
+        const mediaPath = p.filename?.startsWith("http")
+          ? p.filename // 🟢 Supabase URL already
+          : savedFilename
           ? `/uploads/${savedFilename}`
           : p.filename
           ? `/uploads/${p.filename.replace("/uploads/", "")}`

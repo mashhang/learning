@@ -189,7 +189,7 @@ export default function EditLesson() {
       const data = await res.json();
       if (res.ok) {
         const updatedPages = [...lesson.pages];
-        updatedPages[pageIndex].existingMedia = `${API_URL}${data.url}`;
+        updatedPages[pageIndex].existingMedia = data.url; // 🟢 This is already the full Supabase public URL
         updatedPages[pageIndex].serverFilename = data.filename;
         updatedPages[pageIndex].media = null; // Don't resend file during PUT
         setLesson({ ...lesson, pages: updatedPages });
@@ -443,9 +443,13 @@ export default function EditLesson() {
                             const rawPath = page.existingMedia ?? "";
 
                             // ✅ Detect Supabase URL — skip prefixing
-                            const fullUrl = rawPath.startsWith("http")
-                              ? rawPath
-                              : `${API_URL}/uploads/${rawPath}`;
+                            const fullUrl = (() => {
+                              if (!rawPath) return "";
+                              if (rawPath.startsWith("http")) return rawPath;
+                              return `${API_URL}${
+                                rawPath.startsWith("/") ? "" : "/"
+                              }${rawPath}`;
+                            })();
 
                             return rawPath.endsWith(".mp4") ? (
                               <video className="w-32" controls src={fullUrl} />
