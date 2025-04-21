@@ -1,4 +1,8 @@
 import nodemailer from "nodemailer";
+import { getApiUrl } from "../utils/getApiUrl.js";
+
+const API_URL = getApiUrl();
+// const API_URL = process.env.API_URL || "http://192.168.1.10:5001"; // ✅ Use backend env
 
 /**
  * Sends a verification email to the user
@@ -19,7 +23,7 @@ export const sendVerificationEmail = async (
     },
   });
 
-  const verifyUrl = `http://localhost:5001/verify?token=${token}`; // 👈 Frontend link that triggers backend verification
+  const verifyUrl = `${API_URL}/verify?token=${token}`; // 👈 Frontend link that triggers backend verification
 
   const mailOptions = {
     from: process.env.EMAIL_USER,

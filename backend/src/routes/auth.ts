@@ -4,7 +4,7 @@ import jwt from "jsonwebtoken";
 import { PrismaClient, User } from "@prisma/client";
 import crypto from "crypto";
 import nodemailer from "nodemailer";
-import { getApiUrl } from "../utils/getApiUrl";
+import { getApiUrl } from "../utils/getApiUrl.js";
 
 const API_URL = getApiUrl();
 // const API_URL = process.env.API_URL || "http://192.168.1.10:5001"; // ✅ Use backend env
