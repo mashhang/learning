@@ -4,6 +4,9 @@ import React, { useEffect, useState } from "react";
 import ProtectedRoute from "@/app/components/ProtectedRoute";
 import { useSidebar } from "@/app/context/SidebarContext";
 import { ListFilter } from "lucide-react";
+import API_URL from "@/lib/getApiUrl";
+
+// const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
 
 export default function Announcements() {
   const { isSidebarOpen, sidebarWidth } = useSidebar();

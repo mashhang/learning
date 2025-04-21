@@ -5,8 +5,9 @@ import Link from "next/link";
 import { useAuth } from "@/app/context/AuthContext";
 import { useRouter } from "next/navigation";
 import { Trash2 } from "lucide-react";
+import API_URL from "@/lib/getApiUrl";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
+// const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 export default function LessonsAdmin() {
   const { token } = useAuth();

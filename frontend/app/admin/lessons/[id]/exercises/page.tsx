@@ -3,6 +3,9 @@
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import { InlineMath } from "react-katex";
+import API_URL from "@/lib/getApiUrl";
+
+// const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
 
 type ExampleExercise = {
   id: string;
@@ -16,7 +19,6 @@ type ExampleExercise = {
 export default function ExampleExerciseManager() {
   const params = useParams();
   const lessonId = params.id as string;
-  const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
   useEffect(() => {
     fetch(`${API_URL}/api/exercises/${lessonId}`)

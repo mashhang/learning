@@ -3,8 +3,9 @@
 import { useSearchParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import AssessmentQuiz from "@/app/components/AssessmentQuiz";
+import API_URL from "@/lib/getApiUrl";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
+// const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
 
 export default function PreAssessmentPage() {
   const searchParams = useSearchParams();

@@ -1,6 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import API_URL from "@/lib/getApiUrl";
+
+// const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
 
 const ProfileModal = ({ userId }: { userId: string }) => {
   const [user, setUser] = useState<{
@@ -14,9 +17,7 @@ const ProfileModal = ({ userId }: { userId: string }) => {
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        const response = await fetch(
-          `http://localhost:5001/api/user/${userId}`
-        );
+        const response = await fetch(`${API_URL}/api/user/${userId}`);
         if (!response.ok) {
           throw new Error("User not found");
         }

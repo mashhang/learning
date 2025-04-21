@@ -22,6 +22,9 @@ import Image from "next/image";
 import ProfileModal from "@/app/components/modals/ProfileModal";
 import SettingsModal from "@/app/components/modals/SettingsModal";
 import HelpModal from "@/app/components/modals/HelpModal";
+import API_URL from "@/lib/getApiUrl";
+
+// const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
 
 type NavbarProps = {
   isAuthenticated: boolean;
@@ -53,9 +56,7 @@ const Navbar: React.FC<NavbarProps> = ({
   useEffect(() => {
     if (!user?.id) return;
 
-    fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/api/user/${user.id}/top-priority-lesson`
-    )
+    fetch(`${API_URL}/api/user/${user.id}/top-priority-lesson`)
       .then(async (res) => {
         const text = await res.text(); // ← get the raw response as text first
         try {

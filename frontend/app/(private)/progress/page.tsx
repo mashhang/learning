@@ -7,6 +7,9 @@ import { RiBallPenFill } from "react-icons/ri";
 import { PiReadCvLogoFill } from "react-icons/pi";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/app/context/AuthContext";
+import API_URL from "@/lib/getApiUrl";
+
+// const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
 
 export default function ProgressReport() {
   const { isSidebarOpen } = useSidebar();
@@ -32,9 +35,7 @@ export default function ProgressReport() {
     if (!user?.id) return;
 
     const fetchLessons = async () => {
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/progress/ordered/${user.id}`
-      );
+      const res = await fetch(`${API_URL}/api/progress/ordered/${user.id}`);
       const data = await res.json();
       console.log("📦 Lesson Data:", data);
       setLessons(data);

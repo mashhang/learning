@@ -5,6 +5,9 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/app/context/AuthContext";
 import { InlineMath } from "react-katex";
 import DiagnosticResultSummary from "@/app/components/DiagnosticResultSummary";
+import API_URL from "@/lib/getApiUrl";
+
+// const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
 
 type Question = {
   id: string;
@@ -49,8 +52,6 @@ interface DiagnosticResultSummaryProps {
   weaknesses: Record<string, string[]>;
   chartData: LessonChartEntry[];
 }
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
 
 export default function DiagnosticExam() {
   const router = useRouter();

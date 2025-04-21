@@ -7,8 +7,9 @@ import QuestionModal from "@/app/components/modals/QuestionModal";
 import LessonPageModal from "@/app/components/modals/LessonPageModal";
 import ExerciseModal from "@/app/components/modals/ExerciseModal";
 import { Trash2 } from "lucide-react";
+import API_URL from "@/lib/getApiUrl";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
+// const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
 
 type LessonPage = {
   content: string;
@@ -438,23 +439,24 @@ export default function EditLesson() {
 
                       <td className="border px-3 py-2">
                         {page.existingMedia || page.media ? (
-                          page.existingMedia?.endsWith(".mp4") ? (
-                            <video
-                              className="w-32"
-                              controls
-                              src={page.existingMedia ?? ""}
-                            />
-                          ) : (
-                            <img
-                              className="w-20 rounded border"
-                              src={
-                                typeof page.media === "string"
-                                  ? page.media
-                                  : page.existingMedia ?? ""
-                              }
-                              alt="Media"
-                            />
-                          )
+                          (() => {
+                            const rawPath = page.existingMedia ?? "";
+
+                            // ✅ Detect Supabase URL — skip prefixing
+                            const fullUrl = rawPath.startsWith("http")
+                              ? rawPath
+                              : `${API_URL}/uploads/${rawPath}`;
+
+                            return rawPath.endsWith(".mp4") ? (
+                              <video className="w-32" controls src={fullUrl} />
+                            ) : (
+                              <img
+                                className="w-20 rounded border"
+                                src={fullUrl}
+                                alt="Media"
+                              />
+                            );
+                          })()
                         ) : (
                           <span className="text-gray-500">No media</span>
                         )}

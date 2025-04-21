@@ -5,8 +5,9 @@ import { useAuth } from "@/app/context/AuthContext";
 import { useRouter } from "next/navigation";
 import { InlineMath } from "react-katex";
 import "katex/dist/katex.min.css";
+import API_URL from "@/lib/getApiUrl";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
+// const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
 
 export default function AssessmentQuiz({
   type,

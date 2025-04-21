@@ -1,10 +1,12 @@
 import { Router, Request, Response, RequestHandler } from "express";
 import { PrismaClient } from "@prisma/client";
+import { getApiUrl } from "../utils/getApiUrl";
+
+const API_URL = getApiUrl();
+// const API_URL = process.env.API_URL || "http://192.168.1.10:5001"; // ✅ Use backend env
 
 const router = Router();
 const prisma = new PrismaClient();
-
-const API_URL = process.env.API_URL || "http://192.168.1.10:5001";
 
 /**
  * PATCH /api/progress

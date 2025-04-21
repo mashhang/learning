@@ -4,6 +4,10 @@ import jwt from "jsonwebtoken";
 import { PrismaClient, User } from "@prisma/client";
 import crypto from "crypto";
 import nodemailer from "nodemailer";
+import { getApiUrl } from "../utils/getApiUrl";
+
+const API_URL = getApiUrl();
+// const API_URL = process.env.API_URL || "http://192.168.1.10:5001"; // ✅ Use backend env
 
 const prisma = new PrismaClient();
 const JWT_SECRET = process.env.JWT_SECRET || "default_secret";
@@ -53,7 +57,7 @@ export const registerUser = async (
       data: { verificationToken },
     });
 
-    const verificationLink = `http://localhost:5001/api/auth/verify-email?token=${verificationToken}`;
+    const verificationLink = `${API_URL}/api/auth/verify-email?token=${verificationToken}`;
 
     await transporter.sendMail({
       from: process.env.EMAIL_USER,

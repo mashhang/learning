@@ -5,14 +5,15 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "../context/AuthContext";
 import Image from "next/image";
 import Logo from "../../public/logo.png";
+import API_URL from "@/lib/getApiUrl";
+
+// const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
 
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const { login } = useAuth();
   const router = useRouter();
-
-  const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
   const handleLogin = async () => {
     try {

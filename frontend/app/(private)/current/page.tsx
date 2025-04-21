@@ -11,6 +11,9 @@ import "katex/dist/katex.min.css"; // Import KaTeX styles
 import Image from "next/image";
 import { useAuth } from "@/app/context/AuthContext";
 import AssessmentQuiz from "@/app/components/AssessmentQuiz";
+import API_URL from "@/lib/getApiUrl";
+
+// const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
 
 type LessonPage = {
   content: string;
@@ -37,10 +40,6 @@ type ExampleExercise = {
   skillTag?: string;
   explanation: string;
 };
-
-// const [resolvedLessonId, setResolvedLessonId] = useState<string | null>(null);
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
 
 export default function CurrentLesson() {
   const [lesson, setLesson] = useState<Lesson | null>(null);

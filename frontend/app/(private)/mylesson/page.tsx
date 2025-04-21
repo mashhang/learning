@@ -5,8 +5,9 @@ import ProtectedRoute from "@/app/components/ProtectedRoute";
 import { useSidebar } from "@/app/context/SidebarContext";
 import { useAuth } from "@/app/context/AuthContext";
 import { useRouter } from "next/navigation";
+import API_URL from "@/lib/getApiUrl";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
+// const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
 
 type OrderedLesson = {
   lessonId: string;

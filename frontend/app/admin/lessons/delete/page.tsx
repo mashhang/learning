@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
+import API_URL from "@/lib/getApiUrl";
+// const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 export default function DeleteLesson() {
   const router = useRouter();

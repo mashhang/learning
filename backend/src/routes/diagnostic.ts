@@ -5,36 +5,6 @@ import { PrismaClient } from "@prisma/client";
 const router = Router();
 const prisma = new PrismaClient();
 
-// // This should be ignore since we are not using it anymore (no sorting for lesson now)
-// router.get("/:userId/prioritized-lessons", async (req, res) => {
-//   const { userId } = req.params;
-
-//   const prioritizedLessons = await prisma.userLessonPriority.findMany({
-//     where: { userId },
-//     include: {
-//       lesson: {
-//         include: { chapter: true },
-//       },
-//     },
-//     orderBy: {
-//       priority: "desc",
-//     },
-//   });
-
-//   // ✅ Put this formatting logic here
-//   const formatted = prioritizedLessons.map((item) => ({
-//     lessonId: item.lessonId,
-//     title: item.lesson?.title ?? "Untitled",
-//     chapterId: item.lesson?.chapterId ?? null,
-//     chapterTitle: item.lesson?.chapter?.title ?? null,
-//     progress: item.progress,
-//     priority: item.priority,
-//     updatedAt: item.updatedAt, // ✅ Add this!
-//   }));
-
-//   res.status(200).json(formatted);
-// });
-
 // GET /api/lessons/by-user/:userId (new)
 router.get("/lessons/:userId", async (req, res) => {
   const { userId } = req.params;

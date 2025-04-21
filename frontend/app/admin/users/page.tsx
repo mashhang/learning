@@ -1,6 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import API_URL from "@/lib/getApiUrl";
+
+// const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
 
 type User = {
   id: string;
@@ -8,8 +11,6 @@ type User = {
   email: string;
   role: "USER" | "ADMIN";
 };
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 export default function UsersAdmin() {
   const [users, setUsers] = useState<User[]>([]);

@@ -4,8 +4,9 @@ import { useState } from "react";
 import Image from "next/image";
 import Logo from "../../../public/logo.png";
 import { useRouter } from "next/navigation";
+import API_URL from "@/lib/getApiUrl";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
+// const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
 
 export default function Register() {
   const [name, setName] = useState("");

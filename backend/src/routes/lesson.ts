@@ -3,9 +3,11 @@ import { PrismaClient, User, Prisma } from "@prisma/client";
 import { AuthenticatedRequest } from "../types/express";
 import { deleteFile } from "../utils/deleteFile.js";
 import { Multer } from "multer";
+import { getApiUrl } from "../utils/getApiUrl";
 
+const API_URL = getApiUrl();
+// const API_URL = process.env.API_URL || "http://192.168.1.10:5001"; // ✅ Use backend env
 const prisma = new PrismaClient();
-const API_URL = process.env.API_URL || "http://192.168.1.10:5001"; // ✅ Use backend env
 
 // ✅ Extend Express Request type to include `user`
 declare module global {
@@ -135,9 +137,9 @@ export const getLessonById: RequestHandler = async (
     const pagesWithMediaURL = lesson.pages.map((p) => ({
       content: p.content,
       media: p.media
-        ? p.media.startsWith("/uploads/")
-          ? `${API_URL}${p.media}`
-          : `${API_URL}/uploads/${p.media}`
+        ? p.media.startsWith("http")
+          ? p.media // ✅ already a full Supabase URL
+          : `${API_URL}/uploads/${p.media.replace(/^\/uploads\//, "")}`
         : null,
       order: p.order,
       serverFilename: p.media?.split("/").pop() || null, // 👈 ADD THIS LINE
@@ -495,7 +497,14 @@ export const deleteContentImage: RequestHandler = (async (req, res) => {
       data: { media: null },
     });
 
-    deleteFile(imagePath.replace(API_URL, ""));
+    if (!lessonId || !imagePath || typeof imagePath !== "string") {
+      res.status(400).json({ error: "Lesson ID and image path are required." });
+      return;
+    }
+
+    const localPath = imagePath.replace(API_URL ?? "", "");
+    deleteFile(localPath);
+
     res.status(200).json({ message: "Content image deleted." });
   } catch (error) {
     console.error("❌ Failed to delete content image:", error);
@@ -521,7 +530,14 @@ export const deleteQuestionImage: RequestHandler = (async (req, res) => {
       data: { questionImage: null },
     });
 
-    deleteFile(imagePath.replace(API_URL, ""));
+    if (!imagePath || typeof imagePath !== "string") {
+      res.status(400).json({ error: "Image path is required." });
+      return;
+    }
+
+    const localPath = imagePath.replace(API_URL ?? "", "");
+    deleteFile(localPath);
+
     res.status(200).json({ message: "Question image deleted." });
   } catch (error) {
     console.error("❌ Failed to delete question image:", error);
@@ -568,7 +584,18 @@ export const deleteChoiceImage: RequestHandler = (async (req, res) => {
       data: { choices: updatedChoices },
     });
 
-    deleteFile(imagePath.replace(API_URL, ""));
+    if (
+      typeof index !== "number" ||
+      !imagePath ||
+      typeof imagePath !== "string"
+    ) {
+      res.status(400).json({ error: "Index and image path are required." });
+      return;
+    }
+
+    const localPath = imagePath.replace(API_URL ?? "", "");
+    deleteFile(localPath);
+
     res.status(200).json({ message: "Choice image deleted." });
   } catch (error) {
     console.error("❌ Failed to delete choice image:", error);
