@@ -26,6 +26,7 @@ model User {
   lessonPriorities   UserLessonPriority[]
   diagnosticAnswers  DiagnosticAnswer[] // ✅ Add this line
   assessmentAnswers  AssessmentAnswer[]
+  userSkillPerformances UserSkillPerformance[]
 }
 
 enum Role {
@@ -72,6 +73,7 @@ model Lesson {
   status            LessonStatus         @default(DRAFT) // 👈 add this
   assessmentAnswers AssessmentAnswer[]
   exampleExercises  ExampleExercise[]
+  userSkillPerformances UserSkillPerformance[] // New relation to track user skill performance
 }
 
 model Question {
@@ -83,6 +85,7 @@ model Question {
   choices           String[] // Array of choices
   isChoiceImage     Boolean            @default(false) // ✅ whether choices are images
   correctAnswer     String
+  skillTag       String?  // ✅ Add this line
   diagnosticAnswers DiagnosticAnswer[] // ✅ Add this line
   assessmentAnswers AssessmentAnswer[]
 }
@@ -158,4 +161,20 @@ model ExampleExercise {
   isChoiceImage Boolean @default(false)
   questionImage String? // optional image for the exercise
   createdAt   DateTime @default(now())
+}
+
+model UserSkillPerformance {
+  id            String   @id @default(cuid())
+  userId        String
+  lessonId      String
+  skillTag      String
+  source        String   // "DIAGNOSTIC" or "PRE"
+  averageScore  Float
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  user   User   @relation(fields: [userId], references: [id])
+  lesson Lesson @relation(fields: [lessonId], references: [id])
+
+  @@unique([userId, lessonId, skillTag, source])
 }

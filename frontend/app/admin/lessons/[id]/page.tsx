@@ -26,6 +26,7 @@ type Question = {
   choiceImages?: (File | null)[];
   isChoiceImage?: boolean;
   correctAnswer: string;
+  skillTag?: string;
 };
 
 type ExampleExercise = {
@@ -56,6 +57,7 @@ export default function EditLesson() {
     question: "",
     choices: ["", "", "", ""],
     correctAnswer: "",
+    skillTag: "",
   });
   const [tempExercise, setTempExercise] = useState({
     question: "",
@@ -511,6 +513,7 @@ export default function EditLesson() {
                             question: "",
                             choices: ["", "", "", ""],
                             correctAnswer: "",
+                            skillTag: "",
                           });
                           setEditQuestionIndex(null); // new item
                           setShowQuestionModal(true);
@@ -556,6 +559,7 @@ export default function EditLesson() {
                                 question: q.question,
                                 choices: [...q.choices],
                                 correctAnswer: q.correctAnswer,
+                                skillTag: q.skillTag ?? "",
                               });
                               setShowQuestionModal(true);
                             }}

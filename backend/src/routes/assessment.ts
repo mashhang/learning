@@ -74,9 +74,77 @@ router.post("/submit", async (req, res) => {
       type,
     }));
 
-    console.log("📝 Saving assessment answers:", data); // ✅ Log
+    console.log("📝 Saving assessment answers:", data);
 
     await prisma.assessmentAnswer.createMany({ data });
+
+    // ✅ Only apply algorithm if type is PRE
+    if (type === "PRE") {
+      const skillMap: Record<
+        string,
+        {
+          totalTime: number;
+          count: number;
+          incorrect: number;
+          lessonId: string;
+        }
+      > = {};
+
+      for (const r of results) {
+        const question = await prisma.question.findUnique({
+          where: { id: r.questionId },
+          select: { skillTag: true, lessonId: true },
+        });
+
+        if (!question?.skillTag) continue;
+
+        const key = `${r.lessonId}_${question.skillTag}`;
+        if (!skillMap[key]) {
+          skillMap[key] = {
+            totalTime: 0,
+            count: 0,
+            incorrect: 0,
+            lessonId: r.lessonId,
+          };
+        }
+
+        skillMap[key].totalTime += r.timeTaken;
+        skillMap[key].count += 1;
+        if (!r.isCorrect) skillMap[key].incorrect += 1;
+      }
+
+      const upserts = Object.entries(skillMap).map(async ([key, data]) => {
+        const [lessonId, skillTag] = key.split("_");
+        const avgTime = data.totalTime / data.count;
+        const maxExpected = 20;
+        const difficultyScore =
+          avgTime / maxExpected + (data.incorrect > 0 ? 1 : 0);
+
+        return prisma.userSkillPerformance.upsert({
+          where: {
+            userId_lessonId_skillTag_source: {
+              userId,
+              lessonId,
+              skillTag,
+              source: "PRE",
+            },
+          },
+          update: {
+            averageScore: difficultyScore,
+          },
+          create: {
+            userId,
+            lessonId,
+            skillTag,
+            source: "PRE",
+            averageScore: difficultyScore,
+          },
+        });
+      });
+
+      await Promise.all(upserts);
+    }
+
     res.status(200).json({ message: "Assessment saved." });
   } catch (err: any) {
     console.error("❌ Error saving assessment:", err.message);

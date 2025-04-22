@@ -41,6 +41,7 @@ router.put("/questions/:id", async (req, res) => {
         correctAnswer,
         isChoiceImage: isChoiceImage ?? false,
         questionImage: questionImage ?? null,
+        skillTag: req.body.skillTag || null,
       },
     });
 

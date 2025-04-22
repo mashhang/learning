@@ -56,6 +56,11 @@ export default function CurrentLesson() {
   const [currentPageLoaded, setCurrentPageLoaded] = useState(false);
   const [exerciseIndex, setExerciseIndex] = useState(0);
   const [showSummary, setShowSummary] = useState(false);
+  const [pageEnterTime, setPageEnterTime] = useState<number>(Date.now());
+  const [showExercise, setShowExercise] = useState<boolean>(false);
+  const [exerciseDifficulty, setExerciseDifficulty] = useState<
+    "EASY" | "MEDIUM" | "HARD"
+  >("MEDIUM");
 
   const [selectedAnswers, setSelectedAnswers] = useState<{
     [index: number]: string;
@@ -135,15 +140,28 @@ export default function CurrentLesson() {
   const [exercises, setExercises] = useState<ExampleExercise[]>([]);
 
   useEffect(() => {
-    if (!lesson?.id) return;
+    if (!lesson?.id || !user?.id) return;
 
-    fetch(`${API_URL}/api/exercises/${lesson.id}`)
-      .then((res) => res.json())
-      .then((data) => {
-        setExercises(data);
-        setExerciseIndex(0); // Reset when lesson changes
-      });
-  }, [lesson?.id]);
+    const fetchPrioritizedExercises = async () => {
+      try {
+        const res = await fetch(`${API_URL}/api/exercises/prioritized`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ userId: user.id, lessonId: lesson.id }),
+        });
+
+        if (!res.ok) throw new Error("Failed to load exercises");
+
+        const prioritized = await res.json();
+        setExercises(prioritized);
+        setExerciseIndex(0);
+      } catch (err) {
+        console.error("⚠️ Error loading prioritized exercises:", err);
+      }
+    };
+
+    fetchPrioritizedExercises();
+  }, [lesson?.id, user?.id]);
 
   useEffect(() => {
     if (!lesson || !user?.id) return;
@@ -216,6 +234,24 @@ export default function CurrentLesson() {
     );
   }
 
+  let currentExercises = exercises.filter(
+    (ex) => ex.difficulty === exerciseDifficulty
+  );
+
+  // Fallbacks if none match
+  if (currentExercises.length === 0) {
+    // Try medium
+    currentExercises = exercises.filter((ex) => ex.difficulty === "MEDIUM");
+  }
+  if (currentExercises.length === 0) {
+    // Try easy
+    currentExercises = exercises.filter((ex) => ex.difficulty === "EASY");
+  }
+  if (currentExercises.length === 0) {
+    // Try hard
+    currentExercises = exercises.filter((ex) => ex.difficulty === "HARD");
+  }
+
   return (
     <ProtectedRoute>
       <div
@@ -229,7 +265,27 @@ export default function CurrentLesson() {
         <div className="flex justify-between mt-11 py-3 px-5 bg-[#D9D9D9]">
           {currentPage > 1 ? (
             <button
-              onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+              onClick={() => {
+                const now = Date.now();
+                const timeSpent = (now - pageEnterTime) / 1000;
+
+                // Determine if exercise should show
+                const show =
+                  timeSpent >= 20 ? true : timeSpent <= 7 ? false : true;
+                setShowExercise(show);
+
+                // Determine difficulty level
+                if (timeSpent >= 20) {
+                  setExerciseDifficulty("EASY");
+                } else if (timeSpent <= 9) {
+                  setExerciseDifficulty("HARD");
+                } else {
+                  setExerciseDifficulty("MEDIUM");
+                }
+
+                setPageEnterTime(now);
+                setCurrentPage((prev) => Math.min(prev + 1, totalPages));
+              }}
               className="text-[13px] py-2 px-4 bg-[#30608E] text-white rounded-md"
             >
               Previous Page
@@ -242,9 +298,18 @@ export default function CurrentLesson() {
 
           {currentPage < totalPages ? (
             <button
-              onClick={() =>
-                setCurrentPage((prev) => Math.min(totalPages, prev + 1))
-              }
+              onClick={() => {
+                const now = Date.now();
+                const timeSpent = (now - pageEnterTime) / 1000; // seconds
+
+                // Decide if exercise should be shown based on time
+                const show =
+                  timeSpent >= 20 ? true : timeSpent <= 7 ? false : true;
+
+                setShowExercise(show); // Set whether to show on next page
+                setPageEnterTime(now); // Start timing next page
+                setCurrentPage((prev) => Math.min(totalPages, prev + 1));
+              }}
               className="text-[13px] py-2 px-4 bg-[#30608E] text-white rounded-md"
             >
               Next Page
@@ -320,21 +385,23 @@ export default function CurrentLesson() {
           {/* 🧠 Example Exercises */}
           {exercises.length > 0 && (
             <>
-              {currentPage <= totalPages && exercises[currentPage - 1] && (
-                <ExerciseCard
-                  exercise={exercises[currentPage - 1]}
-                  index={currentPage - 1}
-                  total={exercises.length}
-                  onNext={() => setCurrentPage((prev) => prev + 1)}
-                  onPrev={() => setCurrentPage((prev) => prev - 1)}
-                  selectedAnswers={selectedAnswers}
-                  setSelectedAnswers={setSelectedAnswers}
-                  answerResults={answerResults}
-                  setAnswerResults={setAnswerResults}
-                  score={score}
-                  setScore={setScore}
-                />
-              )}
+              {showExercise &&
+                currentPage <= totalPages &&
+                currentExercises[currentPage - 1] && (
+                  <ExerciseCard
+                    exercise={currentExercises[currentPage - 1]}
+                    index={currentPage - 1}
+                    total={currentExercises.length}
+                    onNext={() => setCurrentPage((prev) => prev + 1)}
+                    onPrev={() => setCurrentPage((prev) => prev - 1)}
+                    selectedAnswers={selectedAnswers}
+                    setSelectedAnswers={setSelectedAnswers}
+                    answerResults={answerResults}
+                    setAnswerResults={setAnswerResults}
+                    score={score}
+                    setScore={setScore}
+                  />
+                )}
 
               {currentPage > totalPages && exercises[currentPage - 1] && (
                 <ExerciseCard

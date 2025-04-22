@@ -149,4 +149,49 @@ router.delete("/exercises/:id", async (req, res) => {
   }
 });
 
+// POST /api/exercises/prioritized
+router.post("/prioritized", async (req, res) => {
+  const { userId, lessonId } = req.body;
+
+  if (!userId || !lessonId) {
+    res.status(400).json({ error: "Missing userId or lessonId." });
+  }
+
+  try {
+    // Fetch all exercises for the lesson
+    const exercises = await prisma.exampleExercise.findMany({
+      where: { lessonId },
+    });
+
+    // Fetch user skill performance for that lesson
+    const skillData = await prisma.userSkillPerformance.findMany({
+      where: {
+        userId,
+        lessonId,
+        source: "PRE", // or "DIAGNOSTIC" if you prefer
+      },
+    });
+
+    // Create a lookup map for average difficulty scores
+    const skillMap: Record<string, number> = {};
+    skillData.forEach((s) => {
+      skillMap[s.skillTag] = s.averageScore;
+    });
+
+    // Attach difficulty score to each exercise (lower = easier)
+    const scored = exercises.map((ex) => ({
+      ...ex,
+      priorityScore: skillMap[ex.skillTag || ""] ?? 1, // default if no record
+    }));
+
+    // Sort by priority score ascending (easiest first)
+    scored.sort((a, b) => a.priorityScore - b.priorityScore);
+
+    res.json(scored);
+  } catch (err) {
+    console.error("❌ Failed to fetch prioritized exercises:", err);
+    res.status(500).json({ error: "Failed to fetch prioritized exercises." });
+  }
+});
+
 export default router;

@@ -12,6 +12,7 @@ export type Question = {
   choiceImages?: (File | null)[];
   isChoiceImage?: boolean;
   correctAnswer: string;
+  skillTag?: string;
 };
 
 type Props = {
@@ -22,12 +23,14 @@ type Props = {
     question: string;
     choices: string[];
     correctAnswer: string;
+    skillTag?: string;
   };
   onSaveToServer: (
     data: {
       question: string;
       choices: string[];
       correctAnswer: string;
+      skillTag?: string;
     },
     index: number | null
   ) => Promise<void>;
@@ -55,6 +58,7 @@ export default function QuestionModal({
     answer: false,
   });
 
+  const [skillTag, setSkillTag] = useState<string>(""); // 👈 NEW
   const [question, setQuestion] = useState(initialData.question);
   const [choices, setChoices] = useState(initialData.choices);
   const [correctAnswer, setCorrectAnswer] = useState(initialData.correctAnswer);
@@ -109,6 +113,7 @@ export default function QuestionModal({
     setQuestion(initialData.question);
     setChoices(initialData.choices);
     setCorrectAnswer(initialData.correctAnswer);
+    setSkillTag(initialData.skillTag || "");
   }, [initialData]);
 
   useEffect(() => {
@@ -379,6 +384,15 @@ export default function QuestionModal({
           />
         )}
 
+        <label className="text-sm font-medium mb-1 block">Skill Tag</label>
+        <input
+          type="text"
+          placeholder="e.g. domain, range, mapping"
+          value={skillTag}
+          onChange={(e) => setSkillTag(e.target.value)}
+          className="w-full border rounded p-2 mb-4"
+        />
+
         <div className="flex justify-end gap-2 mt-4">
           <button onClick={onClose} className="px-4 py-2 border rounded">
             Cancel
@@ -388,7 +402,7 @@ export default function QuestionModal({
             className="px-4 py-2 bg-blue-500 text-white rounded"
             onClick={async () => {
               await onSaveToServer(
-                { question, choices, correctAnswer },
+                { question, choices, correctAnswer, skillTag },
                 editIndex
               );
               onClose(); // ✅ Close the modal after saving
