@@ -107,13 +107,89 @@ router.post("/submit", async (req, res) => {
       })),
     });
 
+    // Step 5.5: Compute skill-level performance and save to UserSkillPerformance
+    const skillMap: Record<
+      string,
+      {
+        lessonId: string;
+        skillTag: string;
+        totalTime: number;
+        count: number;
+        incorrect: number;
+      }
+    > = {};
+
+    for (const r of results) {
+      const question = await prisma.question.findUnique({
+        where: { id: r.questionId },
+        select: { skillTag: true, lessonId: true },
+      });
+
+      if (!question?.skillTag) continue;
+
+      const key = `${r.lessonId}_${question.skillTag}`;
+      if (!skillMap[key]) {
+        skillMap[key] = {
+          lessonId: r.lessonId,
+          skillTag: question.skillTag,
+          totalTime: 0,
+          count: 0,
+          incorrect: 0,
+        };
+      }
+
+      skillMap[key].totalTime += r.timeTaken;
+      skillMap[key].count += 1;
+      if (!r.isCorrect) skillMap[key].incorrect += 1;
+    }
+
+    // Upsert to UserSkillPerformance
+    const skillInserts = Object.values(skillMap).map((entry) => {
+      const avgTime = entry.totalTime / entry.count;
+      const maxExpected = 20;
+      const difficultyScore =
+        avgTime / maxExpected + (entry.incorrect > 0 ? 1 : 0);
+
+      return prisma.userSkillPerformance.upsert({
+        where: {
+          userId_lessonId_skillTag_source: {
+            userId,
+            lessonId: entry.lessonId,
+            skillTag: entry.skillTag,
+            source: "DIAGNOSTIC",
+          },
+        },
+        update: { averageScore: difficultyScore },
+        create: {
+          userId,
+          lessonId: entry.lessonId,
+          skillTag: entry.skillTag,
+          source: "DIAGNOSTIC",
+          averageScore: difficultyScore,
+        },
+      });
+    });
+
+    await Promise.all(skillInserts);
+
     // Step 6: Mark user as having taken diagnostic
     await prisma.user.update({
       where: { id: userId },
       data: { hasTakenDiagnostic: true },
     });
 
-    res.status(200).json({ message: "Diagnostic submitted", priorities });
+    const skillResults = await prisma.userSkillPerformance.findMany({
+      where: {
+        userId,
+        source: "DIAGNOSTIC",
+      },
+    });
+
+    res.status(200).json({
+      message: "Diagnostic submitted",
+      priorities,
+      skillPerformance: skillResults,
+    });
   } catch (err) {
     console.error("❌ Diagnostic error:", err);
     res.status(500).json({ error: "Server error" });
