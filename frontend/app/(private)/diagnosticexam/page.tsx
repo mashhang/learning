@@ -165,7 +165,7 @@ export default function DiagnosticExam() {
         const autoTimed = shuffledQuestions.map((q) => ({
           questionId: q.id,
           lessonId: q.lessonId,
-          timeTaken: 1, // Assume 1 sec per question
+          timeTaken: Math.floor(Math.random() * (599 - 10 + 1)) + 10, // 10 to 599 seconds
           isCorrect: autoAnswers[q.id] === q.correctAnswer,
         }));
 
