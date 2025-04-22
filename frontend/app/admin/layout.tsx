@@ -9,21 +9,17 @@ export default function AdminLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { user, logout } = useAuth();
+  const { user, logout, isLoading } = useAuth();
   const router = useRouter();
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    setLoading(false);
-  }, []);
-
-  useEffect(() => {
-    if (!loading && (!user || user.role !== "ADMIN")) {
+    if (!isLoading && (!user || user.role !== "ADMIN")) {
       router.push("/login");
     }
-  }, [loading, user, router]);
+  }, [isLoading, user, router]);
 
-  if (loading) return <p>Loading...</p>;
+  // ✅ Don't render anything while loading or unauthorized
+  if (isLoading || !user || user.role !== "ADMIN") return null;
 
   return (
     <div className="flex">

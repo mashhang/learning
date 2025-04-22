@@ -3,9 +3,22 @@
 import Image from "next/image";
 import { FaCheck } from "react-icons/fa";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/app/context/AuthContext";
+import { useEffect } from "react";
 
 export default function Page() {
-  const router = useRouter(); // Initialize useRouter
+  const { user, isLoading } = useAuth(); // 👈 Get auth state
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!isLoading && user) {
+      const destination = user.role === "ADMIN" ? "/admin" : "/dashboard";
+      router.push(destination);
+    }
+  }, [user, isLoading, router]);
+
+  // Optional: prevent flicker
+  if (isLoading || user) return null;
 
   const handleSignIn = () => {
     router.push("/login"); // Navigate to the login page
@@ -31,6 +44,8 @@ export default function Page() {
 
           <div>
             <Image
+              width={100}
+              height={100}
               src="/landingPage/learning.svg"
               alt="Learning"
               className="w-[100%] h-[100%] relative md:my-0 my-10"
@@ -52,6 +67,8 @@ export default function Page() {
           <div className="flex flex-row justify-between">
             <div className="w-[310px] text-center flex flex-col">
               <Image
+                width={100}
+                height={100}
                 src="/landingPage/sci.svg"
                 alt="Seamless Curriculum Integration"
                 className="w-[100px] h-[100px] md:my-0 self-center"
@@ -69,6 +86,8 @@ export default function Page() {
 
             <div className="w-[310px] text-center flex flex-col">
               <Image
+                width={100}
+                height={100}
                 src="/landingPage/alm.svg"
                 alt="Adaptive Learning Modules"
                 className="w-[100px] h-[100px] md:my-0 self-center"
@@ -86,6 +105,8 @@ export default function Page() {
 
             <div className="w-[310px] text-center flex flex-col">
               <Image
+                width={100}
+                height={100}
                 src="/landingPage/ilt.svg"
                 alt="Interactive Learning Tools"
                 className="w-[100px] h-[100px] md:my-0 self-center"
@@ -142,6 +163,8 @@ export default function Page() {
           </div>
 
           <Image
+            width={100}
+            height={100}
             src="/cardDeal/dealbg.svg"
             alt="Background"
             className="absolute w-[50%] h-[50%] mt-[-500px] ml-36 z-[-1]"

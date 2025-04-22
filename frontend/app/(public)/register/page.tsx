@@ -1,18 +1,30 @@
 "use client";
 
-import { useState } from "react";
-import Image from "next/image";
-import Logo from "../../../public/logo.png";
+import { useState, useEffect } from "react";
+import { useAuth } from "@/app/context/AuthContext";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import API_URL from "@/lib/getApiUrl";
+import Logo from "../../../public/logo.png";
 
 // const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
 
 export default function Register() {
+  const { user, isLoading } = useAuth(); // 👈 Get auth state
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!isLoading && user) {
+      router.push("/dashboard");
+    }
+  }, [user, isLoading, router]);
+
+  // Optional: prevent flicker
+  if (isLoading || user) return null;
+
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const router = useRouter();
 
   const handleRegister = async () => {
     const res = await fetch(`${API_URL}/api/auth/register`, {

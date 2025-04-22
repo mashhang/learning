@@ -28,6 +28,41 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
 
   useEffect(() => {
+    const handleStorageChange = (event: StorageEvent) => {
+      if (event.key === "token" || event.key === "user") {
+        const newToken = localStorage.getItem("token");
+        const storedUser = localStorage.getItem("user");
+
+        if (!newToken || !storedUser) {
+          setUser(null);
+          setToken(null);
+          router.push("/login");
+          return;
+        }
+
+        const parsedUser = JSON.parse(storedUser);
+        setUser(parsedUser);
+        setToken(newToken);
+
+        // ✅ Redirect only if on auth or landing page
+        const pathname = window.location.pathname;
+        if (
+          pathname === "/" ||
+          pathname === "/login" ||
+          pathname === "/register"
+        ) {
+          const destination =
+            parsedUser.role === "ADMIN" ? "/admin" : "/dashboard";
+          router.push(destination);
+        }
+      }
+    };
+
+    window.addEventListener("storage", handleStorageChange);
+    return () => window.removeEventListener("storage", handleStorageChange);
+  }, []);
+
+  useEffect(() => {
     const storedUser = localStorage.getItem("user");
     const storedToken = localStorage.getItem("token");
 

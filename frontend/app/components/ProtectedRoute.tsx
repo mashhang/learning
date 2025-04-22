@@ -8,16 +8,27 @@ export default function ProtectedRoute({
 }: {
   children: React.ReactNode;
 }) {
-  const { user } = useAuth();
+  const { user, isLoading } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
-    if (!user) {
-      router.push("/login");
+    if (!isLoading) {
+      if (!user) {
+        router.push("/login");
+      } else if (user.role === "ADMIN") {
+        // 👈 Prevent admin from accessing user-only pages
+        router.push("/admin");
+      }
     }
-  }, [user, router]);
+  }, [user, isLoading, router]);
 
-  if (!user) return null; // Prevent rendering until redirected
+  if (isLoading) {
+    return (
+      <p className="text-center mt-20 text-lg text-gray-500">Loading...</p>
+    );
+  }
+
+  if (!user) return null;
 
   return <>{children}</>;
 }

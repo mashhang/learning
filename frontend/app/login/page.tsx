@@ -1,6 +1,6 @@
 "use client";
 // wd
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "../context/AuthContext";
 import Image from "next/image";
@@ -13,7 +13,18 @@ export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const { login } = useAuth();
+  const { user, isLoading } = useAuth(); // 👈 Get auth state
   const router = useRouter();
+
+  useEffect(() => {
+    if (!isLoading && user) {
+      const destination = user.role === "ADMIN" ? "/admin" : "/dashboard";
+      router.push(destination);
+    }
+  }, [user, isLoading, router]);
+
+  // Optional: prevent flicker
+  if (isLoading || user) return null;
 
   const handleLogin = async () => {
     try {
