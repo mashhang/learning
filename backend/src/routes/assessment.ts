@@ -143,6 +143,40 @@ router.post("/submit", async (req, res) => {
       });
 
       await Promise.all(upserts);
+
+      // Step 5.6: Save per-question difficulty to UserQuestionPerformance
+      const questionInserts = results.map(
+        (r: {
+          questionId: string;
+          lessonId: string;
+          timeTaken: number;
+          isCorrect: boolean;
+        }) => {
+          const difficulty = r.timeTaken / 20 + (r.isCorrect ? 0 : 1);
+
+          return prisma.userQuestionPerformance.upsert({
+            where: {
+              userId_questionId_source: {
+                userId,
+                questionId: r.questionId,
+                source: "PRE", // "DIAGNOSTIC" or "PRE"
+              },
+            },
+            update: {
+              averageScore: difficulty,
+            },
+            create: {
+              userId,
+              lessonId: r.lessonId,
+              questionId: r.questionId,
+              averageScore: difficulty,
+              source: "PRE",
+            },
+          });
+        }
+      );
+
+      await Promise.all(questionInserts);
     }
 
     res.status(200).json({ message: "Assessment saved." });

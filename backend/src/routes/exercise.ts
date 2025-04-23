@@ -155,42 +155,73 @@ router.post("/prioritized", async (req, res) => {
 
   if (!userId || !lessonId) {
     res.status(400).json({ error: "Missing userId or lessonId." });
+    return;
   }
 
   try {
-    // Fetch all exercises for the lesson
+    // 🔍 Step 1: Fetch all exercises for this lesson
     const exercises = await prisma.exampleExercise.findMany({
       where: { lessonId },
     });
 
-    // Fetch user skill performance for that lesson
-    const skillData = await prisma.userSkillPerformance.findMany({
-      where: {
-        userId,
-        lessonId,
-        source: "PRE", // or "DIAGNOSTIC" if you prefer
-      },
+    // 🔍 Step 2: Get question-level difficulty scores from PRE-assessment
+    const questionScores = await prisma.userQuestionPerformance.findMany({
+      where: { userId, lessonId, source: "PRE" }, // 👈 PRE only
     });
 
-    // Create a lookup map for average difficulty scores
-    const skillMap: Record<string, number> = {};
-    skillData.forEach((s) => {
-      skillMap[s.skillTag] = s.averageScore;
-    });
+    const questionMap = new Map(
+      questionScores.map((entry) => [entry.questionId, entry.averageScore])
+    );
 
-    // Attach difficulty score to each exercise (lower = easier)
+    // 🔍 Step 3: Score each exercise by its question ID match
     const scored = exercises.map((ex) => ({
       ...ex,
-      priorityScore: skillMap[ex.skillTag || ""] ?? 1, // default if no record
+      priorityScore: questionMap.get(ex.id) ?? 1, // default score if missing
     }));
 
-    // Sort by priority score ascending (easiest first)
+    // 🔍 Step 4: Sort by ascending score (easier questions first)
     scored.sort((a, b) => a.priorityScore - b.priorityScore);
 
     res.json(scored);
+    return;
   } catch (err) {
     console.error("❌ Failed to fetch prioritized exercises:", err);
     res.status(500).json({ error: "Failed to fetch prioritized exercises." });
+    return;
+  }
+});
+
+// GET /api/exercises/all
+router.get("/exercises-all", async (req, res) => {
+  try {
+    const allExercises = await prisma.exampleExercise.findMany({
+      include: {
+        lesson: {
+          include: {
+            chapter: true,
+          },
+        },
+      },
+      orderBy: [
+        { lesson: { chapter: { title: "asc" } } },
+        { lesson: { title: "asc" } },
+        { createdAt: "asc" },
+      ],
+    });
+
+    const formatted = allExercises.map((ex) => ({
+      lessonId: ex.lessonId,
+      lessonTitle: ex.lesson.title,
+      chapterTitle: ex.lesson.chapter.title,
+      question: ex.question,
+      choices: ex.choices,
+      correctAnswer: ex.correctAnswer,
+    }));
+
+    res.json(formatted);
+  } catch (err) {
+    console.error("❌ Failed to fetch all exercises:", err);
+    res.status(500).json({ error: "Failed to fetch all exercises." });
   }
 });
 

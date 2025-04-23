@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { InlineMath } from "react-katex";
 import "katex/dist/katex.min.css";
 import API_URL from "@/lib/getApiUrl";
+import groupBy from "lodash/groupBy";
 
 // const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
 
@@ -20,8 +21,17 @@ export default function AssessmentQuiz({
 }) {
   const router = useRouter();
   const [questions, setQuestions] = useState(() => {
-    const shuffled = [...lesson.questions].sort(() => Math.random() - 0.5);
-    return shuffled.slice(0, 5); // First 5 questions
+    const groupedBySkillTag = groupBy(lesson.questions, "skillTag");
+    const balanced: any[] = [];
+
+    const maxPerTag = 2; // Adjust how many per skillTag
+
+    for (const group of Object.values(groupedBySkillTag) as any[][]) {
+      balanced.push(...group.slice(0, maxPerTag));
+    }
+
+    // Final shuffle and limit
+    return balanced.sort(() => Math.random() - 0.5).slice(0, 15);
   });
 
   const [currentIndex, setCurrentIndex] = useState(0);

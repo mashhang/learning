@@ -178,3 +178,16 @@ model UserSkillPerformance {
 
   @@unique([userId, lessonId, skillTag, source])
 }
+
+model UserQuestionPerformance {
+  id            String   @id @default(uuid())
+  userId        String
+  lessonId      String
+  questionId    String
+  averageScore  Float
+  source        String   // "DIAGNOSTIC", "PRE", etc.
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([userId, questionId, source]) // ✅ Add this line
+}

@@ -33,6 +33,7 @@ export const getLessons: RequestHandler = async (_req, res) => {
             choices: true,
             correctAnswer: true,
             isChoiceImage: true,
+            skillTag: true,
           },
         },
         pages: {
@@ -81,6 +82,7 @@ export const getLessons: RequestHandler = async (_req, res) => {
           choices: q.choices,
           correctAnswer: q.correctAnswer,
           isChoiceImage: q.isChoiceImage,
+          skillTag: q.skillTag || null,
         })),
         pages: Array.isArray(lesson.pages)
           ? lesson.pages.map((p) => ({
@@ -124,13 +126,16 @@ export const getLessonById: RequestHandler = async (
 
     // ✅ Add full URL to questionImage
     const questionsWithURL = lesson.questions.map((q) => ({
-      ...q,
+      id: q.id,
+      question: q.question,
+      choices: q.choices,
+      correctAnswer: q.correctAnswer,
+      isChoiceImage: q.isChoiceImage,
+      skillTag: q.skillTag ?? null, // ✅ ADD THIS
       questionImage:
-        q.questionImage && !q.questionImage.startsWith("http")
-          ? `${API_URL}${q.questionImage.startsWith("/") ? "" : "/"}${
-              q.questionImage
-            }`
-          : q.questionImage || null,
+        q.questionImage && q.questionImage.startsWith("uploads/")
+          ? `/uploads/${q.questionImage}`
+          : q.questionImage,
     }));
 
     // 🆕 Map media URL on lesson.pages

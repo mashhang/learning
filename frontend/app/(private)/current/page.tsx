@@ -284,7 +284,7 @@ export default function CurrentLesson() {
                 }
 
                 setPageEnterTime(now);
-                setCurrentPage((prev) => Math.min(prev + 1, totalPages));
+                setCurrentPage((prev) => Math.min(prev - 1, totalPages));
               }}
               className="text-[13px] py-2 px-4 bg-[#30608E] text-white rounded-md"
             >

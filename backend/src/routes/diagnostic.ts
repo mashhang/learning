@@ -125,7 +125,15 @@ router.post("/submit", async (req, res) => {
         select: { skillTag: true, lessonId: true },
       });
 
-      if (!question?.skillTag) continue;
+      if (!question) {
+        console.warn("⚠️ Question not found for ID:", r.questionId);
+        continue;
+      }
+
+      if (!question.skillTag) {
+        console.warn("⚠️ No skillTag for question ID:", r.questionId);
+        continue;
+      }
 
       const key = `${r.lessonId}_${question.skillTag}`;
       if (!skillMap[key]) {
@@ -171,6 +179,40 @@ router.post("/submit", async (req, res) => {
     });
 
     await Promise.all(skillInserts);
+
+    // Step 5.6: Save per-question difficulty to UserQuestionPerformance
+    const questionInserts = results.map(
+      (r: {
+        questionId: string;
+        lessonId: string;
+        timeTaken: number;
+        isCorrect: boolean;
+      }) => {
+        const difficulty = r.timeTaken / 20 + (r.isCorrect ? 0 : 1);
+
+        return prisma.userQuestionPerformance.upsert({
+          where: {
+            userId_questionId_source: {
+              userId,
+              questionId: r.questionId,
+              source: "DIAGNOSTIC", // "DIAGNOSTIC" or "PRE"
+            },
+          },
+          update: {
+            averageScore: difficulty,
+          },
+          create: {
+            userId,
+            lessonId: r.lessonId,
+            questionId: r.questionId,
+            averageScore: difficulty,
+            source: "DIAGNOSTIC",
+          },
+        });
+      }
+    );
+
+    await Promise.all(questionInserts);
 
     // Step 6: Mark user as having taken diagnostic
     await prisma.user.update({

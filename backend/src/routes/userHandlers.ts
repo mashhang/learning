@@ -100,3 +100,59 @@ export const getTopPriorityLesson = async (
     res.status(500).json({ error: "Server error" });
   }
 };
+
+export const getWeakSkillTagsByLesson: RequestHandler = async (req, res) => {
+  try {
+    const { userId, lessonId } = req.params;
+
+    const performance = await prisma.userSkillPerformance.findMany({
+      where: {
+        userId,
+        lessonId,
+        source: "DIAGNOSTIC",
+      },
+      orderBy: {
+        averageScore: "desc", // higher = weaker
+      },
+      select: {
+        skillTag: true,
+      },
+    });
+
+    const skillTags = performance.map((p) => p.skillTag);
+    res.status(200).json(skillTags);
+  } catch (error) {
+    console.error("Error fetching weak skill tags:", error);
+    res.status(500).json({ error: "Failed to load weak skills" });
+  }
+};
+
+export const getQuestionDifficultiesByLesson: RequestHandler = async (
+  req,
+  res
+) => {
+  try {
+    const { userId, lessonId } = req.params;
+
+    const results = await prisma.userQuestionPerformance.findMany({
+      where: {
+        userId,
+        lessonId,
+        source: "PRE", // You can change this to "DIAGNOSTIC" or support both
+      },
+      select: {
+        questionId: true,
+        averageScore: true,
+        source: true,
+      },
+      orderBy: {
+        averageScore: "asc", // easier → harder
+      },
+    });
+
+    res.status(200).json(results);
+  } catch (error) {
+    console.error("❌ Error fetching question difficulties:", error);
+    res.status(500).json({ error: "Failed to fetch question difficulties." });
+  }
+};
