@@ -150,7 +150,7 @@ router.delete("/exercises/:id", async (req, res) => {
 });
 
 // POST /api/exercises/prioritized
-router.post("/prioritized", async (req, res) => {
+router.post("/exercises/prioritized", async (req, res) => {
   const { userId, lessonId } = req.body;
 
   if (!userId || !lessonId) {
@@ -159,30 +159,58 @@ router.post("/prioritized", async (req, res) => {
   }
 
   try {
-    // 🔍 Step 1: Fetch all exercises for this lesson
     const exercises = await prisma.exampleExercise.findMany({
       where: { lessonId },
     });
 
-    // 🔍 Step 2: Get question-level difficulty scores from PRE-assessment
-    const questionScores = await prisma.userQuestionPerformance.findMany({
-      where: { userId, lessonId, source: "PRE" }, // 👈 PRE only
+    // Attempt to fetch diagnostic skill performance
+    const skillScores = await prisma.userSkillPerformance.findMany({
+      where: { userId, lessonId, source: "DIAGNOSTIC" },
     });
 
-    const questionMap = new Map(
-      questionScores.map((entry) => [entry.questionId, entry.averageScore])
-    );
+    if (skillScores.length > 0) {
+      const skillMap: Record<string, number> = {};
+      skillScores.forEach((s) => {
+        skillMap[s.skillTag] = s.averageScore;
+      });
 
-    // 🔍 Step 3: Score each exercise by its question ID match
-    const scored = exercises.map((ex) => ({
+      const scored = exercises.map((ex) => ({
+        ...ex,
+        priorityScore: skillMap[ex.skillTag || ""] ?? 1,
+      }));
+
+      scored.sort((a, b) => a.priorityScore - b.priorityScore);
+      res.json(scored);
+      return;
+    }
+
+    // Fallback to pre-assessment question performance
+    const questionScores = await prisma.userQuestionPerformance.findMany({
+      where: { userId, lessonId, source: "PRE" },
+    });
+
+    if (questionScores.length > 0) {
+      const questionMap = new Map(
+        questionScores.map((entry) => [entry.questionId, entry.averageScore])
+      );
+
+      const scored = exercises.map((ex) => ({
+        ...ex,
+        priorityScore: questionMap.get(ex.id) ?? 1,
+      }));
+
+      scored.sort((a, b) => a.priorityScore - b.priorityScore);
+      res.json(scored);
+      return;
+    }
+
+    // Default priority if no performance data is available
+    const defaultScored = exercises.map((ex) => ({
       ...ex,
-      priorityScore: questionMap.get(ex.id) ?? 1, // default score if missing
+      priorityScore: 1,
     }));
 
-    // 🔍 Step 4: Sort by ascending score (easier questions first)
-    scored.sort((a, b) => a.priorityScore - b.priorityScore);
-
-    res.json(scored);
+    res.json(defaultScored);
     return;
   } catch (err) {
     console.error("❌ Failed to fetch prioritized exercises:", err);

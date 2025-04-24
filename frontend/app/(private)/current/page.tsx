@@ -238,6 +238,8 @@ export default function CurrentLesson() {
     (ex) => ex.difficulty === exerciseDifficulty
   );
 
+  currentExercises = currentExercises.filter((ex) => !selectedAnswers[ex.id]);
+
   // Fallbacks if none match
   if (currentExercises.length === 0) {
     // Try medium
@@ -269,22 +271,26 @@ export default function CurrentLesson() {
                 const now = Date.now();
                 const timeSpent = (now - pageEnterTime) / 1000;
 
-                // Determine if exercise should show
                 const show =
                   timeSpent >= 20 ? true : timeSpent <= 7 ? false : true;
-                setShowExercise(show);
 
-                // Determine difficulty level
-                if (timeSpent >= 20) {
-                  setExerciseDifficulty("EASY");
-                } else if (timeSpent <= 9) {
-                  setExerciseDifficulty("HARD");
+                if (show) {
+                  if (timeSpent >= 20) {
+                    setExerciseDifficulty("EASY");
+                  } else if (timeSpent <= 9) {
+                    setExerciseDifficulty("HARD");
+                  } else {
+                    setExerciseDifficulty("MEDIUM");
+                  }
+
+                  setShowExercise(true);
+                  setExerciseIndex((prev) => Math.max(prev - 1, 0)); // ✅ decrement but not below 0
                 } else {
-                  setExerciseDifficulty("MEDIUM");
+                  setShowExercise(false);
                 }
 
                 setPageEnterTime(now);
-                setCurrentPage((prev) => Math.min(prev - 1, totalPages));
+                setCurrentPage((prev) => Math.max(prev - 1, 1)); // prevent going below page 1
               }}
               className="text-[13px] py-2 px-4 bg-[#30608E] text-white rounded-md"
             >
@@ -300,15 +306,31 @@ export default function CurrentLesson() {
             <button
               onClick={() => {
                 const now = Date.now();
-                const timeSpent = (now - pageEnterTime) / 1000; // seconds
+                const timeSpent = (now - pageEnterTime) / 1000;
 
-                // Decide if exercise should be shown based on time
-                const show =
-                  timeSpent >= 20 ? true : timeSpent <= 7 ? false : true;
+                // 🧠 Check the last exercise's accuracy
+                const lastExerciseId = exercises[exerciseIndex - 1]?.id;
+                const wasCorrect = answerResults[lastExerciseId] ?? false;
 
-                setShowExercise(show); // Set whether to show on next page
-                setPageEnterTime(now); // Start timing next page
-                setCurrentPage((prev) => Math.min(totalPages, prev + 1));
+                // 🧠 Decide what difficulty to show
+                let difficulty: "EASY" | "MEDIUM" | "HARD" = "MEDIUM";
+                let show = true;
+
+                if (timeSpent <= 15) {
+                  difficulty = wasCorrect ? "HARD" : "EASY";
+                } else if (timeSpent > 40) {
+                  difficulty = "EASY";
+                } else {
+                  difficulty = "MEDIUM";
+                }
+
+                // 🧠 Apply the logic
+                setExerciseDifficulty(difficulty);
+                setShowExercise(show);
+                setExerciseIndex((prev) => prev + 1);
+
+                setCurrentPage((prev) => Math.min(prev + 1, totalPages));
+                setPageEnterTime(now);
               }}
               className="text-[13px] py-2 px-4 bg-[#30608E] text-white rounded-md"
             >
@@ -385,23 +407,32 @@ export default function CurrentLesson() {
           {/* 🧠 Example Exercises */}
           {exercises.length > 0 && (
             <>
-              {showExercise &&
-                currentPage <= totalPages &&
-                currentExercises[currentPage - 1] && (
-                  <ExerciseCard
-                    exercise={currentExercises[currentPage - 1]}
-                    index={currentPage - 1}
-                    total={currentExercises.length}
-                    onNext={() => setCurrentPage((prev) => prev + 1)}
-                    onPrev={() => setCurrentPage((prev) => prev - 1)}
-                    selectedAnswers={selectedAnswers}
-                    setSelectedAnswers={setSelectedAnswers}
-                    answerResults={answerResults}
-                    setAnswerResults={setAnswerResults}
-                    score={score}
-                    setScore={setScore}
-                  />
-                )}
+              {showExercise && currentExercises.length > 0 ? (
+                <ExerciseCard
+                  exercise={currentExercises[exerciseIndex]}
+                  index={exerciseIndex}
+                  total={currentExercises.length}
+                  onNext={() => setCurrentPage((prev) => prev + 1)}
+                  onPrev={() => setCurrentPage((prev) => prev - 1)}
+                  selectedAnswers={selectedAnswers}
+                  setSelectedAnswers={setSelectedAnswers}
+                  answerResults={answerResults}
+                  setAnswerResults={setAnswerResults}
+                  score={score}
+                  setScore={setScore}
+                />
+              ) : (
+                <div className="text-center text-gray-500 mt-4">
+                  ✅ You’ve answered all available exercises!
+                  <br />
+                  <button
+                    className="mt-3 px-4 py-2 bg-blue-600 text-white rounded"
+                    onClick={() => setShowSummary(true)}
+                  >
+                    View Summary
+                  </button>
+                </div>
+              )}
 
               {currentPage > totalPages && exercises[currentPage - 1] && (
                 <ExerciseCard
