@@ -31,7 +31,7 @@ export const registerUser = async (
     const allowedDomain = "@itmlyceumalabang.onmicrosoft.com";
     if (!email.endsWith(allowedDomain)) {
       res.status(400).json({
-        error: `Registration is restricted to ${allowedDomain} emails only.`,
+        error: `Registration is restricted to institutional emails addresses.`,
       });
       return;
     }
