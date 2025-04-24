@@ -25,6 +25,13 @@ export const getLessons: RequestHandler = async (_req, res) => {
     const lessons = await prisma.lesson.findMany({
       include: {
         chapter: true, // ✅ include chapter relation
+        _count: {
+          select: {
+            questions: true,
+            pages: true,
+            exampleExercises: true, // ✅ Add this if not yet included in model
+          },
+        },
         questions: {
           select: {
             id: true,
@@ -92,6 +99,9 @@ export const getLessons: RequestHandler = async (_req, res) => {
             }))
           : [],
         status: lesson.status, // ✅ Add this line
+        questionCount: lesson._count.questions,
+        pageCount: lesson._count.pages,
+        exerciseCount: lesson._count.exampleExercises,
       }))
     );
   } catch (error) {

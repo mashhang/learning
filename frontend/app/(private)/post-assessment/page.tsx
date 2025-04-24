@@ -2,28 +2,48 @@
 
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
-import AssessmentQuiz from "@/app/components/AssessmentQuiz";
+import { useAuth } from "@/app/context/AuthContext";
 import { useRouter } from "next/navigation";
+import AssessmentQuiz from "@/app/components/AssessmentQuiz";
 import API_URL from "@/lib/getApiUrl";
 
 // const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
 
 export default function PostAssessmentPage() {
   const router = useRouter();
+  const { user } = useAuth();
+
   const searchParams = useSearchParams();
   const lessonId = searchParams.get("id");
 
   const [lesson, setLesson] = useState<any>(null);
 
   useEffect(() => {
-    if (!lessonId) return;
-    fetch(`${API_URL}/api/lessons/${lessonId}`)
-      .then((res) => res.json())
-      .then((data) => {
-        console.log("🧪 Loaded lesson with questions:", data); // ✅ Add this
-        setLesson(data);
-      });
-  }, [lessonId]);
+    if (!lessonId || !user?.id) return;
+
+    const fetchPostAssessmentQuestions = async () => {
+      try {
+        const lessonRes = await fetch(`${API_URL}/api/lessons/${lessonId}`);
+        const lessonData = await lessonRes.json();
+
+        const res = await fetch(
+          `${API_URL}/api/user/${user.id}/lesson/${lessonId}/questions/post`
+        );
+        const prioritized = await res.json();
+
+        setLesson({
+          ...lessonData,
+          questions: prioritized,
+        });
+
+        console.log("🧪 Post-assessment prioritized questions:", prioritized);
+      } catch (err) {
+        console.error("❌ Failed to load post-assessment questions:", err);
+      }
+    };
+
+    fetchPostAssessmentQuestions();
+  }, [lessonId, user]);
 
   if (!lesson) {
     return <div className="p-10 text-center">Loading assessment...</div>;

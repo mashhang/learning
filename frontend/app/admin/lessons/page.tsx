@@ -17,7 +17,10 @@ export default function LessonsAdmin() {
       title: string;
       chapterId: string;
       chapterTitle: string;
-      status: string; // ✅ Add this line
+      status: string;
+      questionCount: number;
+      pageCount: number;
+      exerciseCount: number;
     }[]
   >([]);
   const [chapters, setChapters] = useState<{ id: string; title: string }[]>([]);
@@ -93,6 +96,9 @@ export default function LessonsAdmin() {
           <tr className="border bg-gray-200">
             <th className="p-2 text-left">Title</th>
             <th className="p-2 text-center w-32">Chapter</th>
+            <th className="p-2 text-center w-24">Pages</th>
+            <th className="p-2 text-center w-24">Questions</th>
+            <th className="p-2 text-center w-24">Exercises</th>
             <th className="p-2 text-center w-28">Status</th> {/* ✅ Add this */}
             <th className="p-2 text-center w-40">Actions</th>
           </tr>
@@ -115,6 +121,13 @@ export default function LessonsAdmin() {
                 <td className="p-2 border">{lesson.title}</td>
                 <td className="p-2 text-center border">
                   {lesson.chapterTitle}
+                </td>
+                <td className="p-2 text-center border">{lesson.pageCount}</td>
+                <td className="p-2 text-center border">
+                  {lesson.questionCount}
+                </td>
+                <td className="p-2 text-center border">
+                  {lesson.exerciseCount}
                 </td>
                 <td className="p-2 text-center border">
                   {lesson.status === "published" ? (

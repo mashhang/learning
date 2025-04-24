@@ -68,4 +68,39 @@ router.delete("/questions/:id", async (req, res) => {
   }
 });
 
+// GET /api/user/:userId/lesson/:lessonId/questions/post
+router.get(
+  "/user/:userId/lesson/:lessonId/questions/post",
+  async (req, res) => {
+    const { userId, lessonId } = req.params;
+
+    try {
+      const all = await prisma.question.findMany({ where: { lessonId } });
+
+      const questionScores = await prisma.userQuestionPerformance.findMany({
+        where: { userId, lessonId, source: "PRE" }, // use PRE assessment result
+      });
+
+      const map = new Map(
+        questionScores.map((q) => [q.questionId, q.averageScore])
+      );
+
+      const sorted = all
+        .map((q) => ({
+          ...q,
+          difficulty: map.get(q.id) ?? 1,
+        }))
+        .sort((a, b) => a.difficulty - b.difficulty); // easiest to hardest
+
+      const final = sorted.slice(0, 15); // pick top 15 questions
+      res.json(final);
+    } catch (err) {
+      console.error("❌ Failed to fetch post-assessment questions:", err);
+      res
+        .status(500)
+        .json({ error: "Failed to fetch post-assessment questions." });
+    }
+  }
+);
+
 export default router;
