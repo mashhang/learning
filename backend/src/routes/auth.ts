@@ -27,9 +27,19 @@ export const registerUser = async (
   try {
     const { name, email, password } = req.body;
 
+    // ✅ Allow only institutional emails
+    const allowedDomain = "@itmlyceumalabang.onmicrosoft.com";
+    if (!email.endsWith(allowedDomain)) {
+      res.status(400).json({
+        error: `Registration is restricted to ${allowedDomain} emails only.`,
+      });
+      return;
+    }
+
+    // ✅ Check if email already exists
     const existingUser = await prisma.user.findUnique({ where: { email } });
     if (existingUser) {
-      res.status(400).json({ error: "Email already exists" });
+      res.status(400).json({ error: "Email already exists." });
       return;
     }
 
@@ -38,18 +48,17 @@ export const registerUser = async (
       data: { name, email, password: hashedPassword, role: "USER" },
     });
 
-    // ✅ Email verification setup
+    // Email verification setup
     const transporter = nodemailer.createTransport({
       service: "gmail",
       auth: {
-        user: process.env.EMAIL_USER, // sender email from .env
-        pass: process.env.EMAIL_PASS, // sender password from .env
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
       },
     });
 
     const verificationToken = crypto.randomBytes(32).toString("hex");
 
-    // Save the token to the user
     await prisma.user.update({
       where: { id: user.id },
       data: { verificationToken },
@@ -59,7 +68,7 @@ export const registerUser = async (
 
     await transporter.sendMail({
       from: process.env.EMAIL_USER,
-      to: email, // user email from input
+      to: email,
       subject: "Verify your email",
       html: `
         <h2>Welcome to the Learning App, ${name}!</h2>
@@ -124,14 +133,20 @@ export const loginUser = async (req: Request, res: Response): Promise<void> => {
   try {
     const { email, password } = req.body;
 
-    // Find user by email
     const user = await prisma.user.findUnique({ where: { email } });
+
     if (!user || !(await bcrypt.compare(password, user.password))) {
       res.status(400).json({ error: "Invalid email or password" });
       return;
     }
 
-    // Generate JWT token
+    if (!user.isVerified) {
+      res
+        .status(403)
+        .json({ error: "Please verify your email before logging in." });
+      return;
+    }
+
     const token = jwt.sign(
       { userId: String(user.id), role: user.role },
       JWT_SECRET,

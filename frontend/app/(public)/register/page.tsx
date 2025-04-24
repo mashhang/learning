@@ -32,12 +32,16 @@ export default function Register() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name, email, password }),
     });
+
+    const data = await res.json();
+    if (!res.ok) {
+      alert(data.error || "Registration failed");
+      return;
+    }
+
     alert(
       "Registration successful! Please check your email to verify your account."
     );
-    const data = await res.json();
-    alert(data.message);
-
     router.push("/login");
   };
 
@@ -46,32 +50,6 @@ export default function Register() {
   };
 
   return (
-    // <div className="max-w-md mx-auto p-4">
-    //   <h2 className="text-xl font-bold">Register</h2>
-    //   <input
-    //     className="block w-full p-2 border"
-    //     placeholder="Name"
-    //     onChange={(e) => setName(e.target.value)}
-    //   />
-    //   <input
-    //     className="block w-full p-2 border mt-2"
-    //     placeholder="Email"
-    //     onChange={(e) => setEmail(e.target.value)}
-    //   />
-    //   <input
-    //     className="block w-full p-2 border mt-2"
-    //     type="password"
-    //     placeholder="Password"
-    //     onChange={(e) => setPassword(e.target.value)}
-    //   />
-    //   <button
-    //     className="w-full bg-blue-500 text-white p-2 mt-3"
-    //     onClick={handleRegister}
-    //   >
-    //     Register
-    //   </button>
-    // </div>
-
     <section className="flex flex-col max-w-[265px] h-screen items-center justify-center mx-auto my-auto">
       <div>
         <Image src={Logo} alt="logo" width={200} height={200} />
