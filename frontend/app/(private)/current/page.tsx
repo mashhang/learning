@@ -1,16 +1,22 @@
 "use client";
 
+// External libraries
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import ProtectedRoute from "@/app/components/ProtectedRoute";
-import { useSidebar } from "@/app/context/SidebarContext";
 import ReactMarkdown from "react-markdown";
 import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
 import "katex/dist/katex.min.css"; // Import KaTeX styles
 import Image from "next/image";
+
+// Internal components and context
+import ProtectedRoute from "@/app/components/ProtectedRoute";
+import { useSidebar } from "@/app/context/SidebarContext";
 import { useAuth } from "@/app/context/AuthContext";
 import AssessmentQuiz from "@/app/components/AssessmentQuiz";
+import MathPreview from "@/app/components/MathPreview";
+
+// Environment/config
 import API_URL from "@/lib/getApiUrl";
 
 // const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
@@ -41,6 +47,15 @@ type ExampleExercise = {
   explanation: string;
 };
 
+const decideDifficulty = (
+  timeSpent: number,
+  isCorrect?: boolean
+): "EASY" | "MEDIUM" | "HARD" => {
+  if (timeSpent > 40) return "EASY";
+  if (timeSpent <= 15) return isCorrect ? "HARD" : "EASY";
+  return "MEDIUM";
+};
+
 export default function CurrentLesson() {
   const [lesson, setLesson] = useState<Lesson | null>(null);
   const [lessons, setLessons] = useState<Lesson[]>([]);
@@ -51,41 +66,35 @@ export default function CurrentLesson() {
   const router = useRouter();
   const { isSidebarOpen, sidebarWidth } = useSidebar();
   const { user } = useAuth();
-  const [showPreAssessment, setShowPreAssessment] = useState(false);
+  const [showPreAssessment] = useState(false);
   const [showPostAssessment, setShowPostAssessment] = useState(false);
   const [currentPageLoaded, setCurrentPageLoaded] = useState(false);
   const [exerciseIndex, setExerciseIndex] = useState(0);
   const [showSummary, setShowSummary] = useState(false);
   const [pageEnterTime, setPageEnterTime] = useState<number>(Date.now());
   const [showExercise, setShowExercise] = useState<boolean>(false);
+  const [showGeneratedExerciseModal, setShowGeneratedExerciseModal] =
+    useState(false);
+  const [generatedExercise, setGeneratedExercise] =
+    useState<ExampleExercise | null>(null);
+  const [noMoreExercises, setNoMoreExercises] = useState(false);
+
   const [exerciseDifficulty, setExerciseDifficulty] = useState<
     "EASY" | "MEDIUM" | "HARD"
   >("MEDIUM");
 
   const [selectedAnswers, setSelectedAnswers] = useState<{
-    [index: number]: string;
+    [id: string]: string;
   }>({});
-  const [answerResults, setAnswerResults] = useState<{
-    [index: number]: boolean;
-  }>({});
+  const [answerResults, setAnswerResults] = useState<{ [id: string]: boolean }>(
+    {}
+  );
+
   const [score, setScore] = useState(0);
-
-  const handleChoiceClick = (
-    exerciseIndex: number,
-    choice: string,
-    correctAnswer: string
-  ) => {
-    if (selectedAnswers[exerciseIndex]) return; // Already answered
-
-    const isCorrect = choice === correctAnswer;
-
-    setSelectedAnswers((prev) => ({ ...prev, [exerciseIndex]: choice }));
-    setAnswerResults((prev) => ({ ...prev, [exerciseIndex]: isCorrect }));
-
-    if (isCorrect) {
-      setScore((prev) => prev + 1);
-    }
-  };
+  const [reviewMode, setReviewMode] = useState(false);
+  const [exercisePerPage, setExercisePerPage] = useState<{
+    [page: number]: string;
+  }>({});
 
   useEffect(() => {
     if (!user?.id) return;
@@ -154,6 +163,34 @@ export default function CurrentLesson() {
 
         const prioritized = await res.json();
         setExercises(prioritized);
+
+        // ✅ Apply adaptive logic on Page 1 if not assigned yet
+        if (
+          currentPage === 1 &&
+          prioritized.length > 0 &&
+          !exercisePerPage[1]
+        ) {
+          const timeSpent = (Date.now() - pageEnterTime) / 1000;
+
+          let difficulty: "EASY" | "MEDIUM" | "HARD" = "MEDIUM";
+          if (timeSpent >= 20) {
+            difficulty = "EASY";
+          } else if (timeSpent <= 9) {
+            difficulty = "HARD";
+          }
+
+          const match =
+            prioritized.find((ex) => ex.difficulty === difficulty) ||
+            prioritized[0];
+
+          setExerciseDifficulty(match.difficulty);
+          setExercisePerPage((prev) => ({
+            ...prev,
+            1: match.id,
+          }));
+          setShowExercise(true);
+        }
+
         setExerciseIndex(0);
       } catch (err) {
         console.error("⚠️ Error loading prioritized exercises:", err);
@@ -196,12 +233,6 @@ export default function CurrentLesson() {
     return <p className="text-center mt-5 text-lg">Loading lesson...</p>;
   }
 
-  const currentIndex = lessons.findIndex((l) => l.id === lesson?.id);
-  const checkAnswer = (index: number, correctAnswer: string) => {
-    const isCorrect = selectedAnswers[index] === correctAnswer;
-    setAnswerResults((prev) => ({ ...prev, [index]: isCorrect }));
-  };
-
   const contentToRender = lesson?.pages?.[currentPage - 1]?.content || "";
   let pageMedia = lesson?.pages?.[currentPage - 1]?.media || null;
 
@@ -234,11 +265,19 @@ export default function CurrentLesson() {
     );
   }
 
-  let currentExercises = exercises.filter(
-    (ex) => ex.difficulty === exerciseDifficulty
-  );
+  let currentExercises: ExampleExercise[] = [];
 
-  currentExercises = currentExercises.filter((ex) => !selectedAnswers[ex.id]);
+  const storedId = exercisePerPage[currentPage];
+  if (storedId) {
+    const matched = exercises.find((ex) => ex.id === storedId);
+    if (matched) currentExercises = [matched];
+  }
+
+  if (currentExercises.length === 0) {
+    currentExercises = exercises.filter(
+      (ex) => ex.difficulty === exerciseDifficulty
+    );
+  }
 
   // Fallbacks if none match
   if (currentExercises.length === 0) {
@@ -271,26 +310,55 @@ export default function CurrentLesson() {
                 const now = Date.now();
                 const timeSpent = (now - pageEnterTime) / 1000;
 
-                const show =
-                  timeSpent >= 20 ? true : timeSpent <= 7 ? false : true;
+                console.log(
+                  "⬅️ PREV PAGE: Time spent on page",
+                  currentPage,
+                  ":",
+                  timeSpent.toFixed(2),
+                  "seconds"
+                );
 
-                if (show) {
-                  if (timeSpent >= 20) {
-                    setExerciseDifficulty("EASY");
-                  } else if (timeSpent <= 9) {
-                    setExerciseDifficulty("HARD");
-                  } else {
-                    setExerciseDifficulty("MEDIUM");
-                  }
+                const targetPage = Math.max(currentPage - 1, 1);
 
-                  setShowExercise(true);
-                  setExerciseIndex((prev) => Math.max(prev - 1, 0)); // ✅ decrement but not below 0
-                } else {
-                  setShowExercise(false);
-                }
-
+                setCurrentPage(targetPage);
                 setPageEnterTime(now);
-                setCurrentPage((prev) => Math.max(prev - 1, 1)); // prevent going below page 1
+
+                const storedId = exercisePerPage[targetPage];
+                const matched = storedId
+                  ? exercises.find((e) => e.id === storedId)
+                  : null;
+
+                if (matched) {
+                  setExerciseDifficulty(matched.difficulty);
+                  setShowExercise(true);
+                } else {
+                  const lastId = currentExercises[0]?.id;
+                  const isCorrect = lastId ? answerResults[lastId] : undefined;
+                  const difficulty = decideDifficulty(timeSpent, isCorrect);
+
+                  const newExercise = exercises.find(
+                    (ex) =>
+                      ex.difficulty === difficulty &&
+                      !Object.values(exercisePerPage).includes(ex.id)
+                  );
+
+                  console.log("📊 PREV: Decided difficulty →", difficulty);
+                  console.log(
+                    "📘 PREV: New assigned exercise →",
+                    newExercise?.id
+                  );
+
+                  if (newExercise) {
+                    setExercisePerPage((prev) => ({
+                      ...prev,
+                      [targetPage]: newExercise.id,
+                    }));
+                    setExerciseDifficulty(newExercise.difficulty);
+                    setShowExercise(true);
+                  } else {
+                    setShowExercise(false);
+                  }
+                }
               }}
               className="text-[13px] py-2 px-4 bg-[#30608E] text-white rounded-md"
             >
@@ -308,29 +376,65 @@ export default function CurrentLesson() {
                 const now = Date.now();
                 const timeSpent = (now - pageEnterTime) / 1000;
 
-                // 🧠 Check the last exercise's accuracy
-                const lastExerciseId = exercises[exerciseIndex - 1]?.id;
-                const wasCorrect = answerResults[lastExerciseId] ?? false;
+                console.log(
+                  "➡️ NEXT PAGE: Time spent on page",
+                  currentPage,
+                  ":",
+                  timeSpent.toFixed(2),
+                  "seconds"
+                );
 
-                // 🧠 Decide what difficulty to show
-                let difficulty: "EASY" | "MEDIUM" | "HARD" = "MEDIUM";
-                let show = true;
+                const targetPage = Math.min(currentPage + 1, totalPages);
 
-                if (timeSpent <= 15) {
-                  difficulty = wasCorrect ? "HARD" : "EASY";
-                } else if (timeSpent > 40) {
-                  difficulty = "EASY";
-                } else {
-                  difficulty = "MEDIUM";
+                const currentExerciseId = currentExercises[0]?.id;
+                if (currentExerciseId) {
+                  setExercisePerPage((prev) => ({
+                    ...prev,
+                    [currentPage]: currentExerciseId,
+                  }));
                 }
 
-                // 🧠 Apply the logic
-                setExerciseDifficulty(difficulty);
-                setShowExercise(show);
-                setExerciseIndex((prev) => prev + 1);
-
-                setCurrentPage((prev) => Math.min(prev + 1, totalPages));
+                setCurrentPage(targetPage);
                 setPageEnterTime(now);
+
+                const storedId = exercisePerPage[targetPage];
+                const matched = storedId
+                  ? exercises.find((e) => e.id === storedId)
+                  : null;
+
+                if (matched) {
+                  setExerciseDifficulty(matched.difficulty);
+                  setShowExercise(true);
+                } else {
+                  const isCorrect = currentExerciseId
+                    ? answerResults[currentExerciseId]
+                    : undefined;
+
+                  const difficulty = decideDifficulty(timeSpent, isCorrect);
+
+                  const newExercise = exercises.find(
+                    (ex) =>
+                      ex.difficulty === difficulty &&
+                      !Object.values(exercisePerPage).includes(ex.id)
+                  );
+
+                  console.log("📊 NEXT: Decided difficulty →", difficulty);
+                  console.log(
+                    "📘 NEXT: New assigned exercise →",
+                    newExercise?.id
+                  );
+
+                  if (newExercise) {
+                    setExercisePerPage((prev) => ({
+                      ...prev,
+                      [targetPage]: newExercise.id,
+                    }));
+                    setExerciseDifficulty(newExercise.difficulty);
+                    setShowExercise(true);
+                  } else {
+                    setShowExercise(false);
+                  }
+                }
               }}
               className="text-[13px] py-2 px-4 bg-[#30608E] text-white rounded-md"
             >
@@ -409,19 +513,18 @@ export default function CurrentLesson() {
             <>
               {showExercise && currentExercises.length > 0 ? (
                 <ExerciseCard
-                  exercise={currentExercises[exerciseIndex]}
-                  index={exerciseIndex}
+                  exercise={currentExercises[0]}
+                  index={0}
                   total={currentExercises.length}
-                  onNext={() => setCurrentPage((prev) => prev + 1)}
-                  onPrev={() => setCurrentPage((prev) => prev - 1)}
                   selectedAnswers={selectedAnswers}
                   setSelectedAnswers={setSelectedAnswers}
                   answerResults={answerResults}
                   setAnswerResults={setAnswerResults}
                   score={score}
                   setScore={setScore}
+                  exercises={exercises}
                 />
-              ) : (
+              ) : currentPage !== totalPages && noMoreExercises ? (
                 <div className="text-center text-gray-500 mt-4">
                   ✅ You’ve answered all available exercises!
                   <br />
@@ -432,23 +535,7 @@ export default function CurrentLesson() {
                     View Summary
                   </button>
                 </div>
-              )}
-
-              {currentPage > totalPages && exercises[currentPage - 1] && (
-                <ExerciseCard
-                  exercise={exercises[currentPage - 1]}
-                  index={currentPage - 1}
-                  total={exercises.length}
-                  onNext={() => setCurrentPage((prev) => prev + 1)}
-                  onPrev={() => setCurrentPage((prev) => prev - 1)}
-                  selectedAnswers={selectedAnswers}
-                  setSelectedAnswers={setSelectedAnswers}
-                  answerResults={answerResults}
-                  setAnswerResults={setAnswerResults}
-                  score={score}
-                  setScore={setScore}
-                />
-              )}
+              ) : null}
             </>
           )}
 
@@ -467,7 +554,7 @@ export default function CurrentLesson() {
                   <button
                     className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded"
                     onClick={async () => {
-                      const excludeIds = Object.keys(selectedAnswers); // use selected indices as IDs
+                      const excludeIds = Object.keys(selectedAnswers);
                       const res = await fetch(
                         `${API_URL}/api/exercises/${lesson?.id}/unanswered`,
                         {
@@ -479,8 +566,14 @@ export default function CurrentLesson() {
 
                       if (res.ok) {
                         const newExercises = await res.json();
-                        setExercises((prev) => [...prev, ...newExercises]);
-                        alert("✅ New exercises added!");
+                        if (newExercises.length > 0) {
+                          setGeneratedExercise(newExercises[0]); // ✅ Only the first one
+                          setShowGeneratedExerciseModal(true); // ✅ Open modal
+                          setNoMoreExercises(false); // ✅ Reset state
+                        } else {
+                          setNoMoreExercises(true); // ✅ Mark that no more to show
+                          alert("✅ No more new exercises available.");
+                        }
                       } else {
                         alert("⚠️ Failed to load more exercises.");
                       }
@@ -569,6 +662,116 @@ export default function CurrentLesson() {
           </div>
         </div>
       )}
+
+      {exercises.length > 0 && (
+        <button
+          className="fixed bottom-6 right-6 z-50 px-5 py-3 rounded-full bg-gray-800 text-white text-sm shadow-lg hover:bg-gray-700 transition"
+          onClick={() => setReviewMode(true)}
+        >
+          🧠 Review Past Exercises
+        </button>
+      )}
+
+      {reviewMode && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-white w-full max-w-3xl max-h-[80vh] overflow-y-auto rounded-lg shadow-xl p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-semibold">🧠 Reviewed Exercises</h2>
+              <button
+                onClick={() => setReviewMode(false)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                ✖
+              </button>
+            </div>
+
+            {exercises.filter((ex) => selectedAnswers[ex.id]).length > 0 ? (
+              exercises
+                .filter((ex) => selectedAnswers[ex.id])
+                .map((ex, i) => (
+                  <ExerciseCard
+                    key={ex.id}
+                    exercise={ex}
+                    index={i}
+                    total={exercises.length}
+                    selectedAnswers={selectedAnswers}
+                    setSelectedAnswers={setSelectedAnswers}
+                    answerResults={answerResults}
+                    setAnswerResults={setAnswerResults}
+                    score={score}
+                    setScore={setScore}
+                    exercises={exercises}
+                  />
+                ))
+            ) : (
+              <p className="text-center text-gray-500">
+                No past exercises answered yet.
+              </p>
+            )}
+          </div>
+        </div>
+      )}
+
+      {showGeneratedExerciseModal && generatedExercise && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-white w-full max-w-2xl max-h-[80vh] overflow-y-auto rounded-lg shadow-xl p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-semibold">🆕 New Exercise</h2>
+              <button
+                onClick={() => setShowGeneratedExerciseModal(false)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                ✖
+              </button>
+            </div>
+            <ExerciseCard
+              exercise={generatedExercise}
+              index={0}
+              total={1}
+              selectedAnswers={selectedAnswers}
+              setSelectedAnswers={setSelectedAnswers}
+              answerResults={answerResults}
+              setAnswerResults={setAnswerResults}
+              score={score}
+              setScore={setScore}
+              exercises={[generatedExercise]}
+            />
+
+            {/* 👇 Add this button bottom-center inside modal */}
+            <div className="flex justify-center mt-6">
+              <button
+                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded"
+                onClick={async () => {
+                  const excludeIds = Object.keys(selectedAnswers);
+                  const res = await fetch(
+                    `${API_URL}/api/exercises/${lesson?.id}/unanswered`,
+                    {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ excludeIds }),
+                    }
+                  );
+
+                  if (res.ok) {
+                    const newExercises = await res.json();
+                    if (newExercises.length > 0) {
+                      setGeneratedExercise(newExercises[0]);
+                      setNoMoreExercises(false);
+                    } else {
+                      setNoMoreExercises(true);
+                      alert("✅ No more new exercises available.");
+                    }
+                  } else {
+                    alert("⚠️ Failed to load more exercises.");
+                  }
+                }}
+              >
+                ➕ Generate Another
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </ProtectedRoute>
   );
 }
@@ -577,14 +780,13 @@ function ExerciseCard({
   exercise,
   index,
   total,
-  onNext,
-  onPrev,
   selectedAnswers,
   setSelectedAnswers,
   answerResults,
   setAnswerResults,
   score,
   setScore,
+  exercises,
 }) {
   useEffect(() => {
     setSelected(selectedAnswers[exercise.id] || null);
@@ -612,9 +814,8 @@ function ExerciseCard({
 
   return (
     <div className="bg-white shadow-md rounded-md p-4 mb-6 border border-gray-200 select-none">
-      <h3 className="font-semibold text-md mb-4">
-        Exercise {index + 1}: {exercise.question}
-      </h3>
+      {/* <h3 className="font-semibold text-md mb-4">{exercise.question}</h3> */}
+      <MathPreview value={exercise.question} />
 
       <div className="grid grid-cols-2 gap-6">
         {/* Left Column: Question Choices */}
@@ -624,7 +825,7 @@ function ExerciseCard({
               key={i}
               onClick={() => handleChoice(choice)}
               disabled={!!selected}
-              className={`block w-full text-left p-2 my-1 border rounded transition-all
+              className={`block w-full text-left p-2 my-1 border rounded transition-all select-none
               ${
                 selected && choice === exercise.correctAnswer
                   ? "bg-green-100 border-green-500"
@@ -643,7 +844,7 @@ function ExerciseCard({
                   : ""
               }`}
             >
-              {choice}
+              <MathPreview value={choice} />
             </button>
           ))}
         </div>
@@ -671,16 +872,6 @@ function ExerciseCard({
                     <p className="text-gray-700">{exercise.explanation}</p>
                   </div>
                 )}
-
-                {/* Next Button */}
-                {/* {index < total - 1 && (
-                  <button
-                    onClick={onNext}
-                    className="mt-4 px-4 py-2 bg-blue-600 text-white rounded"
-                  >
-                    Next Exercise
-                  </button>
-                )} */}
               </div>
             </div>
           )}

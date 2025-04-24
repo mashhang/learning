@@ -105,10 +105,10 @@ export default function DiagnosticExam() {
 
       lessons.forEach((lesson, index) => {
         // Slice first N random questions per lesson
-        const shuffled = [...lesson.questions].sort(() => Math.random() - 0.5);
         const limit =
           index < remainder ? questionsPerLesson + 1 : questionsPerLesson;
-        const selected = shuffled.slice(0, limit);
+        const available = [...lesson.questions].sort(() => Math.random() - 0.5);
+        const selected = available.slice(0, Math.min(limit, available.length));
 
         const formatted = selected.map((q) => ({
           ...q,
@@ -119,6 +119,35 @@ export default function DiagnosticExam() {
 
         all.push(...formatted);
       });
+
+      // Fallback to ensure total is exactly 100
+      if (all.length < 100) {
+        const extras: QuestionWithLessonInfo[] = [];
+
+        for (const lesson of lessons) {
+          const remaining = lesson.questions.filter(
+            (q) => !all.some((sel) => sel.id === q.id)
+          );
+
+          const toAdd = remaining
+            .sort(() => Math.random() - 0.5)
+            .map((q) => ({
+              ...q,
+              lessonId: lesson.id,
+              lessonTitle: lesson.title,
+              chapterTitle: lesson.chapterTitle,
+            }));
+
+          for (const q of toAdd) {
+            if (extras.length + all.length >= 100) break;
+            extras.push(q);
+          }
+
+          if (extras.length + all.length >= 100) break;
+        }
+
+        all.push(...extras);
+      }
 
       // Optional: Shuffle all 100 after combining
       setShuffledQuestions(all.sort(() => Math.random() - 0.5));

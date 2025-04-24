@@ -20,19 +20,7 @@ export default function AssessmentQuiz({
   onFinish: () => void;
 }) {
   const router = useRouter();
-  const [questions, setQuestions] = useState(() => {
-    const groupedBySkillTag = groupBy(lesson.questions, "skillTag");
-    const balanced: any[] = [];
-
-    const maxPerTag = 2; // Adjust how many per skillTag
-
-    for (const group of Object.values(groupedBySkillTag) as any[][]) {
-      balanced.push(...group.slice(0, maxPerTag));
-    }
-
-    // Final shuffle and limit
-    return balanced.sort(() => Math.random() - 0.5).slice(0, 15);
-  });
+  const [questions, setQuestions] = useState(lesson.questions);
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedAnswers, setSelectedAnswers] = useState<{

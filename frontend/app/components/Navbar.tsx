@@ -334,7 +334,7 @@ const Navbar: React.FC<NavbarProps> = ({
       {isProfileOpen && !modalContent && (
         <div
           ref={profileRef}
-          className="fixed top-[3rem] right-0 mr-6 rounded-md w-[14rem] bg-white border border-[#bebebe] shadow-lg"
+          className="fixed top-[3rem] right-0 mr-6 rounded-md w-[14rem] bg-white border border-[#bebebe] shadow-lg z-50"
         >
           <div className="mt-2">
             <div className="w-full flex justify-center">

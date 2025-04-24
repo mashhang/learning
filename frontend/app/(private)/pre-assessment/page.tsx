@@ -60,12 +60,28 @@ export default function PreAssessmentPage() {
           (q: any) => !weakSkillTags.includes(q.skillTag)
         );
 
-        const prioritized = [
-          ...weakQuestions.slice(0, 10),
-          ...otherQuestions.slice(0, 5),
-        ]
-          .slice(0, 15)
-          .sort((a, b) => a.difficulty - b.difficulty); // ✅ easiest first
+        const desiredTotal = 15;
+
+        const weakCount = Math.min(10, weakQuestions.length);
+        const otherCount = desiredTotal - weakCount;
+
+        let prioritized = [
+          ...weakQuestions.slice(0, weakCount),
+          ...otherQuestions.slice(0, otherCount),
+        ].sort((a, b) => a.difficulty - b.difficulty);
+
+        // 🛠 Pad if less than 15
+        if (prioritized.length < desiredTotal) {
+          const remaining = lessonData.questions.filter(
+            (q: any) => !prioritized.some((p) => p.id === q.id)
+          );
+
+          const fill = remaining
+            .sort(() => Math.random() - 0.5)
+            .slice(0, desiredTotal - prioritized.length);
+
+          prioritized = [...prioritized, ...fill];
+        }
 
         setLesson({
           ...lessonData,
