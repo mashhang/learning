@@ -1,5 +1,5 @@
 // lib/getApiUrl.ts
-const useLocal = process.env.NEXT_PUBLIC_USE_LOCAL_API === "true";
+const useLocal = process.env.NEXT_PUBLIC_USE_LOCAL_API === "false";
 
 const API_URL = useLocal
   ? process.env.NEXT_PUBLIC_LOCAL_API_URL
