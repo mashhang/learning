@@ -28,6 +28,21 @@ export default function Login() {
   if (isLoading || user) return null;
 
   const handleLogin = async () => {
+    if (!email.trim() && !password.trim()) {
+      toast.error("All fields are required.");
+      return;
+    }
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      toast.error("Please enter a valid email.");
+      return;
+    }
+
+    if (!password.trim()) {
+      toast.error("Please enter your password.");
+      return;
+    }
+
     try {
       const res = await fetch(`${API_URL}/api/auth/login`, {
         // ✅ Use API_URL
@@ -63,6 +78,7 @@ export default function Login() {
       </div>
 
       <form
+        noValidate
         onSubmit={(e) => {
           e.preventDefault(); // Prevent page reload
           handleLogin(); // Trigger login
@@ -73,12 +89,7 @@ export default function Login() {
           type="email"
           placeholder="Enter your email"
           value={email}
-          onChange={(e) => {
-            const email = e.target.value;
-            if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email === "") {
-              setEmail(email); // ✅ Only update state if it's a valid email
-            }
-          }}
+          onChange={(e) => setEmail(e.target.value)}
           className="border-black border-[1px] rounded-xl text-[18px] py-2 px-2 mt-16 mb-5"
         />
         <input
