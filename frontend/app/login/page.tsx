@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "../context/AuthContext";
 import Image from "next/image";
+import { toast } from "sonner";
 import Logo from "../../public/logo.png";
 import API_URL from "@/lib/getApiUrl";
 
@@ -42,9 +43,11 @@ export default function Login() {
 
       localStorage.setItem("token", data.token);
       login(data.user, data.token);
+
+      toast.success("Login successful!");
     } catch (error) {
       console.error("Login Error:", error);
-      alert((error as Error).message || "Something went wrong");
+      toast.error((error as Error).message || "Something went wrong");
     }
   };
 
@@ -59,35 +62,44 @@ export default function Login() {
         <h1 className="text-center font-semibold text-[24px] mt-4">Sign in</h1>
       </div>
 
-      <input
-        type="email"
-        placeholder="Enter your email"
-        onChange={(e) => {
-          const email = e.target.value;
-          if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email === "") {
-            setEmail(email); // ✅ Only update state if it's a valid email
-          }
+      <form
+        onSubmit={(e) => {
+          e.preventDefault(); // Prevent page reload
+          handleLogin(); // Trigger login
         }}
-        className="border-black border-[1px] rounded-xl text-[18px] py-2 px-2 mt-16 mb-5"
-      />
-      <input
-        type="password"
-        placeholder="Enter your password"
-        onChange={(e) => setPassword(e.target.value)}
-        className="border-black border-[1px] rounded-xl text-[18px] py-2 px-2 mb-12"
-      />
-
-      <button
-        className="py-[10px] w-[264px] bg-[#30608E] text-white rounded-xl"
-        onClick={handleLogin}
+        className="flex flex-col items-center"
       >
-        SIGN IN
-      </button>
+        <input
+          type="email"
+          placeholder="Enter your email"
+          value={email}
+          onChange={(e) => {
+            const email = e.target.value;
+            if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email === "") {
+              setEmail(email); // ✅ Only update state if it's a valid email
+            }
+          }}
+          className="border-black border-[1px] rounded-xl text-[18px] py-2 px-2 mt-16 mb-5"
+        />
+        <input
+          type="password"
+          placeholder="Enter your password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          className="border-black border-[1px] rounded-xl text-[18px] py-2 px-2 mb-12"
+        />
 
-      <div className="mt-[25px] w-full h-[1px] bg-[#D6D6D6]"></div>
+        <button
+          className="py-[10px] w-[264px] bg-[#30608E] text-white rounded-xl"
+          type="submit"
+        >
+          SIGN IN
+        </button>
 
-      <p className="text-[#A8A8A8] my-3">Don’t have an account?</p>
+        <div className="mt-[25px] w-full h-[1px] bg-[#D6D6D6]"></div>
 
+        <p className="text-[#A8A8A8] my-3">Don’t have an account?</p>
+      </form>
       <button
         className="py-[10px] w-[264px] border-black border-[1px] text-[#515151] rounded-xl"
         onClick={handleRedirectToRegister} // Add onClick event

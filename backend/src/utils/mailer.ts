@@ -1,7 +1,8 @@
 import nodemailer from "nodemailer";
-import { getApiUrl } from "../utils/getApiUrl.js";
+import { getApiUrl, getFrontendAPIUrl } from "../utils/getApiUrl.js";
 
 const API_URL = getApiUrl();
+const FRONTEND_API_URL = getFrontendAPIUrl();
 // const API_URL = process.env.API_URL || "http://192.168.1.10:5001"; // ✅ Use backend env
 
 /**
@@ -34,6 +35,36 @@ export const sendVerificationEmail = async (
       <p>Thank you for registering. Please click the button below to verify your email address:</p>
       <a href="${verifyUrl}" style="padding: 10px 20px; background: #30608E; color: white; text-decoration: none;">Verify Email</a>
       <p>If you did not create an account, please ignore this email.</p>
+    `,
+  };
+
+  await transporter.sendMail(mailOptions);
+};
+
+export const sendResetPasswordEmail = async (
+  to: string,
+  name: string,
+  token: string
+) => {
+  const transporter = nodemailer.createTransport({
+    service: "gmail",
+    auth: {
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASS,
+    },
+  });
+
+  const resetUrl = `${FRONTEND_API_URL}/reset-password?token=${token}`;
+
+  const mailOptions = {
+    from: process.env.EMAIL_USER,
+    to,
+    subject: "Reset Your Password",
+    html: `
+      <h2>Hello, ${name}!</h2>
+      <p>Click the button below to reset your password. This link will expire in 30 minutes:</p>
+      <a href="${resetUrl}" style="padding: 10px 20px; background: #E67300; color: white; text-decoration: none;">Reset Password</a>
+      <p>If you didn't request this, you can ignore the email.</p>
     `,
   };
 

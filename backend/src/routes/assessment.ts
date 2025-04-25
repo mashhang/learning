@@ -186,4 +186,59 @@ router.post("/submit", async (req, res) => {
   }
 });
 
+// GET /api/admin/assessments?userId=...
+router.get("/assessments", async (req, res) => {
+  const { userId } = req.query;
+
+  if (!userId) {
+    res.status(400).json({ error: "Missing userId" });
+  }
+
+  try {
+    const answers = await prisma.assessmentAnswer.findMany({
+      where: { userId: String(userId) },
+      include: {
+        lesson: {
+          include: {
+            chapter: true, // ✅ Include chapter here too
+          },
+        },
+      },
+    });
+
+    const grouped: Record<string, any> = {};
+
+    for (const a of answers) {
+      const key = `${a.lessonId}_${a.type}`;
+
+      if (!grouped[key]) {
+        grouped[key] = {
+          chapterTitle: a.lesson.chapter?.title ?? "Unassigned",
+          lessonTitle: a.lesson.title,
+          type: a.type,
+          correct: 0,
+          total: 0,
+        };
+      }
+
+      grouped[key].total += 1;
+      if (a.isCorrect) grouped[key].correct += 1;
+    }
+
+    const results = Object.values(grouped).map((entry: any) => ({
+      chapterTitle: entry.chapterTitle,
+      lessonTitle: entry.lessonTitle,
+      type: entry.type,
+      correct: entry.correct,
+      total: entry.total,
+      score: Math.round((entry.correct / entry.total) * 100),
+    }));
+
+    res.json(results);
+  } catch (err) {
+    console.error("❌ Error fetching assessment answers:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 export default router;

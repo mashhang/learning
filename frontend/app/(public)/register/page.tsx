@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/app/context/AuthContext";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import { toast } from "sonner";
 import API_URL from "@/lib/getApiUrl";
 import Logo from "../../../public/logo.png";
 
@@ -27,22 +28,45 @@ export default function Register() {
   const [password, setPassword] = useState("");
 
   const handleRegister = async () => {
-    const res = await fetch(`${API_URL}/api/auth/register`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, email, password }),
-    });
-
-    const data = await res.json();
-    if (!res.ok) {
-      alert(data.error || "Registration failed");
+    if (!name.trim() && !email.trim() && !password.trim()) {
+      toast.error("All fields are required.");
+      return;
+    }
+    if (!email.trim()) {
+      toast.error("Enter your institutional email.");
+      return;
+    }
+    if (!password.trim()) {
+      toast.error("Enter your password.");
+      return;
+    }
+    if (!name.trim()) {
+      toast.error("Enter your name.");
       return;
     }
 
-    alert(
-      "Registration successful! Please check your email to verify your account."
-    );
-    router.push("/login");
+    try {
+      const res = await fetch(`${API_URL}/api/auth/register`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, email, password }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        toast.error(data.error || "Registration failed");
+        return;
+      }
+
+      toast.success(
+        "Registration successful! Please check your email to verify your account."
+      );
+      router.push("/login");
+    } catch (err) {
+      console.error("Register Error:", err);
+      toast.error("Something went wrong during registration.");
+    }
   };
 
   const handleRedirectToLogin = () => {

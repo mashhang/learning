@@ -23,6 +23,8 @@ model User {
   isVerified         Boolean              @default(false)
   verificationToken  String?
   hasTakenDiagnostic Boolean              @default(false) // ✅ Add this
+  resetToken         String? 
+  resetTokenExpiry   DateTime?
   lessonPriorities   UserLessonPriority[]
   diagnosticAnswers  DiagnosticAnswer[] // ✅ Add this line
   assessmentAnswers  AssessmentAnswer[]

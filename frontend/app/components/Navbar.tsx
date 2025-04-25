@@ -235,7 +235,9 @@ const Navbar: React.FC<NavbarProps> = ({
               </svg>
             </button>
           )}
-          <p className="absolute mt-[6px] ml-[40px]">{activeLabel}</p>
+          <p className="hidden md:block absolute mt-[6px] ml-[40px]">
+            {activeLabel}
+          </p>
           <Link
             className={`${!isAuthenticated ? "text-center pb-1" : ""}`}
             href={"/dashboard"}

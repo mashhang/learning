@@ -5,6 +5,17 @@ import ProtectedRoute from "@/app/components/ProtectedRoute";
 import { useAuth } from "@/app/context/AuthContext";
 import { SidebarProvider, useSidebar } from "@/app/context/SidebarContext";
 import { useState } from "react";
+import { MathJaxContext } from "better-react-mathjax";
+
+const mathJaxConfig = {
+  tex: {
+    inlineMath: [["\\(", "\\)"]],
+    displayMath: [["\\[", "\\]"]],
+  },
+  chtml: {
+    linebreaks: { automatic: true },
+  },
+};
 
 export default function PrivateLayout({
   children,
@@ -16,7 +27,11 @@ export default function PrivateLayout({
   return (
     <ProtectedRoute>
       <SidebarProvider>
-        <InnerLayout>{children}</InnerLayout>
+        <InnerLayout>
+          <MathJaxContext config={mathJaxConfig} version={3}>
+            {children}
+          </MathJaxContext>
+        </InnerLayout>
       </SidebarProvider>
     </ProtectedRoute>
   );

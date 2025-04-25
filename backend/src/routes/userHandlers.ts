@@ -1,5 +1,7 @@
 import { Request, Response, RequestHandler } from "express";
 import { PrismaClient } from "@prisma/client";
+import bcrypt from "bcryptjs";
+import { sendResetPasswordEmail } from "../utils/mailer.js";
 
 const prisma = new PrismaClient();
 
@@ -154,5 +156,78 @@ export const getQuestionDifficultiesByLesson: RequestHandler = async (
   } catch (error) {
     console.error("❌ Error fetching question difficulties:", error);
     res.status(500).json({ error: "Failed to fetch question difficulties." });
+  }
+};
+
+// POST /api/user/:id/reset-password
+export const submitPasswordResetHandler = async (
+  req: Request,
+  res: Response
+) => {
+  const { token, password } = req.body;
+
+  try {
+    const user = await prisma.user.findFirst({
+      where: {
+        resetToken: token,
+        resetTokenExpiry: {
+          gt: new Date(),
+        },
+      },
+    });
+
+    if (!user) {
+      res.status(400).json({ error: "Invalid or expired token." });
+      return;
+    }
+
+    const hashed = await bcrypt.hash(password, 10); // make sure bcrypt is imported
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        password: hashed,
+        resetToken: null,
+        resetTokenExpiry: null,
+      },
+    });
+
+    res.json({ message: "Password reset successful." });
+  } catch (err) {
+    console.error("Error resetting password:", err);
+    res.status(500).json({ error: "Internal server error." });
+  }
+};
+
+export const resetPasswordRequestHandler = async (
+  req: Request,
+  res: Response
+) => {
+  const { id } = req.params;
+
+  try {
+    const user = await prisma.user.findUnique({ where: { id } });
+
+    if (!user) {
+      res.status(400).json({ error: "Invalid or expired token." });
+      return;
+    }
+
+    const token = crypto.randomUUID();
+
+    await prisma.user.update({
+      where: { id },
+      data: {
+        resetToken: token,
+        resetTokenExpiry: new Date(Date.now() + 1000 * 60 * 30),
+      },
+    });
+
+    await sendResetPasswordEmail(user.email, user.name, token);
+
+    res.status(200).json({ message: "Reset email sent successfully." });
+  } catch (err) {
+    console.error("Admin-triggered password reset failed:", err);
+    res.status(500).json({ error: "Failed to send reset email." });
   }
 };

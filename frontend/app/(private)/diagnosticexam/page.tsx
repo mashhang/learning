@@ -3,10 +3,11 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/app/context/AuthContext";
-import { InlineMath } from "react-katex";
 import DiagnosticResultSummary from "@/app/components/DiagnosticResultSummary";
 import API_URL from "@/lib/getApiUrl";
-
+import { ChevronRight, ChevronLeft } from "lucide-react";
+import { InlineMath } from "react-katex";
+import { MathJax } from "better-react-mathjax";
 // const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
 
 type Question = {
@@ -86,6 +87,8 @@ export default function DiagnosticExam() {
   const [submitted, setSubmitted] = useState(false);
   const [showSummary, setShowSummary] = useState(false);
   const [chartData, setChartData] = useState<LessonChartEntry[]>([]);
+
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   // ---------- Fetch lessons ----------
   useEffect(() => {
@@ -403,19 +406,19 @@ export default function DiagnosticExam() {
 
   return (
     // Root container with fixed header offset and horizontal layout
-    <div className="relative h-screen flex overflow-hidden pt-20">
+    <div className="relative min-h-screen flex flex-col md:flex-row overflow-auto pt-20">
       {/* Instructions Overlay */}
       {showInstructions && (
         <div className="fixed inset-0 z-50 bg-black bg-opacity-60 flex items-center justify-center">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl p-8 relative animate-fadeIn">
-            <h2 className="text-3xl font-bold text-center text-[#1A3D6D] mb-3">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl p-8 relative animate-fadeIn mx-8 leading-relaxed">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-center text-[#1A3D6D] mb-3">
               📘 Diagnostic Exam Instructions
             </h2>
             <p className="text-center text-gray-600 mb-6 text-sm">
               Please read the guidelines below carefully before starting the
               exam.
             </p>
-            <ul className="space-y-3 text-sm text-gray-800 leading-relaxed">
+            <ul className="space-y-3 text-sm sm:text-base text-gray-800 leading-relaxed">
               <li>
                 ✅ The exam contains <strong>100 questions</strong> randomly
                 selected from various topics.
@@ -456,7 +459,25 @@ export default function DiagnosticExam() {
         // your existing main diagnostic exam JSX stays here...
         <>
           {/* Sidebar (Left) - Exam Toolbar */}
-          <div className="w-64 border-r overflow-y-auto h-full px-4">
+          {/* Toggle Sidebar Button */}
+          <button
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+            className={`fixed top-1/2 z-50 -translate-y-1/2 bg-white border border-gray-300 rounded-full h-10 w-10 flex items-center justify-center hover:bg-gray-100 shadow-md transition-all duration-300
+    ${sidebarOpen ? "left-[15.5rem]" : "-left-5"} md:hidden`}
+            aria-label="Toggle Exam Toolbar"
+          >
+            {sidebarOpen ? (
+              <ChevronLeft size={18} />
+            ) : (
+              <ChevronRight size={18} className="ml-4" />
+            )}
+          </button>
+
+          <div
+            className={`fixed top-20 left-0 z-40 bg-white w-64 h-[calc(100vh-5rem)] border-r transition-transform duration-300 transform ${
+              sidebarOpen ? "translate-x-0" : "-translate-x-full"
+            } md:relative md:translate-x-0 md:block px-4`}
+          >
             <h2 className="text-sm font-semibold text-gray-700 mb-4">
               Exam Toolbar
             </h2>
@@ -521,10 +542,10 @@ export default function DiagnosticExam() {
           </div>
 
           {/* Main Exam Content (Right) */}
-          <div className="flex-1 overflow-y-hidden">
-            <div className="flex-1 overflow-hidden">
+          <div className="flex-1 overflow-y-auto">
+            <div className="flex-1 overflow-auto px-4 sm:px-10">
               {/* Top Header:  Title and Progress */}
-              <div className="flex justify-between items-center mb-6  px-10">
+              <div className="flex flex-col md:flex-row justify-between items-center mb-6  px-10">
                 <h1 className="text-3xl font-bold text-[#30608E]">
                   {/* Title */}
                   Diagnostic Exam
@@ -563,11 +584,13 @@ export default function DiagnosticExam() {
 
                     {/* Question Text */}
                     {shuffledQuestions[currentIndex].question && (
-                      <p className="mt-2 text-gray-800 text-base whitespace-pre-line leading-relaxed select-none">
-                        <InlineMath>
-                          {shuffledQuestions[currentIndex].question}
-                        </InlineMath>
-                      </p>
+                      <div className="overflow-x-auto max-w-full">
+                        <div className="inline-block min-w-fit text-gray-800 text-base leading-relaxed select-none">
+                          <MathJax inline>
+                            {`\\( ${shuffledQuestions[currentIndex].question} \\)`}
+                          </MathJax>
+                        </div>
+                      </div>
                     )}
 
                     {/* Question Image (if any) */}
@@ -594,7 +617,7 @@ export default function DiagnosticExam() {
                         .map((choice, index) => (
                           <label
                             key={index}
-                            className={`flex items-center space-x-3 cursor-pointer border px-4 py-3 rounded-md select-none ${
+                            className={`flex flex-wrap items-center space-x-3 cursor-pointer border px-4 py-3 rounded-md select-none ${
                               selectedAnswers[
                                 shuffledQuestions[currentIndex].id
                               ] === choice
@@ -675,7 +698,7 @@ export default function DiagnosticExam() {
                       <button
                         onClick={goToPrev}
                         disabled={currentIndex === 0}
-                        className={`w-36 px-4 py-3 rounded text-white text-sm font-semibold transition ${
+                        className={`w-full sm:w-36 px-4 py-3 rounded text-white text-sm font-semibold transition ${
                           currentIndex === 0
                             ? "bg-gray-300 cursor-not-allowed text-gray-600"
                             : "bg-blue-700 hover:bg-blue-800"
@@ -687,7 +710,7 @@ export default function DiagnosticExam() {
                       <button
                         onClick={goToNext}
                         disabled={currentIndex === shuffledQuestions.length - 1}
-                        className={`w-36 px-4 py-3 rounded text-white text-sm font-semibold transition ${
+                        className={`w-full sm:w-36 px-4 py-3 rounded text-white text-sm font-semibold transition ${
                           currentIndex === shuffledQuestions.length - 1
                             ? "bg-gray-300 cursor-not-allowed text-gray-600"
                             : "bg-blue-700 hover:bg-blue-800"
@@ -701,7 +724,7 @@ export default function DiagnosticExam() {
                     <button
                       onClick={handleSubmitExam}
                       disabled={isSubmitting}
-                      className={`w-36 px-4 py-3 rounded text-white text-sm font-semibold transition flex items-center justify-center
+                      className={`min-w-[100px] px-4 py-3 rounded text-white text-sm font-semibold transition flex items-center justify-center
     ${
       isSubmitting
         ? "bg-gray-400 cursor-not-allowed"
@@ -780,7 +803,7 @@ export default function DiagnosticExam() {
           {/* Summary Modal Overlay */}
           {showSummary && (
             <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
-              <div className="bg-[#fffaf5] p-8 rounded-lg shadow-xl w-full max-w-5xl max-h-[90vh] overflow-y-auto relative">
+              <div className="bg-[#fffaf5] p-8 rounded-lg shadow-xl w-full max-w-5xl max-h-[90vh] overflow-y-auto relative mx-8">
                 <button
                   onClick={() => setShowSummary(false)}
                   className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-xl"

@@ -238,4 +238,53 @@ router.post("/submit", async (req, res) => {
   }
 });
 
+// GET /api/diagnostic/results?userId=...
+router.get("/results", async (req, res) => {
+  const { userId } = req.query;
+
+  try {
+    const answers = await prisma.diagnosticAnswer.findMany({
+      where: { userId: String(userId) },
+      include: {
+        lesson: {
+          include: {
+            chapter: true, // ✅ This is the missing part
+          },
+        },
+      },
+    });
+
+    // Group scores per lesson
+    const grouped: Record<string, any> = {};
+
+    for (const a of answers) {
+      const key = a.lessonId;
+      if (!grouped[key]) {
+        grouped[key] = {
+          chapterTitle: a.lesson.chapter?.title ?? "Unassigned",
+          lessonTitle: a.lesson.title,
+          correct: 0,
+          total: 0,
+        };
+      }
+
+      grouped[key].total += 1;
+      if (a.isCorrect) grouped[key].correct += 1;
+    }
+
+    const results = Object.values(grouped).map((entry: any) => ({
+      chapterTitle: entry.chapterTitle,
+      lessonTitle: entry.lessonTitle,
+      correct: entry.correct,
+      total: entry.total,
+      score: Math.round((entry.correct / entry.total) * 100),
+    }));
+
+    res.json(results);
+  } catch (err) {
+    console.error("❌ Failed to fetch diagnostic results:", err);
+    res.status(500).json({ error: "Failed to load diagnostic results." });
+  }
+});
+
 export default router;

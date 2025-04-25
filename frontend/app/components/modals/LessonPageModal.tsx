@@ -4,6 +4,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import MathInput from "@/app/components/MathInput";
 import MathKeypad from "@/app/components/MathKeypad";
+import { toast } from "sonner";
 
 export type LessonPage = {
   content: string;
@@ -59,6 +60,7 @@ export default function LessonPageModal({
 
   const handleSave = () => {
     setTempPage(localPage);
+    toast.success("✅ Lesson page saved successfully!");
     onSave();
   };
 

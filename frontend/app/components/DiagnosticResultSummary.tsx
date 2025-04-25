@@ -136,48 +136,56 @@ export default function DiagnosticResultSummary({
 
   return (
     <div className="space-y-10 bg-[#fef9f4] px-8 py-10 rounded-lg shadow-md text-[#1A3D6D]">
-      <h2 className="text-3xl font-bold text-center text-[#1A3D6D] bg-[#f4ce93] py-2 px-6 rounded-md w-fit mx-auto uppercase tracking-wide">
+      <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-center text-[#1A3D6D] bg-[#f4ce93] py-2 px-6 rounded-md w-fit mx-auto uppercase tracking-wide">
         Diagnostic Exam Summary
       </h2>
 
-      <div className="grid grid-cols-3 gap-6 text-sm border-t border-[#f4ce93] pt-6">
-        {/* Strengths */}
-        <div className="max-h-[300px] overflow-y-auto pr-2 ">
-          <div>
-            <h3 className="font-bold text-center mb-2 bg-[#fef9f4] sticky top-0 z-10">
-              Strength
-            </h3>
-            {Object.entries(strengths).map(([chapter, lessons]) => (
-              <div key={chapter} className="mb-3">
-                <p className="font-bold text-[#1A3D6D]">{chapter}</p>
-                <ul className="ml-4 list-disc text-[#1A3D6D]">
-                  {lessons.map((lesson, i) => (
-                    <li key={i}>{lesson}</li>
-                  ))}
-                </ul>
-              </div>
-            ))}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 text-sm border-t border-[#f4ce93] pt-6">
+        {/* Arc Chart */}
+        <div className="order-1 sm:order-2 flex justify-center">
+          <div className="flex flex-col justify-center items-center gap-1">
+            <DiagnosticArc
+              score={score}
+              correctCount={correctCount}
+              totalCount={totalCount}
+            />
           </div>
         </div>
 
-        {/* Arc Chart */}
-        <div className="flex flex-col justify-center items-center gap-1">
-          <DiagnosticArc
-            score={score}
-            correctCount={correctCount}
-            totalCount={totalCount}
-          />
+        {/* Strengths */}
+        <div className="order-2 sm:order-1">
+          <div className="max-h-[300px] overflow-y-auto pr-2 ">
+            <div>
+              <h3 className="text-sm sm:text-base font-bold text-center mb-2 bg-[#fef9f4] sticky top-0 z-10">
+                Strength
+              </h3>
+              {Object.entries(strengths).map(([chapter, lessons]) => (
+                <div key={chapter} className="mb-3">
+                  <p className="font-bold text-[#1A3D6D] text-sm sm:text-base">
+                    {chapter}
+                  </p>
+                  <ul className="ml-4 list-disc text-[#1A3D6D]">
+                    {lessons.map((lesson, i) => (
+                      <li key={i}>{lesson}</li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
 
         {/* Weaknesses */}
-        <div className="max-h-[300px] overflow-y-auto pr-2">
-          <div>
-            <h3 className="font-bold text-center mb-2 bg-[#fef9f4] sticky top-0 z-10">
+        <div className="order-3">
+          <div className="max-h-[300px] overflow-y-auto pr-2">
+            <h3 className="text-sm sm:text-base font-bold text-center mb-2 bg-[#fef9f4] sticky top-0 z-10">
               Weaknesses
             </h3>
             {Object.entries(weaknesses).map(([chapter, lessons]) => (
               <div key={chapter} className="mb-3">
-                <p className="font-bold text-[#1A3D6D]">{chapter}</p>
+                <p className="font-bold text-[#1A3D6D] text-sm sm:text-base">
+                  {chapter}
+                </p>
                 <ul className="ml-4 list-disc text-[#1A3D6D]">
                   {lessons.map((lesson, i) => (
                     <li key={i}>{lesson}</li>
@@ -190,84 +198,94 @@ export default function DiagnosticResultSummary({
       </div>
 
       <div className="border-t border-[#f4ce93] pt-4">
-        <h3 className="text-center font-bold mb-4 text-[#1A3D6D]">
+        <h3 className="text-sm sm:text-base text-center font-bold mb-4 text-[#1A3D6D]">
           Diagnostic Exam Statistics
         </h3>
-        <ResponsiveContainer width="100%" height={350}>
-          <BarChart
-            data={flattenedDataWithGaps}
-            margin={{ top: 20, right: 30, left: 0, bottom: 80 }}
-            barCategoryGap={0}
-          >
-            <XAxis
-              dataKey="chapter"
-              stroke="#1A3D6D"
-              interval={0}
-              tickFormatter={(value, index) => {
-                const current = flattenedDataWithGaps[index];
-                // Show only first label in a chapter group
-                const isFirst =
-                  index === 0 ||
-                  flattenedDataWithGaps[index - 1].chapter !== current.chapter;
-                return current.chapter && isFirst ? current.chapter : "";
-              }}
-              tick={{ fontSize: 12 }}
-            />
 
-            <YAxis stroke="#1A3D6D" tickFormatter={(value) => `${value}%`} />
-            <Tooltip
-              content={({ payload }) => {
-                const first = payload?.[0]?.payload;
-                if (!first || !first.chapter) return null;
+        <div className="w-full overflow-x-auto">
+          <div className="min-w-[600px]">
+            <ResponsiveContainer width="100%" height={350}>
+              <BarChart
+                data={flattenedDataWithGaps}
+                margin={{ top: 20, right: 30, left: 0, bottom: 80 }}
+                barCategoryGap={0}
+              >
+                <XAxis
+                  dataKey="chapter"
+                  stroke="#1A3D6D"
+                  interval={0}
+                  tickFormatter={(value, index) => {
+                    const current = flattenedDataWithGaps[index];
+                    // Show only first label in a chapter group
+                    const isFirst =
+                      index === 0 ||
+                      flattenedDataWithGaps[index - 1].chapter !==
+                        current.chapter;
+                    return current.chapter && isFirst ? current.chapter : "";
+                  }}
+                  tick={{ fontSize: 10 }}
+                />
 
-                return (
-                  <div className="bg-white  shadow-md border rounded text-sm text-[#1A3D6D]">
-                    <div className="font-semibold">
-                      {first.chapter} - {first.lesson}
-                    </div>
-                    {first.correct !== undefined &&
-                      first.total !== undefined && (
-                        <div>
-                          Score: {first.correct} out of {first.total}
+                <YAxis
+                  stroke="#1A3D6D"
+                  tickFormatter={(value) => `${value}%`}
+                  tick={{ fontSize: 10 }}
+                />
+                <Tooltip
+                  content={({ payload }) => {
+                    const first = payload?.[0]?.payload;
+                    if (!first || !first.chapter) return null;
+
+                    return (
+                      <div className="bg-white  shadow-md border rounded text-sm text-[#1A3D6D]">
+                        <div className="font-semibold">
+                          {first.chapter} - {first.lesson}
                         </div>
-                      )}
-                    <div>Score (%): {first.percentage}%</div>
-                  </div>
-                );
-              }}
-            />
+                        {first.correct !== undefined &&
+                          first.total !== undefined && (
+                            <div>
+                              Score: {first.correct} out of {first.total}
+                            </div>
+                          )}
+                        <div>Score (%): {first.percentage}%</div>
+                      </div>
+                    );
+                  }}
+                />
 
-            <Legend />
-            {/* <Bar
+                <Legend />
+                {/* <Bar
               dataKey="percentage"
               fill="#1A3D6D"
               name="Score (%)"
               radius={[5, 5, 0, 0]}
             /> */}
-            <Bar
-              dataKey="percentage"
-              radius={[5, 5, 0, 0]}
-              shape={(props) => {
-                const entry = flattenedDataWithGaps[props.index];
-                const score = entry.percentage;
+                <Bar
+                  dataKey="percentage"
+                  radius={[5, 5, 0, 0]}
+                  shape={(props) => {
+                    const entry = flattenedDataWithGaps[props.index];
+                    const score = entry.percentage;
 
-                let fill = "#DC2626"; // red
-                if (score >= 80) fill = "#16A34A"; // green
-                else if (score >= 50) fill = "#FACC15"; // yellow
+                    let fill = "#DC2626"; // red
+                    if (score >= 80) fill = "#16A34A"; // green
+                    else if (score >= 50) fill = "#FACC15"; // yellow
 
-                return (
-                  <CustomAnimatedBar
-                    {...props}
-                    fill={entry.chapter ? fill : "transparent"}
-                    activeIndex={activeIndex}
-                    setActiveIndex={setActiveIndex} // ✅ pass setter
-                    index={props.index}
-                  />
-                );
-              }}
-            />
-          </BarChart>
-        </ResponsiveContainer>
+                    return (
+                      <CustomAnimatedBar
+                        {...props}
+                        fill={entry.chapter ? fill : "transparent"}
+                        activeIndex={activeIndex}
+                        setActiveIndex={setActiveIndex} // ✅ pass setter
+                        index={props.index}
+                      />
+                    );
+                  }}
+                />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
       </div>
     </div>
   );

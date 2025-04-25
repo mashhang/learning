@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import MathKeypad from "@/app/components/MathKeypad";
 import MathInput from "@/app/components/MathInput";
+import { toast } from "sonner";
 
 export type Question = {
   id: string;
@@ -401,11 +402,28 @@ export default function QuestionModal({
           <button
             className="px-4 py-2 bg-blue-500 text-white rounded"
             onClick={async () => {
+              if (
+                !question.trim() ||
+                choices.some((c) => !c || !c.trim()) ||
+                !correctAnswer.trim()
+              ) {
+                toast.error("Please complete all required fields.");
+                return;
+              }
+
+              if (choices.length < 2 || choices.length > 4) {
+                toast.error("Please enter 2 to 4 choices only.");
+                return;
+              }
+
               await onSaveToServer(
                 { question, choices, correctAnswer, skillTag },
                 editIndex
               );
-              onClose(); // ✅ Close the modal after saving
+              toast.success(
+                editIndex !== null ? "Question updated!" : "Question added!"
+              );
+              onClose();
             }}
           >
             {editIndex !== null ? "Update" : "Add"}

@@ -6,6 +6,8 @@ import { useAuth } from "@/app/context/AuthContext";
 import { useRouter } from "next/navigation";
 import { Trash2 } from "lucide-react";
 import API_URL from "@/lib/getApiUrl";
+import { toast } from "sonner";
+import DeleteLessonButton from "@/components/DeleteLessonButton";
 
 // const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -57,6 +59,7 @@ export default function LessonsAdmin() {
       setSelectedChapter(storedChapter);
     }
   }, []);
+
   const handleChapterChange = (value: string) => {
     setSelectedChapter(value);
     localStorage.setItem("selectedChapter", value);
@@ -152,15 +155,11 @@ export default function LessonsAdmin() {
                       Exercises
                     </Link>
 
-                    <button
-                      onClick={() =>
-                        (window.location.href = `/admin/lessons/delete?id=${lesson.id}`)
-                      }
-                      className="text-red-400 hover:text-red-700 transition"
-                      title="Delete"
-                    >
-                      <Trash2 size={24} />
-                    </button>
+                    <DeleteLessonButton
+                      lesson={lesson}
+                      token={token}
+                      setLessons={setLessons}
+                    />
                   </div>
                 </td>
               </tr>

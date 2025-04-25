@@ -103,17 +103,17 @@ export default function Dashboard() {
         )}
 
         {hasTakenDiagnostic === false && (
-          <div className="flex flex-col justify-center items-center h-screen">
-            <h2 className="text-2xl font-bold text-[#30608E]">
+          <div className="flex flex-col justify-center items-center h-screen text-center mx-4">
+            <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-[#30608E] ">
               Start the Diagnostic Exam
             </h2>
-            <p className="text-gray-600 mt-2">
+            <p className="text-gray-600 mt-2 text-sm sm:text-base">
               Take the diagnostic exam to determine your proficiency in General
               Mathematics.
             </p>
             <a
               href="/diagnosticexam"
-              className="mt-4 inline-block bg-[#30608E] text-white px-6 py-3 rounded shadow hover:bg-[#244e75]"
+              className="mt-4 inline-block bg-[#30608E] text-white text-sm sm:text-base px-6 py-3 rounded shadow hover:bg-[#244e75]"
             >
               Take Diagnostic Exam
             </a>
