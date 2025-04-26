@@ -193,3 +193,27 @@ model UserQuestionPerformance {
 
   @@unique([userId, questionId, source]) // ✅ Add this line
 }
+
+model Announcement {
+  id          String   @id @default(uuid())
+  title       String
+  content     String
+  author      String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  // Relation: One announcement can be read by many users
+  userAnnouncements UserAnnouncement[]
+}
+
+model UserAnnouncement {
+  id              String   @id @default(uuid())
+  userId          String   // who read it
+  announcementId  String
+  isRead          Boolean  @default(false)
+  readAt          DateTime? // optional, when the user read it
+
+  // Relations
+  announcement   Announcement @relation(fields: [announcementId], references: [id])
+
+  @@unique([userId, announcementId]) // One user, one record per announcement
+}

@@ -6,6 +6,8 @@ import { fileURLToPath } from "url";
 import upload from "./src/middleware/upload.js"; // ✅ Import upload middleware
 import progressRoutes from "./src/routes/progress.js";
 import questionRoutes from "./src/routes/question.js"; // ✅ adjust path if needed
+import announcementRoutes from "./src/routes/announcement/announcement.js";
+import userAnnouncementRoutes from "./src/routes/userAnnouncement.js";
 
 import {
   registerUser,
@@ -68,6 +70,10 @@ app.get("/api/auth/profile", authenticateUser, getProfile); // Middleware takes 
 
 // ✅ SETTINGS ROUTES
 app.use("/api/settings", settingsRoutes);
+
+// ✅ ANNOUNCEMENT ROUTES
+app.use("/api/announcement", announcementRoutes);
+app.use("/api/user-announcements", userAnnouncementRoutes);
 
 // ✅ CHAPTER ROUTES
 app.get("/api/chapters", getChapters);

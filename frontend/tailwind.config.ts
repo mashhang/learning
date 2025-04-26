@@ -30,11 +30,17 @@ export default {
           "0%": { opacity: "0" },
           "100%": { opacity: "1" },
         },
+        fade: {
+          "0%": { opacity: "0" },
+          "100%": { opacity: "1" },
+        },
       },
       animation: {
         keypad: "keypad 0.2s ease-out forwards",
-        keypadExit: "keypadExit 1s ease-in forwards", // ⏱ longer
+        keypadExit: "keypadExit 0.5s ease-in forwards", // ⏱ longer
         "fade-in": "fade-in 0.3s ease-out",
+        fade: "fade 0.1s ease-in-out",
+        zoom: "zoom 0.1s ease-in-out",
       },
     },
   },
