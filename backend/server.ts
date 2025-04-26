@@ -36,6 +36,7 @@ import diagnosticRoutes from "./src/routes/diagnostic.js";
 import uploadRouter from "./src/routes/upload.js";
 import assessmentRoutes from "./src/routes/assessment.js";
 import exerciseRoutes from "./src/routes/exercise.js";
+import settingsRoutes from "./src/routes/settings.js";
 
 dotenv.config();
 const app = express();
@@ -64,6 +65,9 @@ app.post("/api/auth/register", registerUser); // Takes (req, res)
 app.get("/api/auth/verify-email", verifyEmail);
 app.post("/api/auth/login", loginUser); // Takes (req, res)
 app.get("/api/auth/profile", authenticateUser, getProfile); // Middleware takes (req, res, next)
+
+// ✅ SETTINGS ROUTES
+app.use("/api/settings", settingsRoutes);
 
 // ✅ CHAPTER ROUTES
 app.get("/api/chapters", getChapters);

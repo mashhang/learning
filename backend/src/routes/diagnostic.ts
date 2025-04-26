@@ -287,4 +287,65 @@ router.get("/results", async (req, res) => {
   }
 });
 
+// GET /api/diagnostic/admin/diagnostic-results
+// GET /api/diagnostic/admin/diagnostic-results
+router.get("/admin/diagnostic-results", async (req, res) => {
+  try {
+    const answers = await prisma.diagnosticAnswer.findMany({
+      orderBy: { createdAt: "desc" },
+    });
+
+    // Get all unique userIds
+    const userIds = [...new Set(answers.map((a) => a.userId))];
+
+    // Fetch user info separately
+    const users = await prisma.user.findMany({
+      where: { id: { in: userIds } },
+      select: { id: true, name: true, email: true },
+    });
+
+    const userMap = users.reduce((acc, user) => {
+      acc[user.id] = user;
+      return acc;
+    }, {} as Record<string, { id: string; name: string; email: string }>);
+
+    // Group diagnostic results
+    const grouped: Record<string, any> = {};
+
+    for (const a of answers) {
+      const key = a.userId;
+      if (!grouped[key]) {
+        grouped[key] = {
+          userId: a.userId,
+          userName: userMap[a.userId]?.name || "Unknown",
+          userEmail: userMap[a.userId]?.email || "",
+          type: "DIAGNOSTIC",
+          total: 0,
+          correct: 0,
+          createdAt: a.createdAt,
+        };
+      }
+      grouped[key].total += 1;
+      if (a.isCorrect) grouped[key].correct += 1;
+    }
+
+    const results = Object.values(grouped).map((entry: any) => ({
+      userId: entry.userId,
+      userName: entry.userName,
+      userEmail: entry.userEmail,
+      lessonTitle: "Diagnostic Exam",
+      type: entry.type,
+      correct: entry.correct,
+      total: entry.total,
+      score: Math.round((entry.correct / entry.total) * 100),
+      createdAt: entry.createdAt,
+    }));
+
+    res.json(results);
+  } catch (err) {
+    console.error("❌ Failed to fetch diagnostic admin results:", err);
+    res.status(500).json({ error: "Failed to load diagnostic results." });
+  }
+});
+
 export default router;

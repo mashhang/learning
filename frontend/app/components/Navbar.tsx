@@ -342,11 +342,12 @@ const Navbar: React.FC<NavbarProps> = ({
             <div className="w-full flex justify-center">
               <UserRound strokeWidth={1.5} className="size-14" />
             </div>
-            <div className="text-center mb-6">
+            <div className="text-center mb-2">
               {/* ✅ Show logged-in user name */}
               <p className="font-[350]">{user?.name || "Guest"}</p>
               <p className="text-[#3C3C3C] font-[250] text-[12px]">
-                {user?.email || "No email"}
+                <strong>ID:</strong>
+                <span>{user?.email?.split("@")[0]}</span>
               </p>
             </div>
             {profilelinks.map((link) => (

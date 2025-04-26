@@ -26,10 +26,15 @@ export default {
           "0%": { opacity: "1", transform: "translateY(0) scaleY(1)" },
           "100%": { opacity: "0", transform: "translateY(-1rem) scaleY(0.8)" },
         },
+        "fade-in": {
+          "0%": { opacity: "0" },
+          "100%": { opacity: "1" },
+        },
       },
       animation: {
         keypad: "keypad 0.2s ease-out forwards",
         keypadExit: "keypadExit 1s ease-in forwards", // ⏱ longer
+        "fade-in": "fade-in 0.3s ease-out",
       },
     },
   },
