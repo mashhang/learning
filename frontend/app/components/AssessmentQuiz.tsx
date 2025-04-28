@@ -92,6 +92,20 @@ export default function AssessmentQuiz({
       }),
     });
 
+    if (type === "POST") {
+      await fetch(`${API_URL}/api/progress`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: user?.id,
+          lessonId: lesson.id,
+          currentPage: lesson.pages.length,
+          totalPages: lesson.pages.length,
+          forceComplete: true,
+        }),
+      });
+    }
+
     recordTimeForCurrentQuestion();
 
     const correct = timedAnswers.filter((a) => a.isCorrect).length;
@@ -246,9 +260,41 @@ export default function AssessmentQuiz({
               {type === "POST" && (
                 <button
                   className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded"
-                  onClick={() => router.push("/current")} // 👈 or next lesson logic here
+                  // onClick={async () => {
+                  //   if (!user?.id) {
+                  //     router.push("/dashboard");
+                  //     return;
+                  //   }
+
+                  //   try {
+                  //     const res = await fetch(
+                  //       `${API_URL}/api/progress/ordered/${user.id}`,
+                  //       {
+                  //         cache: "no-store",
+                  //       }
+                  //     );
+                  //     const lessons = await res.json();
+
+                  //     const currentIndex = lessons.findIndex(
+                  //       (l: any) => l.lessonId === lesson.id
+                  //     );
+                  //     const nextLesson = lessons[currentIndex + 1];
+
+                  //     if (nextLesson) {
+                  //       router.push(
+                  //         `/pre-assessment?id=${nextLesson.lessonId}`
+                  //       );
+                  //     } else {
+                  //       router.push("/dashboard"); // ✅ if no next lesson
+                  //     }
+                  //   } catch (err) {
+                  //     console.error("❌ Failed to fetch next lesson", err);
+                  //     router.push("/dashboard");
+                  //   }
+                  // }}
+                  onClick={() => router.push("/mylesson")}
                 >
-                  Go to Next Lesson
+                  Back to lessons
                 </button>
               )}
 

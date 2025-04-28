@@ -87,15 +87,25 @@ export default function MyLessons() {
         className="transition-all duration-300 ease-in-out bg-no-repeat bg-cover bg-center bg-fixed "
         style={{
           backgroundImage: `url('/bg-mylesson.png')`,
-          marginLeft: isSidebarOpen ? "14rem" : "0",
-          width: isSidebarOpen ? `calc(100% - 14rem)` : "100%",
+          marginLeft:
+            isSidebarOpen &&
+            typeof window !== "undefined" &&
+            window.innerWidth >= 768
+              ? "14rem"
+              : "0",
+          width:
+            isSidebarOpen &&
+            typeof window !== "undefined" &&
+            window.innerWidth >= 768
+              ? `calc(100% - 14rem)`
+              : "100%",
           minHeight: "100vh",
         }}
       >
         {/*w-[1520px]*/}
         <div className="mt-[46.4px] p-6">
           <div className="  mb-10">
-            <h1 className="text-[#30608E] text-[18px] font-semibold">
+            <h1 className="text-[#30608E] text-base md:text-lg font-semibold">
               Current Lesson
             </h1>
 
@@ -117,7 +127,7 @@ export default function MyLessons() {
                 {currentLessons.length > 1 && (
                   <button
                     onClick={() => setShowAllCurrent(!showAllCurrent)}
-                    className="float-right mt-2 text-[#8f8f8f] underline hover:text-[#383838] transition"
+                    className="text-xs md:text-sm float-right mt-2 text-[#8f8f8f] underline hover:text-[#383838] transition"
                   >
                     {showAllCurrent ? "See less" : "See more"}
                   </button>
@@ -125,7 +135,7 @@ export default function MyLessons() {
               </>
             )}
 
-            <h1 className="text-[#30608E] text-[18px] font-semibold mt-16">
+            <h1 className="text-[#30608E] text-base md:text-lg font-semibold mt-16">
               Upcoming Lessons
             </h1>
 
@@ -145,7 +155,7 @@ export default function MyLessons() {
                 {upcomingLessons.length > 2 && (
                   <button
                     onClick={() => setShowAllUpcoming(!showAllUpcoming)}
-                    className="float-right mt-2 text-[#8f8f8f] underline hover:text-[#383838] transition"
+                    className="text-xs md:text-sm float-right mt-2 text-[#8f8f8f] underline hover:text-[#383838] transition"
                   >
                     {showAllUpcoming ? "See less" : "See more"}
                   </button>
@@ -153,7 +163,7 @@ export default function MyLessons() {
               </>
             )}
 
-            <h1 className="text-[#30608E] text-[18px] font-semibold mt-16">
+            <h1 className="text-[#30608E] text-base md:text-lg font-semibold mt-16">
               Past Lessons
             </h1>
 
@@ -175,7 +185,7 @@ export default function MyLessons() {
                 {pastLessons.length > 2 && (
                   <button
                     onClick={() => setShowAllPast(!showAllPast)}
-                    className="float-right mt-2 text-[#8f8f8f] underline hover:text-[#383838] transition"
+                    className="text-xs md:text-sm float-right mt-2 text-[#8f8f8f] underline hover:text-[#383838] transition"
                   >
                     {showAllPast ? "See less" : "See more"}
                   </button>
@@ -217,9 +227,9 @@ function LessonCard({
   }
 
   return (
-    <div className="w-full rounded-xl h-[160px] bg-[#D9D9D9] shadow-custom mt-4">
-      <div className="mx-8 pt-2">
-        <h1 className="text-[24px] font-semibold">{lesson.title}</h1>
+    <div className="w-full rounded-xl p-4 bg-[#D9D9D9] shadow-custom mt-4">
+      <div className="md:mx-8 md:pt-2">
+        <h1 className="text-base md:text-xl font-semibold">{lesson.title}</h1>
         <p className="text-[#666666]">{lesson.content}</p>
 
         <div className="bg-[#979797] w-full h-[10px] rounded-xl mt-3">
@@ -227,14 +237,14 @@ function LessonCard({
             className="bg-[#30608E] h-[10px] rounded-l-xl"
             style={{ width: `${(progress ?? 0) * 100}%` }} // ✅ Convert 0.45 → 45%
           />
-          <p className="text-sm text-right text-gray-500 mt-1">
+          <p className="text-xs md:text-sm text-right text-gray-500 mt-1">
             Progress:{" "}
             {progress !== undefined ? `${(progress * 100).toFixed(0)}%` : "0%"}
           </p>
         </div>
 
         <button
-          className="text-[14px] w-36 h-12 mt-4 bg-[#30608E] text-white rounded-md hover:bg-[#254a6d] transition"
+          className="text-xs md:text-sm md:w-36 p-4 mt-4 bg-[#30608E] text-white rounded-md hover:bg-[#254a6d] transition"
           // onClick={() => router.push(`/current?id=${lesson.id}`)}
           onClick={() =>
             progress === 0

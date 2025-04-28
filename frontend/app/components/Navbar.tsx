@@ -385,7 +385,7 @@ const Navbar: React.FC<NavbarProps> = ({
         <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
           <div
             ref={modalRef}
-            className="bg-white rounded-lg w-[28rem] p-6 shadow-lg relative"
+            className="bg-white rounded-lg w-80 md:w-[28rem] p-6 shadow-lg relative"
           >
             <button
               onClick={() => setModalContent(null)}

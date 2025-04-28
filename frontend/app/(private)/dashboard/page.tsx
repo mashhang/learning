@@ -11,12 +11,81 @@ import API_URL from "@/lib/getApiUrl";
 export default function Dashboard() {
   const [formattedDate, setFormattedDate] = useState("");
   const [greeting, setGreeting] = useState("");
-  const { user } = useAuth();
+  const { user, token } = useAuth();
   const [hasTakenDiagnostic, setHasTakenDiagnostic] = useState<boolean | null>(
     null
   );
   const [currentLesson, setCurrentLesson] = useState<any>(null);
   const [nextLessons, setNextLessons] = useState<any[]>([]);
+
+  // const totalLessons = nextLessons.length + (currentLesson ? 1 : 0);
+  // const totalCompletedLessons =
+  //   (currentLesson?.progress === 1 ? 1 : 0) +
+  //   nextLessons.filter((lesson) => lesson.progress === 1).length;
+
+  // const lastLesson = [currentLesson, ...nextLessons]
+  //   .filter(Boolean)
+  //   .sort(
+  //     (a, b) =>
+  //       new Date(b.updatedAt ?? "").getTime() -
+  //       new Date(a.updatedAt ?? "").getTime()
+  //   )[0];
+
+  // function getTimeAgo(dateString: string) {
+  //   const now = new Date();
+  //   const date = new Date(dateString);
+  //   const diff = now.getTime() - date.getTime();
+  //   const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+
+  //   if (days === 0) return "Today";
+  //   if (days === 1) return "1 day ago";
+  //   return `${days} days ago`;
+  // }
+
+  // const lastActivity = lastLesson?.updatedAt
+  //   ? getTimeAgo(lastLesson.updatedAt)
+  //   : "No activity yet";
+  const [lessons, setLessons] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const fetchLessons = async () => {
+      try {
+        const res = await fetch(`${API_URL}/api/progress/ordered/${user.id}`);
+        const data = await res.json();
+        setLessons(data);
+      } catch (err) {
+        console.error("Failed to fetch lesson priorities", err);
+      }
+    };
+
+    fetchLessons();
+  }, [user]);
+
+  const totalLessons = lessons.length;
+  const completedLessons = lessons.filter((l) => l.progress === 1).length;
+
+  function getTimeAgo(dateString: string): string {
+    const now = new Date();
+    const past = new Date(dateString);
+    const diffMs = now.getTime() - past.getTime();
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+    if (diffDays === 0) return "Today";
+    if (diffDays === 1) return "1 day ago";
+    return `${diffDays} days ago`;
+  }
+
+  const lastActivityLesson = [...lessons].sort(
+    (a, b) =>
+      new Date(b.updatedAt ?? "").getTime() -
+      new Date(a.updatedAt ?? "").getTime()
+  )[0];
+
+  const lastActivity = lastActivityLesson
+    ? getTimeAgo(lastActivityLesson.updatedAt)
+    : "No activity yet";
 
   useEffect(() => {
     if (!user) return;
@@ -123,34 +192,44 @@ export default function Dashboard() {
           <div
             className="transition-all duration-300 ease-in-out h-screen"
             style={{
-              marginLeft: isSidebarOpen ? sidebarWidth : "0",
-              width: isSidebarOpen ? `calc(100% - ${sidebarWidth})` : "100%",
+              marginLeft: isSidebarOpen
+                ? window.innerWidth >= 768
+                  ? sidebarWidth
+                  : "0"
+                : "0",
+              width: isSidebarOpen
+                ? window.innerWidth >= 768
+                  ? `calc(100% - ${sidebarWidth})`
+                  : "100%"
+                : "100%",
             }}
           >
-            <div className="pt-[96px] mb-6 p-6">
-              <h3 className="text-center font-[200]">{formattedDate}</h3>
-              <h1 className="text-center text-4xl font-[300]">
+            <div className="pt-[96px] ">
+              <h3 className="text-center text-sm md:text-base font-[200]">
+                {formattedDate}
+              </h3>
+              <h1 className="text-center text-3xl md:text-4xl font-[300]">
                 {greeting}, {user?.name ?? "Guest"}
               </h1>
             </div>
 
             {/* max-w-[1520px] */}
-            <div className="max-w-full  xl:max-w-[1520px] p-14 h-[500px] mx-auto">
-              <div className="h-full grid grid-cols-4 grid-rows-9 gap-14">
-                <div className="w-full h-[200px] bg-white border-black border-[1px] col-span-2 row-span-3 col-start-1 row-start-1 rounded-xl py-2 shadow-custom">
-                  <h1 className="text-center text-[28px] font-medium">
+            <div className="max-w-full  xl:max-w-[1520px] p-8 md:p-14 mb-40 mx-auto">
+              <div className="h-full grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="w-full bg-white border-black border-[1px] rounded-xl pt-2 pb-4 shadow-custom">
+                  <h1 className="text-center text-2xl md:text-3xl font-medium">
                     Current Lesson
                   </h1>
 
-                  <div className="mx-12 mt-3">
+                  <div className="mx-4 md:mx-12 mt-2">
                     {currentLesson ? (
                       <>
-                        <p className="font-bold text-xl">
+                        <p className="font-bold text-base md:text-xl break-words whitespace-pre-wrap">
                           {currentLesson?.title
                             ? `Lesson: ${currentLesson.title}`
                             : "Untitled"}
                         </p>
-                        <p className="text-xl">
+                        <p className="text-base md:text-xl break-words whitespace-pre-wrap">
                           Progress:{" "}
                           <span>
                             {Math.round(currentLesson.progress * 100)}%
@@ -175,38 +254,73 @@ export default function Dashboard() {
                     )}
                   </div>
                 </div>
-                <div className="w-full h-[200px] bg-white border-black border-[1px] col-span-2 row-span-3 col-start-1 row-start-5 rounded-xl py-2 shadow-custom">
-                  <h1 className="text-center text-[28px] font-medium">
+                <div className="w-full bg-white border-black border-[1px] rounded-xl pt-2 pb-4 shadow-custom">
+                  <h1 className="text-center text-2xl md:text-3xl font-medium">
                     Progress Report
                   </h1>
 
-                  <div className="mx-12 mt-5 text-xl">
+                  <div className="mx-4 md:mx-12 my-2 text-base md:text-xl">
                     <p>
                       Total Lessons Completed:
-                      <span className="font-bold"> 4/10</span>
+                      <span className="font-bold">
+                        {completedLessons}/{totalLessons}
+                      </span>
                     </p>
                     <p>
-                      Total Assignments Submitted:
-                      <span className="font-bold"> 5/8</span>
-                    </p>
-                    <p>
-                      Average Score: <span className="font-bold"> 85%</span>
+                      Last Activity:
+                      <span className="font-bold">{lastActivity}</span>
                     </p>
                   </div>
+
+                  {/* Progress Bar */}
+                  <div className=" bg-[#C8C8C8] rounded-full h-3 mt-2 mx-4 md:mx-12">
+                    <div
+                      className="bg-[#30608E] h-3 rounded-full transition-all duration-500"
+                      style={{
+                        width: `${
+                          totalLessons
+                            ? Math.round(
+                                (completedLessons / totalLessons) * 100
+                              )
+                            : 0
+                        }%`,
+                      }}
+                    ></div>
+                  </div>
+                  <div className="mt-2 text-left mx-4 md:mx-12">
+                    {totalLessons === 0 ? (
+                      <p className="text-sm md:text-base font-light break-words whitespace-pre-wrap">
+                        Start your first lesson to begin your journey!
+                      </p>
+                    ) : totalLessons < 50 ? (
+                      <p className="text-sm md:text-base font-light break-words whitespace-pre-wrap">
+                        Great job! Keep progressing through the course.
+                      </p>
+                    ) : totalLessons < 100 ? (
+                      <p className="text-sm md:text-base font-light break-words whitespace-pre-wrap">
+                        You're more than halfway there. Keep going!
+                      </p>
+                    ) : (
+                      <p className="text-sm md:text-base font-light break-words whitespace-pre-wrap">
+                        Congratulations! You’ve completed the course! 🎉
+                      </p>
+                    )}
+                  </div>
                 </div>
-                <div className="w-full h-[200px] bg-white border-black border-[1px] col-span-2 row-span-3 col-start-3 row-start-1 rounded-xl py-2 shadow-custom">
-                  <h1 className="text-center text-[28px] font-medium">
+
+                <div className="w-full bg-white border-black border-[1px] rounded-xl pt-2 pb-4 shadow-custom">
+                  <h1 className="text-center text-2xl md:text-3xl font-medium">
                     Next Lessons
                   </h1>
 
-                  <div className="mx-12 mt-3">
+                  <div className="mx-4 md:mx-12 mt-2">
                     {nextLessons.length > 0 ? (
                       nextLessons.map((lesson) => (
                         <div key={lesson.lessonId} className="mt-2">
-                          <p className="font-bold text-xl">
+                          <p className="font-bold text-base md:text-xl break-words whitespace-pre-wrap">
                             Lesson: {lesson.title}
                           </p>
-                          <p className="text-lg text-gray-700">
+                          <p className="text-base md:text-xl text-gray-700">
                             Progress: {Math.round(lesson.progress * 100)}%
                           </p>
                         </div>
@@ -218,18 +332,19 @@ export default function Dashboard() {
                     )}
                   </div>
                 </div>
-                <div className="w-full h-[200px] bg-white border-black border-[1px] col-span-2 row-span-3 col-start-3 row-start-5 rounded-xl py-2 shadow-custom">
-                  <h1 className="text-center text-[28px] font-medium">
+
+                <div className="w-full bg-white border-black border-[1px] rounded-xl pt-2 pb-4 shadow-custom">
+                  <h1 className="text-center text-2xl md:text-3xl font-medium">
                     Announcements
                   </h1>
 
-                  <div className="mx-12 mt-5 text-xl">
-                    <p className="font-bold text-xl">
+                  <div className="mt-2 mx-4 md:mx-12 text-base md:text-xl">
+                    <p className="font-bold text-base md:text-xl">
                       New Lesson Released:
                       <span className="font-normal"> Algebra Practice Set</span>
                     </p>
                     <p className="text-lg">Due: November 15</p>
-                    <p className="font-bold text-xl mt-3">
+                    <p className="font-bold text-base md:text-xl mt-3">
                       Exam Reminder:
                       <span className="font-normal">
                         Midterm Exam on November 30
@@ -237,11 +352,11 @@ export default function Dashboard() {
                     </p>
                   </div>
                 </div>
-                <div className="w-full h-[200px] bg-white border-black border-[1px] col-span-2 row-span-3 col-start-2 row-start-9 rounded-xl py-2 shadow-custom">
+                {/* <div className="w-full h-[200px] bg-white border-black border-[1px] col-span-2 row-span-3 col-start-2 row-start-9 rounded-xl py-2 shadow-custom">
                   <h1 className="text-center text-[28px] font-medium">
                     Current Lesson
                   </h1>
-                </div>
+                </div> */}
               </div>
             </div>
           </div>

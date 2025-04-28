@@ -8,6 +8,7 @@ import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
 import "katex/dist/katex.min.css"; // Import KaTeX styles
 import Image from "next/image";
+import { toast } from "sonner";
 
 // Internal components and context
 import ProtectedRoute from "@/app/components/ProtectedRoute";
@@ -46,15 +47,6 @@ type ExampleExercise = {
   difficulty: "EASY" | "MEDIUM" | "HARD";
   skillTag?: string;
   explanation: string;
-};
-
-const decideDifficulty = (
-  timeSpent: number,
-  isCorrect?: boolean
-): "EASY" | "MEDIUM" | "HARD" => {
-  if (timeSpent > 40) return "EASY";
-  if (timeSpent <= 15) return isCorrect ? "HARD" : "EASY";
-  return "MEDIUM";
 };
 
 export default function CurrentLesson() {
@@ -98,6 +90,31 @@ export default function CurrentLesson() {
   const [exercisePerPage, setExercisePerPage] = useState<{
     [page: number]: string;
   }>({});
+
+  const updateProgress = async (pageNumber: number) => {
+    if (!lesson || !user) return;
+
+    let calculatedProgress = parseFloat((pageNumber / totalPages).toFixed(2));
+    if (calculatedProgress >= 1) {
+      calculatedProgress = 0.99;
+    }
+
+    try {
+      await fetch(`${API_URL}/api/progress`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: user.id,
+          lessonId: lesson.id,
+          currentPage: pageNumber,
+          totalPages,
+          calculatedProgress,
+        }),
+      });
+    } catch (err) {
+      console.error("Network error while updating progress:", err);
+    }
+  };
 
   useEffect(() => {
     if (!user?.id) return;
@@ -203,35 +220,6 @@ export default function CurrentLesson() {
     fetchPrioritizedExercises();
   }, [lesson?.id, user?.id]);
 
-  useEffect(() => {
-    if (!lesson || !user?.id) return;
-
-    const updateProgress = async () => {
-      const progress = parseFloat((currentPage / totalPages).toFixed(2));
-      try {
-        const res = await fetch(`${API_URL}/api/progress`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            userId: user.id,
-            lessonId: lesson.id, // ✅ Correct property
-            currentPage,
-            totalPages,
-          }),
-        });
-
-        if (!res.ok) {
-          const err = await res.json();
-          console.error("Progress update failed:", err.error);
-        }
-      } catch (err) {
-        console.error("Network error while updating progress:", err);
-      }
-    };
-
-    updateProgress();
-  }, [currentPage, lesson, totalPages, user]);
-
   if (!lesson || lesson.pages.length === 0) {
     return <p className="text-center mt-5 text-lg">Loading lesson...</p>;
   }
@@ -261,8 +249,26 @@ export default function CurrentLesson() {
       <AssessmentQuiz
         type="POST"
         lesson={lesson}
-        onFinish={() => {
-          router.push(`/post-assessment?id=${lesson.id}`);
+        onFinish={async () => {
+          await fetch(`${API_URL}/api/progress`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              userId: user?.id,
+              lessonId: lesson.id,
+              currentPage: totalPages,
+              totalPages,
+              forceComplete: true,
+            }),
+          });
+
+          toast.success("🎉 Lesson Completed!", {
+            duration: 3000, // 3 seconds
+          });
+
+          setTimeout(() => {
+            router.push(`/post-assessment?id=${lesson.id}`);
+          }, 1000); // ✅ short delay so toast shows nicely before redirect
         }}
       />
     );
@@ -309,18 +315,9 @@ export default function CurrentLesson() {
         <div className="flex justify-between mt-11 py-3 px-5 bg-[#D9D9D9]">
           {currentPage > 1 ? (
             <button
-              onClick={() => {
+              onClick={async () => {
                 const now = Date.now();
                 const timeSpent = (now - pageEnterTime) / 1000;
-
-                console.log(
-                  "⬅️ PREV PAGE: Time spent on page",
-                  currentPage,
-                  ":",
-                  timeSpent.toFixed(2),
-                  "seconds"
-                );
-
                 const targetPage = Math.max(currentPage - 1, 1);
 
                 setCurrentPage(targetPage);
@@ -335,33 +332,10 @@ export default function CurrentLesson() {
                   setExerciseDifficulty(matched.difficulty);
                   setShowExercise(true);
                 } else {
-                  const lastId = currentExercises[0]?.id;
-                  const isCorrect = lastId ? answerResults[lastId] : undefined;
-                  const difficulty = decideDifficulty(timeSpent, isCorrect);
-
-                  const newExercise = exercises.find(
-                    (ex) =>
-                      ex.difficulty === difficulty &&
-                      !Object.values(exercisePerPage).includes(ex.id)
-                  );
-
-                  console.log("📊 PREV: Decided difficulty →", difficulty);
-                  console.log(
-                    "📘 PREV: New assigned exercise →",
-                    newExercise?.id
-                  );
-
-                  if (newExercise) {
-                    setExercisePerPage((prev) => ({
-                      ...prev,
-                      [targetPage]: newExercise.id,
-                    }));
-                    setExerciseDifficulty(newExercise.difficulty);
-                    setShowExercise(true);
-                  } else {
-                    setShowExercise(false);
-                  }
+                  setShowExercise(false);
                 }
+
+                await updateProgress(targetPage); // ✅ Save progress when moving
               }}
               className="text-[13px] py-2 px-4 bg-[#30608E] text-white rounded-md"
             >
@@ -383,21 +357,12 @@ export default function CurrentLesson() {
 
           {currentPage < totalPages ? (
             <button
-              onClick={() => {
+              onClick={async () => {
                 const now = Date.now();
                 const timeSpent = (now - pageEnterTime) / 1000;
-
-                console.log(
-                  "➡️ NEXT PAGE: Time spent on page",
-                  currentPage,
-                  ":",
-                  timeSpent.toFixed(2),
-                  "seconds"
-                );
-
                 const targetPage = Math.min(currentPage + 1, totalPages);
 
-                const currentExerciseId = currentExercises[0]?.id;
+                const currentExerciseId = exercises.find((ex) => ex.id)?.id;
                 if (currentExerciseId) {
                   setExercisePerPage((prev) => ({
                     ...prev,
@@ -417,35 +382,10 @@ export default function CurrentLesson() {
                   setExerciseDifficulty(matched.difficulty);
                   setShowExercise(true);
                 } else {
-                  const isCorrect = currentExerciseId
-                    ? answerResults[currentExerciseId]
-                    : undefined;
-
-                  const difficulty = decideDifficulty(timeSpent, isCorrect);
-
-                  const newExercise = exercises.find(
-                    (ex) =>
-                      ex.difficulty === difficulty &&
-                      !Object.values(exercisePerPage).includes(ex.id)
-                  );
-
-                  console.log("📊 NEXT: Decided difficulty →", difficulty);
-                  console.log(
-                    "📘 NEXT: New assigned exercise →",
-                    newExercise?.id
-                  );
-
-                  if (newExercise) {
-                    setExercisePerPage((prev) => ({
-                      ...prev,
-                      [targetPage]: newExercise.id,
-                    }));
-                    setExerciseDifficulty(newExercise.difficulty);
-                    setShowExercise(true);
-                  } else {
-                    setShowExercise(false);
-                  }
+                  setShowExercise(false);
                 }
+
+                await updateProgress(targetPage); // ✅ Save progress when moving
               }}
               className="text-[13px] py-2 px-4 bg-[#30608E] text-white rounded-md"
             >
@@ -707,7 +647,7 @@ export default function CurrentLesson() {
 
       {reviewMode && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-          <div className="bg-white w-full max-w-3xl max-h-[80vh] overflow-y-auto rounded-lg shadow-xl p-6">
+          <div className="bg-white w-full max-w-[1400px] max-h-[80vh] overflow-y-auto rounded-lg shadow-xl p-6">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-semibold">🧠 Reviewed Exercises</h2>
               <button
@@ -747,7 +687,7 @@ export default function CurrentLesson() {
 
       {showGeneratedExerciseModal && generatedExercise && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-          <div className="bg-white w-full max-w-2xl max-h-[80vh] overflow-y-auto rounded-lg shadow-xl p-6">
+          <div className="bg-white w-full max-w-3xl max-h-[80vh] overflow-y-auto rounded-lg shadow-xl p-6">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-semibold">🆕 New Exercise</h2>
               <button
@@ -892,7 +832,9 @@ function ExerciseCard({
                 ) : (
                   <p className="text-red-600 font-medium">
                     ❌ Incorrect. The correct answer is:{" "}
-                    <strong>{exercise.correctAnswer}</strong>
+                    <strong>
+                      <MathPreview value={exercise.correctAnswer} />
+                    </strong>
                   </p>
                 )}
 
@@ -902,7 +844,9 @@ function ExerciseCard({
                     <p className="font-semibold text-blue-700 mb-1">
                       Explanation:
                     </p>
-                    <p className="text-gray-700">{exercise.explanation}</p>
+                    <p className="text-gray-700 ">
+                      <MathPreview value={exercise.explanation} />
+                    </p>
                   </div>
                 )}
               </div>

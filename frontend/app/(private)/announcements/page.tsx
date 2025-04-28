@@ -95,19 +95,27 @@ export default function Announcements() {
       <div
         className={`transition-all duration-300 ease-in-out bg-[#ffffff] overflow-hidden w-${sidebarWidth} min-h-[calc(100vh - 64px)]`}
         style={{
-          marginLeft: isSidebarOpen ? sidebarWidth : "0",
-          width: isSidebarOpen ? `calc(100% - ${sidebarWidth})` : "100%",
+          marginLeft: isSidebarOpen
+            ? window.innerWidth >= 768
+              ? sidebarWidth
+              : "0"
+            : "0",
+          width: isSidebarOpen
+            ? window.innerWidth >= 768
+              ? `calc(100% - ${sidebarWidth})`
+              : "100%"
+            : "100%",
         }}
       >
-        <div className="pt-[96px] mx-40 mb-6 p-6">
-          <h1 className="text-4xl mb-4">Announcements</h1>
+        <div className="pt-16 md:pt-[96px] md:mx-40 mb-6 p-6">
+          <h1 className="text-xl md:text-4xl mb-4">Announcements</h1>
 
           {/* Filter buttons */}
           <div className="flex gap-2">
             {["All", "Unread", "Read"].map((label) => (
               <button
                 key={label}
-                className={`w-20 px-1 py-1 rounded-2xl text-center transition-all shadow-sm ${
+                className={`md:w-20 w-16 md:px-1 py-2 md:py-1 text-xs md:text-base rounded-lg md:rounded-2xl text-center transition-all shadow-sm ${
                   active === label
                     ? "bg-[#a3a3a3] text-[#ffffff]"
                     : "bg-[#D9D9D9] text-[#4f4f4f] hover:bg-[#a3a3a3] hover:text-[#ffffff]"
@@ -129,10 +137,10 @@ export default function Announcements() {
               >
                 {/* Admin Info */}
                 <div className="ml-2">
-                  <p className="text-xl text-[#000000]">
+                  <p className="text-lg md:text-xl text-[#000000]">
                     {announcement.author || "Admin"}
                   </p>
-                  <p className="text-[#474747]">Admin</p>
+                  <p className="text-xs md:text-sm text-[#474747]">Admin</p>
                 </div>
 
                 {/* Announcement Content */}
@@ -144,15 +152,17 @@ export default function Announcements() {
                     markAsRead(announcement.id); // (optional: you can move it to after closing if you prefer)
                   }}
                 >
-                  <div className="mx-12 text-[#2D2D2D] space-y-2">
-                    <p className="text-xl font-medium">{announcement.title}</p>
+                  <div className=" mx-4 md:mx-12 text-[#2D2D2D] space-y-2">
+                    <p className="text-base md:text-xl font-medium">
+                      {announcement.title}
+                    </p>
                     <p className="text-justify">{announcement.content}</p>
                   </div>
                 </div>
 
                 {/* Timestamp */}
                 <p
-                  className={`text-sm text-right mr-3 mt-2 ${
+                  className={`text-xs md:text-sm text-right mr-3 mt-2 ${
                     announcement.createdAt !== announcement.updatedAt
                       ? "italic text-gray-500"
                       : "text-[#474747]"

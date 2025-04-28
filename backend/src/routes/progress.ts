@@ -21,8 +21,12 @@ const handler: RequestHandler = async (req, res) => {
   }
 
   try {
-    let newProgress = parseFloat((currentPage / totalPages).toFixed(2));
-    if (currentPage === totalPages) newProgress = 1; // ✅ force 100% on last page
+    let newProgress =
+      req.body.calculatedProgress ??
+      parseFloat((currentPage / totalPages).toFixed(2));
+    if (req.body.forceComplete) {
+      newProgress = 1;
+    }
 
     // ✅ Check if progress entry exists first
     const existing = await prisma.userLessonPriority.findUnique({
@@ -145,6 +149,56 @@ router.get("/:userId/:lessonId", async (req, res) => {
   } catch (error) {
     console.error("Error fetching current page:", error);
     res.status(500).json({ error: "Failed to fetch current page" });
+  }
+});
+
+// ✅ Replace your /overview/:userId route with this:
+router.get("/overview/:userId", async (req, res) => {
+  const { userId } = req.params;
+
+  try {
+    const lessons = await prisma.lesson.findMany({
+      include: {
+        lessonPriorities: {
+          where: { userId },
+          select: {
+            progress: true,
+            updatedAt: true,
+          },
+        },
+      },
+      orderBy: [{ chapter: { order: "asc" } }, { order: "asc" }],
+    });
+
+    const userLessons = lessons
+      .map((lesson) => lesson.lessonPriorities[0])
+      .filter((lp) => lp !== undefined);
+
+    const totalLessons = userLessons.length;
+    const completedLessons = userLessons.filter((l) => l.progress === 1).length;
+
+    const lastActivityLesson = userLessons
+      .filter((l) => l.updatedAt)
+      .sort(
+        (a, b) =>
+          new Date(b.updatedAt!).getTime() - new Date(a.updatedAt!).getTime()
+      )[0];
+
+    let lastActivity = "No activity yet";
+    if (lastActivityLesson?.updatedAt) {
+      const now = new Date();
+      const diffMs =
+        now.getTime() - new Date(lastActivityLesson.updatedAt).getTime();
+      const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+      if (diffDays === 0) lastActivity = "Today";
+      else if (diffDays === 1) lastActivity = "1 day ago";
+      else lastActivity = `${diffDays} days ago`;
+    }
+
+    res.status(200).json({ totalLessons, completedLessons, lastActivity });
+  } catch (error) {
+    console.error("❌ Error fetching overview:", error);
+    res.status(500).json({ error: "Server error" });
   }
 });
 

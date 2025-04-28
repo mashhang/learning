@@ -33,19 +33,22 @@ const ProfileModal = ({ userId }: { userId: string }) => {
     fetchUser();
   }, [userId]);
 
-  if (loading) return <p>Loading user data...</p>;
+  if (loading)
+    return <p className="text-sm md:text-base">Loading user data...</p>;
   if (error) return <p className="text-red-500">{error}</p>;
 
   return (
     <div>
-      <h2 className="text-xl font-semibold mb-4">My Account</h2>
-      <p>
+      <h2 className="text-base md:text-xl font-semibold mb-2 md:mb-4">
+        My Account
+      </h2>
+      <p className="text-sm md:text-base">
         <strong>Name:</strong> {user?.name}
       </p>
-      <p>
+      <p className="text-sm md:text-base">
         <strong>Email:</strong> {user?.email}
       </p>
-      <p>
+      <p className="text-sm md:text-base">
         <strong>Joined:</strong>{" "}
         {user?.createdAt
           ? new Date(user.createdAt).toLocaleDateString()
