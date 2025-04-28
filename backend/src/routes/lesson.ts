@@ -29,7 +29,7 @@ export const getLessons: RequestHandler = async (_req, res) => {
           select: {
             questions: true,
             pages: true,
-            exampleExercises: true, // ✅ Add this if not yet included in model
+            exampleExercises: true,
           },
         },
         questions: {
@@ -102,6 +102,7 @@ export const getLessons: RequestHandler = async (_req, res) => {
         questionCount: lesson._count.questions,
         pageCount: lesson._count.pages,
         exerciseCount: lesson._count.exampleExercises,
+        videoUrl: lesson.videoUrl || null,
       }))
     );
   } catch (error) {
@@ -161,11 +162,16 @@ export const getLessonById: RequestHandler = async (
     console.log("Loaded pages:", lesson.pages);
 
     res.status(200).json({
-      ...lesson,
+      id: lesson.id,
+      title: lesson.title,
+      chapterId: lesson.chapterId,
+      media: lesson.media,
+      videoUrl: lesson.videoUrl || "", // ✅ ADD videoUrl correctly here
+      status: lesson.status,
       questions: questionsWithURL,
       pages: pagesWithMediaURL.map((p) => ({
         ...p,
-        existingMedia: p.media, // 👈 add this
+        existingMedia: p.media,
       })),
     });
   } catch (error) {
@@ -188,7 +194,8 @@ export const updateLesson = async (
         .json({ error: "Forbidden: Only admins can update lessons" });
     }
 
-    const { title, content, chapterId, status } = req.body;
+    const { title, content, chapterId, status, videoUrl } = req.body;
+
     const questions = req.body.questions ? JSON.parse(req.body.questions) : [];
     const lessonId = req.params.id;
 
@@ -211,6 +218,10 @@ export const updateLesson = async (
         connect: { id: chapterId },
       };
     }
+    if (videoUrl !== undefined) {
+      updateData.videoUrl = videoUrl;
+    }
+
     const updatedLesson = await prisma.lesson.update({
       where: { id: lessonId },
       data: updateData,
@@ -405,7 +416,7 @@ export const createLesson: RequestHandler = async (
         .json({ error: "Forbidden: Only admins can create lessons" });
     }
 
-    const { title, chapterId, status } = req.body;
+    const { title, chapterId, status, videoUrl } = req.body;
 
     const parsedQuestions =
       typeof req.body.questions === "string"
@@ -436,6 +447,7 @@ export const createLesson: RequestHandler = async (
         chapterId,
         status,
         order: nextOrder,
+        videoUrl,
       },
     });
 

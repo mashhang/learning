@@ -404,15 +404,10 @@ export default function QuestionModal({
             onClick={async () => {
               if (
                 !question.trim() ||
-                choices.some((c) => !c || !c.trim()) ||
+                choices.filter((c) => c && c.trim()).length < 2 ||
                 !correctAnswer.trim()
               ) {
                 toast.error("Please complete all required fields.");
-                return;
-              }
-
-              if (choices.length < 2 || choices.length > 4) {
-                toast.error("Please enter 2 to 4 choices only.");
                 return;
               }
 

@@ -81,6 +81,7 @@ export default function EditLesson() {
     title: string;
     chapterId: string;
     media: string;
+    videoUrl?: string;
     pages: LessonPage[];
     questions: Question[];
     exercises: ExampleExercise[];
@@ -88,6 +89,7 @@ export default function EditLesson() {
     title: "",
     chapterId: "",
     media: "",
+    videoUrl: "",
     pages: [{ content: "", media: null, existingMedia: null }],
     questions: [],
     exercises: [],
@@ -150,6 +152,7 @@ export default function EditLesson() {
           title: lessonData.title || "",
           chapterId: lessonData.chapterId || "",
           media: lessonData.media || "",
+          videoUrl: lessonData.videoUrl || "",
           pages:
             lessonData.pages?.map((p: any) => ({
               content: p.content,
@@ -157,7 +160,7 @@ export default function EditLesson() {
               serverFilename: p.serverFilename || null,
             })) || [],
           questions: parsedQuestions,
-          exercises: formattedExercises, // ✅ include exercises!
+          exercises: formattedExercises,
         });
 
         setStatus(lessonData.status || "DRAFT");
@@ -274,6 +277,7 @@ export default function EditLesson() {
     }));
 
     formData.append("pages", JSON.stringify(pagesWithFilename));
+    formData.append("videoUrl", lesson.videoUrl || "");
 
     // ✅ Upload media files separately
     lesson.pages.forEach((page) => {
@@ -357,6 +361,16 @@ export default function EditLesson() {
                   onChange={(e) => handleLessonChange("title", e.target.value)}
                   className="border p-2 w-full mb-2"
                   placeholder="Lesson Title"
+                />
+
+                <input
+                  type="text"
+                  value={lesson.videoUrl || ""}
+                  onChange={(e) =>
+                    handleLessonChange("videoUrl", e.target.value)
+                  }
+                  className="border p-2 w-full mb-2"
+                  placeholder="Video URL (optional)"
                 />
 
                 <select

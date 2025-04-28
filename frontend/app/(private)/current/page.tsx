@@ -30,6 +30,7 @@ type Lesson = {
   id: string;
   lessonId: string; // ✅ this is now returned
   title: string;
+  videoUrl?: string | null;
   chapterId: string;
   chapterTitle: string;
   progress: number;
@@ -71,6 +72,8 @@ export default function CurrentLesson() {
   const [currentPageLoaded, setCurrentPageLoaded] = useState(false);
   const [exerciseIndex, setExerciseIndex] = useState(0);
   const [showSummary, setShowSummary] = useState(false);
+  const [showVideoModal, setShowVideoModal] = useState(false);
+
   const [pageEnterTime, setPageEnterTime] = useState<number>(Date.now());
   const [showExercise, setShowExercise] = useState<boolean>(false);
   const [showGeneratedExerciseModal, setShowGeneratedExerciseModal] =
@@ -369,6 +372,14 @@ export default function CurrentLesson() {
           )}
 
           <h1 className="text-lg my-auto">{lesson.title}</h1>
+          {lesson?.videoUrl && (
+            <button
+              onClick={() => setShowVideoModal(true)}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded shadow ml-4"
+            >
+              🎥 Watch Lesson Video
+            </button>
+          )}
 
           {currentPage < totalPages ? (
             <button
@@ -658,6 +669,28 @@ export default function CurrentLesson() {
               >
                 Close
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showVideoModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+          <div className="bg-white p-6 rounded-lg shadow-xl w-full max-w-3xl relative">
+            <button
+              onClick={() => setShowVideoModal(false)}
+              className="absolute top-2 right-2 text-gray-500 hover:text-gray-700"
+            >
+              ✖
+            </button>
+            <div className="aspect-video">
+              <iframe
+                src={lesson.videoUrl?.replace("watch?v=", "embed/")}
+                title="Lesson Video"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+                className="w-full h-full rounded-lg"
+              ></iframe>
             </div>
           </div>
         </div>
