@@ -52,7 +52,8 @@ export default function Page() {
             />
           </div>
         </section>
-        <div className="mt-[-13rem] ml-[2.5rem]">
+
+        <div className="mx-auto text-center md:text-left md:mt-[-13rem] md:ml-[2.5rem]">
           <button
             className="py-2 px-12 bg-[#30608E] text-white rounded-sm"
             onClick={handleSignIn} // Add onClick event
@@ -60,12 +61,14 @@ export default function Page() {
             SIGN IN
           </button>
         </div>
+
         {/* ---------------------------------------------------------- */}
-        <div className="mt-20 w-full h-[1px] bg-[#242830]"></div>
+        <div className="my-12 md:mt-20 w-full h-[1px] bg-[#242830]"></div>
         {/* ---------------------------------------------------------- */}
-        <section className="w-[100%] sm:py-36 mt-[-50px]">
-          <div className="flex flex-row justify-between">
-            <div className="w-[310px] text-center flex flex-col">
+
+        <section className="w-full sm:py-36 md:mt-[-50px]">
+          <div className="flex flex-col md:flex-row justify-between items-center gap-10 px-6">
+            <div className="md:w-[310px] w-full text-center flex flex-col">
               <Image
                 width={100}
                 height={100}
@@ -124,14 +127,15 @@ export default function Page() {
           </div>
         </section>
         {/* ---------------------------------------------------------- */}
-        <div className="mt-[-57px] w-full h-[1px] bg-[#242830]"></div>
+        <div className="my-12 md:mt-[-57px] w-full h-[1px] bg-[#242830]"></div>
         {/* ---------------------------------------------------------- */}
-        <section className="w-[100%] sm:py-36 mt-[-50px]">
+
+        <section className="w-full sm:py-36 mb-12 md:mb-0 md:mt-[-50px]">
           <div className="flex flex-col text-center">
             <h1 className="text-[32px] mt-[20px] font-semibold">
               Transform Learning, Tailored for You
             </h1>
-            <p className="text-[18px] w-[650px] mx-auto mt-1 text-[#8A94A7]">
+            <p className="text-[18px] w-full md:max-w-[650px] px-4 mx-auto mt-1 text-[#8A94A7]">
               At Mathmath, we&apos;re committed to revolutionizing math
               education with a platform designed to meet individual needs.
               Explore a seamless, adaptive solution for crafting personalized
@@ -167,11 +171,13 @@ export default function Page() {
             height={100}
             src="/cardDeal/dealbg.svg"
             alt="Background"
-            className="absolute w-[50%] h-[50%] mt-[-500px] ml-36 z-[-1]"
+            className="absolute md:w-[50%] w-[80%] md:h-[50%] h-[80%] mt-[-700px] md:mt-[-500px] md:ml-36 z-[-1]"
           />
         </section>
+
         {/* ---------------------------------------------------------- */}
-        <section className="flex flex-row items-center justify-between px-20 mb-40 w-full bg-[#15181D] h-[150px]">
+
+        <section className="flex flex-col md:flex-row items-center justify-between px-6 md:px-20 text-center gap-4 md:gap-0 md:mb-28 mb-12 w-full bg-[#15181D] h-auto md:h-[150px] py-10 md:py-0">
           <h1 className=" text-white font-bold text-[32px] ">
             Ready to start learning?
           </h1>
