@@ -47,7 +47,21 @@ export default function MathPreview({ value }: Props) {
           caret-color: transparent;
           pointer-events: none !important;
           user-select: none !important;
-          font-size: 1.125rem;
+          display: block;
+          white-space: normal;
+          overflow-wrap: anywhere;
+          word-break: break-word;
+          width: 100%;
+
+          font-size: 0.8rem;
+
+          @media (min-width: 640px) {
+            font-size: 1rem;
+          }
+
+          @media (min-width: 1024px) {
+            font-size: 1.25rem;
+          }
         }
 
         math-field.math-preview-field * {

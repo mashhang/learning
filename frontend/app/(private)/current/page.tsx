@@ -337,19 +337,21 @@ export default function CurrentLesson() {
 
                 await updateProgress(targetPage); // ✅ Save progress when moving
               }}
-              className="text-[13px] py-2 px-4 bg-[#30608E] text-white rounded-md"
+              className="text-xs lg:text-sm py-2 px-4 bg-[#30608E] text-white rounded-md"
             >
               Previous Page
             </button>
           ) : (
-            <div className="py-2 px-12"></div>
+            <div className="py-2 px-10"></div>
           )}
 
-          <h1 className="text-lg my-auto">{lesson.title}</h1>
+          <h1 className="text-sm lg:text-lg my-auto mx-4 text-center">
+            {lesson.title}
+          </h1>
           {lesson?.videoUrl && (
             <button
+              className="fixed bottom-24 right-4 sm:right-6 z-50 px-4 py-2 sm:px-5 sm:py-3 rounded-full bg-blue-600 text-white text-xs sm:text-sm shadow-lg hover:bg-blue-700 transition w-[90%] sm:w-auto max-w-sm"
               onClick={() => setShowVideoModal(true)}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded shadow ml-4"
             >
               🎥 Watch Lesson Video
             </button>
@@ -387,7 +389,7 @@ export default function CurrentLesson() {
 
                 await updateProgress(targetPage); // ✅ Save progress when moving
               }}
-              className="text-[13px] py-2 px-4 bg-[#30608E] text-white rounded-md"
+              className="text-xs lg:text-sm py-2 px-4 bg-[#30608E] text-white rounded-md"
             >
               Next Page
             </button>
@@ -638,7 +640,7 @@ export default function CurrentLesson() {
 
       {exercises.length > 0 && (
         <button
-          className="fixed bottom-6 right-6 z-50 px-5 py-3 rounded-full bg-gray-800 text-white text-sm shadow-lg hover:bg-gray-700 transition"
+          className="fixed bottom-6 right-4 sm:right-6 z-50 px-4 py-2 sm:px-5 sm:py-3 rounded-full bg-gray-800 text-white text-xs sm:text-sm shadow-lg hover:bg-gray-700 transition w-[90%] sm:w-auto max-w-sm"
           onClick={() => setReviewMode(true)}
         >
           🧠 Review Past Exercises
@@ -790,7 +792,7 @@ function ExerciseCard({
       {/* <h3 className="font-semibold text-md mb-4">{exercise.question}</h3> */}
       <MathPreview value={exercise.question} />
 
-      <div className="grid grid-cols-2 gap-6">
+      <div className="flex flex-col lg:flex-row gap-4">
         {/* Left Column: Question Choices */}
         <div>
           {exercise.choices.map((choice, i) => (
