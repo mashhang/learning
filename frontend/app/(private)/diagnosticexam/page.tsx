@@ -525,7 +525,7 @@ export default function DiagnosticExam() {
             </button>
 
             <div
-              className={`fixed top-20 left-0 z-40 bg-white w-64 h-[calc(100vh-5rem)] border-r transition-transform duration-300 transform ${
+              className={`fixed top-0 left-0 z-40 bg-white w-64 h-[calc(100vh-5rem)] border-r transition-transform duration-300 transform ${
                 sidebarOpen ? "translate-x-0" : "-translate-x-full"
               } md:relative md:translate-x-0 md:block px-4`}
             >
@@ -594,17 +594,17 @@ export default function DiagnosticExam() {
 
             {/* Main Exam Content (Right) */}
             <div className="flex-1 overflow-y-auto">
-              <div className="flex-1 overflow-auto px-4 sm:px-10">
+              <div className="flex-1 overflow-auto px-4 sm:px-8">
                 {/* Top Header:  Title and Progress */}
-                <div className="flex flex-col md:flex-row justify-between items-center mb-6  px-10">
-                  <h1 className="text-3xl font-bold text-[#30608E]">
+                <div className="flex flex-col md:flex-row justify-between items-center mb-4 px-8">
+                  <h1 className="text-2xl lg:text-3xl font-bold text-[#30608E]">
                     {/* Title */}
                     Diagnostic Exam
                   </h1>
 
                   {/* Center progress bar */}
                   <div className="flex flex-col items-center flex-grow text-center">
-                    <span className="text-sm text-gray-500">
+                    <span className="text-xs lg:text-sm text-gray-500">
                       Exam Question Progress ({currentIndex + 1}/
                       {shuffledQuestions.length})
                     </span>
@@ -625,7 +625,7 @@ export default function DiagnosticExam() {
                 <div className="w-[180px]" />
                 */}
                   {remainingSeconds !== null && (
-                    <div className="inline-flex items-center gap-2 px-4 py-1 bg-red-100 text-red-700 font-semibold rounded-full shadow-sm border border-red-300 text-sm">
+                    <div className="inline-flex items-center gap-2 px-4 py-1 mt-4 md:mt-0 bg-red-100 text-red-700 font-semibold rounded-full shadow-sm border border-red-300 text-xs lg:text-sm">
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
                         className="h-4 w-4"
@@ -651,7 +651,7 @@ export default function DiagnosticExam() {
                   <div className="flex flex-col items-center gap-6 mt-10">
                     <div className="bg-white border rounded-lg p-6 shadow-md w-full max-w-[95%] mx-auto">
                       {/* Question Count Label */}
-                      <div className="text-left text-sm font-semibold mb-4 text-gray-700">
+                      <div className="text-left text-xs lg:text-sm font-semibold mb-4 text-gray-700">
                         Question {currentIndex + 1} of{" "}
                         {shuffledQuestions.length}
                       </div>
@@ -659,7 +659,7 @@ export default function DiagnosticExam() {
                       {/* Question Text */}
                       {shuffledQuestions[currentIndex].question && (
                         <div className="overflow-x-auto max-w-full">
-                          <div className="inline-block min-w-fit text-gray-800 text-base leading-relaxed select-none">
+                          <div className="inline-block min-w-fit text-gray-800 text-sm lg:text-base leading-relaxed select-none">
                             <MathJax inline>
                               {`\\( ${shuffledQuestions[currentIndex].question} \\)`}
                             </MathJax>
@@ -685,7 +685,7 @@ export default function DiagnosticExam() {
                       )}
 
                       {/* Answer Choices */}
-                      <div className="mt-6 space-y-3">
+                      <div className="mt-6 space-y-3 text-sm lg:text-base">
                         {shuffledQuestions[currentIndex].choices
                           .filter((choice) => choice && choice.trim() !== "")
                           .map((choice, index) => (
@@ -732,12 +732,12 @@ export default function DiagnosticExam() {
                               [shuffledQuestions[currentIndex].id]: null,
                             }))
                           }
-                          className="text-sm text-gray-700 px-3 py-1 border border-gray-400 rounded hover:bg-gray-100"
+                          className="text-xs lg:text-sm text-gray-700 px-3 py-1 border border-gray-400 rounded hover:bg-gray-100"
                         >
                           Reset Answer
                         </button>
 
-                        <label className="text-sm text-gray-700 flex items-center gap-2">
+                        <label className="text-xs lg:text-sm text-gray-700 flex items-center gap-2">
                           <input
                             type="checkbox"
                             className="form-checkbox"
@@ -772,7 +772,7 @@ export default function DiagnosticExam() {
                         <button
                           onClick={goToPrev}
                           disabled={currentIndex === 0}
-                          className={`w-full sm:w-36 px-4 py-3 rounded text-white text-sm font-semibold transition ${
+                          className={`w-full sm:w-36 px-4 py-3 rounded text-white text-xs lg:text-sm font-semibold transition ${
                             currentIndex === 0
                               ? "bg-gray-300 cursor-not-allowed text-gray-600"
                               : "bg-blue-700 hover:bg-blue-800"
@@ -786,7 +786,7 @@ export default function DiagnosticExam() {
                           disabled={
                             currentIndex === shuffledQuestions.length - 1
                           }
-                          className={`w-full sm:w-36 px-4 py-3 rounded text-white text-sm font-semibold transition ${
+                          className={`w-full sm:w-36 px-4 py-3 rounded text-white text-xs lg:text-sm font-semibold transition ${
                             currentIndex === shuffledQuestions.length - 1
                               ? "bg-gray-300 cursor-not-allowed text-gray-600"
                               : "bg-blue-700 hover:bg-blue-800"
@@ -800,7 +800,7 @@ export default function DiagnosticExam() {
                       <button
                         onClick={handleSubmitExam}
                         disabled={isSubmitting}
-                        className={`min-w-[100px] px-4 py-3 rounded text-white text-sm font-semibold transition flex items-center justify-center
+                        className={`min-w-[100px] px-4 py-3 rounded text-white text-xs lg:text-sm font-semibold transition flex items-center justify-center
     ${
       isSubmitting
         ? "bg-gray-400 cursor-not-allowed"
@@ -847,7 +847,7 @@ export default function DiagnosticExam() {
                 <div className="bg-[#fffaf5] p-8 rounded-lg shadow-xl w-full max-w-5xl max-h-[90vh] overflow-y-auto relative mx-8">
                   <button
                     onClick={() => setShowSummary(false)}
-                    className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-xl"
+                    className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-lg lg:text-xl"
                   >
                     ✕
                   </button>
@@ -864,7 +864,7 @@ export default function DiagnosticExam() {
 
                   <div className="flex justify-center mt-6">
                     <button
-                      className="px-6 py-2 bg-blue-700 hover:bg-blue-800 text-white rounded"
+                      className="px-6 py-2 bg-blue-700 hover:bg-blue-800 text-white rounded text-sm lg:text-base"
                       onClick={handleBackToDashboard}
                     >
                       Continue
@@ -879,12 +879,14 @@ export default function DiagnosticExam() {
       <AlertDialog open={showResetDialog} onOpenChange={setShowResetDialog}>
         <AlertDialogContent className="animate-fade-in duration-300">
           <AlertDialogHeader>
-            <span className="flex">
+            <span className="flex ">
               <AlertTriangle className="my-auto text-yellow-500 w-6 h-6 mr-2" />
-              <AlertDialogTitle>Session Ended</AlertDialogTitle>
+              <AlertDialogTitle className="text-base lg:text-lg">
+                Session Ended
+              </AlertDialogTitle>
             </span>
           </AlertDialogHeader>
-          <div className="text-sm text-gray-600">
+          <div className="text-sm lg:text-base text-gray-600">
             You left the exam window. The exam will now reset.
           </div>
           <AlertDialogFooter>
@@ -893,7 +895,7 @@ export default function DiagnosticExam() {
                 setShowResetDialog(false);
                 location.reload(); // ✅ Reload after clicking OK
               }}
-              className="bg-blue-600 hover:bg-blue-700 text-white"
+              className="bg-blue-600 hover:bg-blue-700 text-white text-sm lg:text-base px-10"
             >
               OK
             </AlertDialogAction>

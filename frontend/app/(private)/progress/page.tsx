@@ -12,8 +12,6 @@ import API_URL from "@/lib/getApiUrl";
 // const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
 
 export default function ProgressReport() {
-  const { isSidebarOpen } = useSidebar();
-
   type LessonWithProgress = {
     lessonId: string;
     title: string;
@@ -70,193 +68,223 @@ export default function ProgressReport() {
     ? getTimeAgo(lastActivityLesson.updatedAt)
     : "No activity yet";
 
+  const { isSidebarOpen, sidebarWidth } = useSidebar();
+
   return (
     <ProtectedRoute>
       <div
-        className="transition-all duration-300 ease-in-out bg-[#EFEFEF] overflow-hidden"
+        className="bg-no-repeat bg-cover bg-center bg-fixed"
         style={{
-          marginLeft: isSidebarOpen ? "7rem" : "0",
-          width: isSidebarOpen ? `calc(100% - 7rem)` : "100%",
-          height: "100vh",
+          backgroundImage: `url('/bg-mylesson.png')`,
+          minHeight: "100vh",
         }}
       >
-        <div className="pt-[105px] p-6 w-[1520px] ml-[200px]">
-          <div className="grid grid-cols-3 grid-rows-3 gap-8 h-full">
-            {/* ----------------------PROGRESS OVERVIEW---------------------- */}
-            <div className="w-full h-[250px] bg-white shadow-custom col-span-2 row-span-1 col-start-1 row-start-1 rounded-xl px-10 pt-4">
-              <h1 className="text-[28px] font-medium">Progress Overview</h1>
+        <div
+          className="transition-all duration-300 ease-in-out lg:overflow-hidden"
+          style={{
+            marginLeft: isSidebarOpen
+              ? window.innerWidth >= 768
+                ? sidebarWidth
+                : "0"
+              : "0",
+            width: isSidebarOpen
+              ? window.innerWidth >= 768
+                ? `calc(100% - ${sidebarWidth})`
+                : "100%"
+              : "100%",
+            height: "100vh",
+          }}
+        >
+          <div className="pt-[105px] px-4 md:px-6 lg:px-10 pb-12 md:pb-0 mx-auto w-full max-w-[1520px]">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
+              {/* ----------------------PROGRESS OVERVIEW---------------------- */}
+              <div className="w-full bg-white border-[#d4d4d4] border-[1px] h-auto shadow-custom col-span-1 lg:col-span-2 md:row-span-1 md:col-start-1 md:row-start-1 rounded-xl px-6 pt-4">
+                <h1 className="text-xl lg:text-2xl font-medium">
+                  Progress Overview
+                </h1>
 
-              <div className="flex flex-row mt-3">
-                <p className="font-semibold mr-[5px]">Total Lessons:</p>
-                <p>{totalLessons}</p>
-              </div>
-
-              <div className="flex flex-row">
-                <p className="font-semibold mr-[5px]">Completed: </p>
-                <p>
-                  {completedLessons}/{totalLessons}
-                </p>
-              </div>
-
-              <div className="flex flex-row">
-                <p className="font-semibold mr-[5px]">Average Score: </p>
-                <p>88%</p>
-              </div>
-
-              {lessons.length > 0 && (
-                <div className="flex flex-row">
-                  <p className="font-semibold mr-[5px]">Last Activity: </p>
-                  <p>{lastActivity}</p>
+                <div className="flex flex-row mt-3">
+                  <p className="font-semibold mr-[5px] text-sm lg:text-base">
+                    Total Lessons:
+                  </p>
+                  <p className="text-sm lg:text-base">{totalLessons}</p>
                 </div>
-              )}
 
-              <div className="bg-[#979797] w-full h-[15px] rounded-xl mt-3">
-                <div
-                  className="bg-[#30608E] h-[15px] rounded-l-xl"
-                  style={{ width: `${progressPercent}%` }}
-                ></div>
+                <div className="flex flex-row">
+                  <p className="font-semibold mr-[5px] text-sm lg:text-base">
+                    Completed:{" "}
+                  </p>
+                  <p className="text-sm lg:text-base">
+                    {completedLessons}/{totalLessons}
+                  </p>
+                </div>
+
+                <div className="flex flex-row">
+                  <p className="font-semibold mr-[5px] text-sm lg:text-base">
+                    Average Score:{" "}
+                  </p>
+                  <p className="text-sm lg:text-base">88%</p>
+                </div>
+
+                {lessons.length > 0 && (
+                  <div className="flex flex-row">
+                    <p className="font-semibold mr-[5px] text-sm lg:text-base">
+                      Last Activity:{" "}
+                    </p>
+                    <p className="text-sm lg:text-base">{lastActivity}</p>
+                  </div>
+                )}
+
+                <div className="bg-[#979797] w-full h-[10px] lg:h-[15px] rounded-xl mt-3">
+                  <div
+                    className="bg-[#30608E] h-[10px] lg:h-[15px] rounded-l-xl"
+                    style={{ width: `${progressPercent}%` }}
+                  ></div>
+                </div>
+
+                {progressPercent === 0 ? (
+                  <p className="text-base lg:text-lg font-light my-2">
+                    Start your first lesson to begin your journey!
+                  </p>
+                ) : progressPercent < 50 ? (
+                  <p className="text-base lg:text-lg font-light my-2">
+                    Great job! Keep progressing through the course.
+                  </p>
+                ) : progressPercent < 100 ? (
+                  <p className="text-base lg:text-lg font-light my-2">
+                    You're more than halfway there. Keep going!
+                  </p>
+                ) : (
+                  <p className="text-base lg:text-lg font-light my-2">
+                    Congratulations! You’ve completed the course! 🎉
+                  </p>
+                )}
               </div>
+              {/* ----------------------Skill Development Goals---------------------- */}
+              <div className="w-full bg-white border-[#d4d4d4] border-[1px] h-auto shadow-custom col-span-1 lg:col-span-2 md:row-span-3 col-start-1 md:row-start-2 rounded-xl px-6 pt-4">
+                <h1 className="text-xl lg:text-2xl font-medium">
+                  Skill Development Goals
+                </h1>
 
-              {progressPercent === 0 ? (
-                <p className="text-[20px] font-light mt-3">
-                  Start your first lesson to begin your journey!
-                </p>
-              ) : progressPercent < 50 ? (
-                <p className="text-[20px] font-light mt-3">
-                  Great job! Keep progressing through the course.
-                </p>
-              ) : progressPercent < 100 ? (
-                <p className="text-[20px] font-light mt-3">
-                  You're more than halfway there. Keep going!
-                </p>
-              ) : (
-                <p className="text-[20px] font-light mt-3">
-                  Congratulations! You’ve completed the course! 🎉
-                </p>
-              )}
-            </div>
-            {/* ----------------------Skill Development Goals---------------------- */}
-            <div className="w-full h-[400px] bg-white shadow-custom col-span-2 row-span-3 col-start-1 row-start-2 rounded-xl px-10 pt-4">
-              <h1 className="text-[28px] font-medium">
-                Skill Development Goals
-              </h1>
+                {/* ----------------------Lesson 1---------------------- */}
+                <div className="flex flex-row">
+                  <p className="font-semibold mr-[5px] text-[#30608E] text-base lg:text-lg">
+                    Algebra
+                  </p>
+                </div>
 
-              {/* ----------------------Lesson 1---------------------- */}
-              <div className="flex flex-row mt-3">
-                <p className="font-semibold mr-[5px] text-[#30608E] text-[20px]">
-                  Algebra
-                </p>
-              </div>
-
-              <div className="flex flex-col">
-                <p className="font-light mr-[5px] text-[#666666]">
-                  Current Level: <span>Intermediate</span>
-                </p>
-                <p className="font-light mr-[5px] text-[#666666]">
-                  Suggested Next Step: Practice advanced equations
-                </p>
-
-                <button
-                  className="w-[150px] text-[14px] py-2 px-4 mt-4 bg-[#30608E] text-white rounded-md "
-                  //onClick={handleSignIn}
-                >
-                  Resume Lesson
-                </button>
-                <div className="mt-[25px] w-full h-[1px] bg-[#D6D6D6]"></div>
-              </div>
-
-              {/* ----------------------Lesson 2---------------------- */}
-              <div className="flex flex-row mt-3">
-                <p className="font-semibold mr-[5px] text-[#30608E] text-[20px]">
-                  Geometry
-                </p>
-              </div>
-
-              <div className="flex flex-col">
-                <p className="font-light mr-[5px] text-[#666666]">
-                  Current Level: <span>Beginner</span>
-                </p>
-                <p className="font-light mr-[5px] text-[#666666]">
-                  Suggested Next Step: Learn basic theorems
-                </p>
-
-                <button
-                  className="w-[150px] text-[14px] py-2 px-4 mt-4 bg-[#30608E] text-white rounded-md "
-                  //onClick={handleSignIn}
-                >
-                  View Lesson
-                </button>
-              </div>
-            </div>
-
-            {/* ----------------------Current Lesson---------------------- */}
-            <div className="w-full h-[250px] bg-white shadow-custom col-span-1 row-span-1 col-start-3 row-start-1 rounded-xl px-10 pt-4">
-              {currentLesson ? (
-                <>
-                  <h1 className="text-[28px] font-medium">Current Lesson</h1>
-                  <p className="font-semibold mr-[5px] text-[#30608E] text-[20px]">
-                    {currentLesson.title}
+                <div className="flex flex-col">
+                  <p className="font-light mr-[5px] text-[#666666] text-sm lg:text-base">
+                    Current Level: <span>Intermediate</span>
+                  </p>
+                  <p className="font-light mr-[5px] text-[#666666] text-sm lg:text-base">
+                    Suggested Next Step: Practice advanced equations
                   </p>
 
-                  <div className="flex flex-col">
-                    <p className="font-light mr-[5px] text-[#666666]">
-                      Status: In Progress
-                    </p>
-                    <p className="flex font-light mr-[5px] text-[#2D2D2D]">
-                      <BiSolidVideoRecording className="text-[#2D2D2D] mr-1 mt-1" />
-                      <span>Video: Basics of Algebra</span>
-                    </p>
-                    <p className="flex font-light mr-[5px] text-[#2D2D2D]">
-                      <RiBallPenFill className="mr-1 mt-1" />
-                      <span>Quiz: Practice Problems</span>
-                    </p>
-                    <p className="flex font-light mr-[5px] text-[#2D2D2D]">
-                      <PiReadCvLogoFill className="mr-1 mt-1" />
-                      <span>Reading: Theory Recap</span>
-                    </p>
-                  </div>
-                </>
-              ) : (
-                <p className="text-[#666]">No current lesson</p>
-              )}
-            </div>
-            {/* ----------------------Next Lessons---------------------- */}
-            <div className="w-full h-[400px] bg-white shadow-custom col-span-1 row-span-3 col-start-3 row-start-2 rounded-xl px-10 pt-4">
-              <h1 className="text-[28px] font-medium">Next Lessons</h1>
+                  <button
+                    className="w-[130px] lg:w-[150px] text-xs lg:text-sm py-2 px-4 mt-4 bg-[#30608E] text-white rounded-md "
+                    //onClick={handleSignIn}
+                  >
+                    Resume Lesson
+                  </button>
+                  <div className="mt-[25px] w-full h-[1px] bg-[#D6D6D6]"></div>
+                </div>
 
-              {nextLessons.length > 0 ? (
-                nextLessons.slice(0, 2).map((lesson, index) => (
-                  <div key={lesson.lessonId} className="mt-4">
-                    <p className="font-semibold text-[#30608E] text-[20px]">
-                      {lesson.title}
+                {/* ----------------------Lesson 2---------------------- */}
+                <div className="flex flex-row mt-3">
+                  <p className="font-semibold mr-[5px] text-[#30608E] text-base lg:text-lg">
+                    Geometry
+                  </p>
+                </div>
+
+                <div className="flex flex-col">
+                  <p className="font-light mr-[5px] text-[#666666] text-sm lg:text-base">
+                    Current Level: <span>Beginner</span>
+                  </p>
+                  <p className="font-light mr-[5px] text-[#666666] text-sm lg:text-base">
+                    Suggested Next Step: Learn basic theorems
+                  </p>
+
+                  <button
+                    className="w-[130px] lg:w-[150px] text-xs lg:text-sm py-2 px-4 my-4 bg-[#30608E] text-white rounded-md "
+                    //onClick={handleSignIn}
+                  >
+                    View Lesson
+                  </button>
+                </div>
+              </div>
+
+              {/* ----------------------Current Lesson---------------------- */}
+              <div className="w-full bg-white border-[#d4d4d4] border-[1px] h-auto shadow-custom col-span-1 md:row-span-1 lg:col-start-3 md:row-start-1 rounded-xl px-6 pt-4">
+                {currentLesson ? (
+                  <>
+                    <h1 className="text-xl lg:text-2xl font-medium">
+                      Current Lesson
+                    </h1>
+                    <p className="font-semibold mr-[5px] text-[#30608E] text-base lg:text-lg">
+                      {currentLesson.title}
                     </p>
+
                     <div className="flex flex-col">
-                      <p className="font-light mr-[5px] text-[#666666]">
-                        Status: <span>Pending</span>
+                      <p className="font-light mr-[5px] text-[#666666] text-sm lg:text-base">
+                        Status: In Progress
                       </p>
-                      <p className="font-light mr-[5px] text-[#666666]">
-                        Deadline: <span>Nov 22, 2024</span>
-                      </p>
-                      <p className="flex font-light mr-[5px] text-[#2D2D2D]">
+                      <p className="flex font-light my-2 mr-[5px] text-[#2D2D2D] text-sm lg:text-base">
                         <BiSolidVideoRecording className="text-[#2D2D2D] mr-1 mt-1" />
-                        <span>Video: Problem-Solving Skills</span>
+                        <span>Video: Basics of Algebra</span>
                       </p>
-                      <p className="flex font-light mr-[5px] text-[#2D2D2D]">
+                      <p className="flex font-light mb-2 mr-[5px] text-[#2D2D2D] text-sm lg:text-base">
                         <RiBallPenFill className="mr-1 mt-1" />
-                        <span>Quiz: Practice Test</span>
+                        <span>Quiz: Practice Problems</span>
+                      </p>
+                      <p className="flex font-light mb-2 mr-[5px] text-[#2D2D2D] text-sm lg:text-base">
+                        <PiReadCvLogoFill className="mr-1 mt-1" />
+                        <span>Reading: Theory Recap</span>
                       </p>
                     </div>
-                  </div>
-                ))
-              ) : (
-                <p className="text-[#666]">No upcoming lessons</p>
-              )}
+                  </>
+                ) : (
+                  <p className="text-[#666]">No current lesson</p>
+                )}
+              </div>
+              {/* ----------------------Next Lessons---------------------- */}
+              <div className="w-full bg-white border-[#d4d4d4] border-[1px] h-auto shadow-custom col-span-1 md:row-span-3 lg:col-start-3 md:row-start-2 rounded-xl px-6 pt-4">
+                <h1 className="text-xl lg:text-2xl font-medium">
+                  Next Lessons
+                </h1>
+
+                {nextLessons.length > 0 ? (
+                  nextLessons.slice(0, 2).map((lesson, index) => (
+                    <div key={lesson.lessonId}>
+                      <p className="font-semibold text-[#30608E] text-base lg:text-lg">
+                        {lesson.title}
+                      </p>
+                      <div className="flex flex-col">
+                        <p className="font-light mr-[5px] text-[#666666] text-sm lg:text-base">
+                          Status: <span>Pending</span>
+                        </p>
+                        <p className="font-light my-2 mr-[5px] text-[#666666] text-sm lg:text-base">
+                          Deadline: <span>Nov 22, 2024</span>
+                        </p>
+                        <p className="flex font-light mb-2 mr-[5px] text-[#2D2D2D] text-sm lg:text-base">
+                          <BiSolidVideoRecording className="text-[#2D2D2D] mr-1 mt-1" />
+                          <span>Video: Problem-Solving Skills</span>
+                        </p>
+                        <p className="flex font-light mb-2 mr-[5px] text-[#2D2D2D] text-sm lg:text-base">
+                          <RiBallPenFill className="mr-1 mt-1" />
+                          <span>Quiz: Practice Test</span>
+                        </p>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-[#666]">No upcoming lessons</p>
+                )}
+              </div>
+              {/* ----------------------------------------------------------- */}
             </div>
-            {/* ----------------------------------------------------------- */}
           </div>
         </div>
-
-        <div></div>
       </div>
     </ProtectedRoute>
   );

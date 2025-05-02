@@ -93,97 +93,105 @@ export default function Announcements() {
   return (
     <ProtectedRoute>
       <div
-        className={`transition-all duration-300 ease-in-out bg-[#ffffff] overflow-hidden w-${sidebarWidth} min-h-[calc(100vh - 64px)]`}
+        className="bg-no-repeat bg-cover bg-center bg-fixed"
         style={{
-          marginLeft: isSidebarOpen
-            ? window.innerWidth >= 768
-              ? sidebarWidth
-              : "0"
-            : "0",
-          width: isSidebarOpen
-            ? window.innerWidth >= 768
-              ? `calc(100% - ${sidebarWidth})`
-              : "100%"
-            : "100%",
+          backgroundImage: `url('/bg-mylesson.png')`,
+          minHeight: "100vh",
         }}
       >
-        <div className="pt-16 md:pt-[96px] md:mx-40 mb-6 p-6">
-          <h1 className="text-xl md:text-4xl mb-4">Announcements</h1>
+        <div
+          className={`transition-all duration-300 ease-in-out overflow-hidden w-${sidebarWidth} min-h-[calc(100vh - 64px)]`}
+          style={{
+            marginLeft: isSidebarOpen
+              ? window.innerWidth >= 768
+                ? sidebarWidth
+                : "0"
+              : "0",
+            width: isSidebarOpen
+              ? window.innerWidth >= 768
+                ? `calc(100% - ${sidebarWidth})`
+                : "100%"
+              : "100%",
+          }}
+        >
+          <div className="pt-16 md:pt-[96px] md:mx-40 mb-6 p-6">
+            <h1 className="text-xl md:text-4xl mb-4">Announcements</h1>
 
-          {/* Filter buttons */}
-          <div className="flex gap-2">
-            {["All", "Unread", "Read"].map((label) => (
-              <button
-                key={label}
-                className={`md:w-20 w-16 md:px-1 py-2 md:py-1 text-xs md:text-base rounded-lg md:rounded-2xl text-center transition-all shadow-sm ${
-                  active === label
-                    ? "bg-[#a3a3a3] text-[#ffffff]"
-                    : "bg-[#D9D9D9] text-[#4f4f4f] hover:bg-[#a3a3a3] hover:text-[#ffffff]"
-                }`}
-                onClick={() => setActive(label)}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-
-          {/* Announcements list */}
-          <div className="mt-10 space-y-10">
-            {filteredAnnouncements.map((announcement) => (
-              <div
-                key={announcement.id}
-                onClick={() => markAsRead(announcement.id)}
-                className="cursor-pointer"
-              >
-                {/* Admin Info */}
-                <div className="ml-2">
-                  <p className="text-lg md:text-xl text-[#000000]">
-                    {announcement.author || "Admin"}
-                  </p>
-                  <p className="text-xs md:text-sm text-[#474747]">Admin</p>
-                </div>
-
-                {/* Announcement Content */}
-                <div
-                  className="bg-[#D9D9D9] w-full h-auto p-3 rounded-xl shadow-custom mt-2"
-                  onClick={() => {
-                    setSelectedAnnouncement(announcement);
-                    setIsPreviewOpen(true);
-                    markAsRead(announcement.id); // (optional: you can move it to after closing if you prefer)
-                  }}
-                >
-                  <div className=" mx-4 md:mx-12 text-[#2D2D2D] space-y-2">
-                    <p className="text-base md:text-xl font-medium">
-                      {announcement.title}
-                    </p>
-                    <p className="text-justify">{announcement.content}</p>
-                  </div>
-                </div>
-
-                {/* Timestamp */}
-                <p
-                  className={`text-xs md:text-sm text-right mr-3 mt-2 ${
-                    announcement.createdAt !== announcement.updatedAt
-                      ? "italic text-gray-500"
-                      : "text-[#474747]"
+            {/* Filter buttons */}
+            <div className="flex gap-2">
+              {["All", "Unread", "Read"].map((label) => (
+                <button
+                  key={label}
+                  className={`md:w-20 w-16 md:px-1 py-2 md:py-1 text-xs md:text-base rounded-lg md:rounded-2xl text-center transition-all shadow-sm ${
+                    active === label
+                      ? "bg-[#a3a3a3] text-[#ffffff]"
+                      : "bg-[#D9D9D9] text-[#4f4f4f] hover:bg-[#a3a3a3] hover:text-[#ffffff]"
                   }`}
+                  onClick={() => setActive(label)}
                 >
-                  {announcement.createdAt === announcement.updatedAt
-                    ? new Date(announcement.createdAt).toLocaleString()
-                    : `Updated at ${new Date(
-                        announcement.updatedAt
-                      ).toLocaleString()}`}
-                </p>
-              </div>
-            ))}
+                  {label}
+                </button>
+              ))}
+            </div>
+
+            {/* Announcements list */}
+            <div className="mt-8 space-y-4">
+              {filteredAnnouncements.map((announcement) => (
+                <div
+                  key={announcement.id}
+                  onClick={() => markAsRead(announcement.id)}
+                  className="cursor-pointer"
+                >
+                  {/* Admin Info */}
+                  <div className="ml-2">
+                    <p className="text-lg md:text-xl text-[#000000]">
+                      {announcement.author || "Admin"}
+                    </p>
+                    <p className="text-xs md:text-sm text-[#474747]">Admin</p>
+                  </div>
+
+                  {/* Announcement Content */}
+                  <div
+                    className="bg-[#D9D9D9] w-full h-auto p-3 rounded-xl shadow-custom mt-2"
+                    onClick={() => {
+                      setSelectedAnnouncement(announcement);
+                      setIsPreviewOpen(true);
+                      markAsRead(announcement.id); // (optional: you can move it to after closing if you prefer)
+                    }}
+                  >
+                    <div className=" mx-4 md:mx-12 text-[#2D2D2D] space-y-2">
+                      <p className="text-base md:text-xl font-medium">
+                        {announcement.title}
+                      </p>
+                      <p className="text-justify">{announcement.content}</p>
+                    </div>
+                  </div>
+
+                  {/* Timestamp */}
+                  <p
+                    className={`text-xs md:text-sm text-right mr-3 mt-2 ${
+                      announcement.createdAt !== announcement.updatedAt
+                        ? "italic text-gray-500"
+                        : "text-[#474747]"
+                    }`}
+                  >
+                    {announcement.createdAt === announcement.updatedAt
+                      ? new Date(announcement.createdAt).toLocaleString()
+                      : `Updated at ${new Date(
+                          announcement.updatedAt
+                        ).toLocaleString()}`}
+                  </p>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
+        <AnnouncementPreviewModal
+          isOpen={isPreviewOpen}
+          onClose={() => setIsPreviewOpen(false)}
+          announcement={selectedAnnouncement}
+        />
       </div>
-      <AnnouncementPreviewModal
-        isOpen={isPreviewOpen}
-        onClose={() => setIsPreviewOpen(false)}
-        announcement={selectedAnnouncement}
-      />
     </ProtectedRoute>
   );
 }

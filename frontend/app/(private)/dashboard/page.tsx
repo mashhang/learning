@@ -216,7 +216,7 @@ export default function Dashboard() {
             {/* max-w-[1520px] */}
             <div className="max-w-full  xl:max-w-[1520px] p-8 md:p-14 mb-40 mx-auto">
               <div className="h-full grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div className="w-full bg-white border-black border-[1px] rounded-xl pt-2 pb-4 shadow-custom">
+                <div className="w-full bg-white border-[#b3b3b3] border-[1px] rounded-xl pt-2 pb-4 shadow-custom">
                   <h1 className="text-center text-2xl md:text-3xl font-medium">
                     Current Lesson
                   </h1>
@@ -254,7 +254,7 @@ export default function Dashboard() {
                     )}
                   </div>
                 </div>
-                <div className="w-full bg-white border-black border-[1px] rounded-xl pt-2 pb-4 shadow-custom">
+                <div className="w-full bg-white border-[#b3b3b3] border-[1px] rounded-xl pt-2 pb-4 shadow-custom">
                   <h1 className="text-center text-2xl md:text-3xl font-medium">
                     Progress Report
                   </h1>
@@ -308,7 +308,7 @@ export default function Dashboard() {
                   </div>
                 </div>
 
-                <div className="w-full bg-white border-black border-[1px] rounded-xl pt-2 pb-4 shadow-custom">
+                <div className="w-full bg-white border-[#b3b3b3] border-[1px] rounded-xl pt-2 pb-4 shadow-custom">
                   <h1 className="text-center text-2xl md:text-3xl font-medium">
                     Next Lessons
                   </h1>
@@ -333,7 +333,7 @@ export default function Dashboard() {
                   </div>
                 </div>
 
-                <div className="w-full bg-white border-black border-[1px] rounded-xl pt-2 pb-4 shadow-custom">
+                <div className="w-full bg-white border-[#b3b3b3] border-[1px] rounded-xl pt-2 pb-4 shadow-custom">
                   <h1 className="text-center text-2xl md:text-3xl font-medium">
                     Announcements
                   </h1>
