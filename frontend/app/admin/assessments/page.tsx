@@ -8,7 +8,10 @@ import API_URL from "@/lib/getApiUrl";
 
 type AssessmentEntry = {
   userId: string;
+  studentId: string;
   userName: string;
+  lastName: string;
+  firstName: string;
   userEmail: string;
   lessonTitle: string;
   type: "PRE" | "POST" | "DIAGNOSTIC";
@@ -54,9 +57,19 @@ export default function AssessmentHistoryPage() {
   useEffect(() => {
     let result = [...data];
     if (search) {
-      result = result.filter((entry) =>
-        entry.userName.toLowerCase().includes(search.toLowerCase())
-      );
+      result = result.filter((entry) => {
+        const matchesLastName = entry.lastName
+          ?.toLowerCase()
+          .includes(search.toLowerCase());
+        const matchesFirstName = entry.firstName
+          ?.toLowerCase()
+          .includes(search.toLowerCase());
+        const matchesStudentId = entry.studentId
+          ?.toLowerCase()
+          .includes(search.toLowerCase());
+
+        return matchesLastName || matchesFirstName || matchesStudentId;
+      });
     }
     if (typeFilter !== "ALL") {
       result = result.filter((entry) => entry.type === typeFilter);
@@ -126,8 +139,12 @@ export default function AssessmentHistoryPage() {
         <tbody>
           {filtered.map((entry, idx) => (
             <tr key={idx} className="border-t">
-              <td className="p-2">{entry.userEmail?.split("@")[0] || "-"}</td>
-              <td className="p-2">{entry.userName}</td>
+              <td className="p-2">{entry.studentId}</td>
+              {/* <td className="p-2">{entry.userEmail?.split("@")[0] || "-"}</td> */}
+              <td className="p-2">
+                {entry.lastName}, {entry.firstName}
+                {/* {entry.userName} */}
+              </td>
               <td className="p-2">{entry.lessonTitle}</td>
               <td className="p-2">{entry.type}</td>
               <td className="p-2">

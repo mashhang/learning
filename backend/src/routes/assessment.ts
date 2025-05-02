@@ -44,7 +44,9 @@ router.get("/admin/assessments", async (req, res) => {
 
     const results = Object.values(grouped).map((entry: any) => ({
       userId: entry.user.id,
-      userName: entry.user.name,
+      studentId: entry.user.studentId,
+      lastName: entry.user.lastName,
+      firstName: entry.user.firstName,
       userEmail: entry.user.email,
       lessonTitle: entry.lesson.title,
       type: entry.type,

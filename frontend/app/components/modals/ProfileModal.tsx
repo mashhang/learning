@@ -7,7 +7,9 @@ import API_URL from "@/lib/getApiUrl";
 
 const ProfileModal = ({ userId }: { userId: string }) => {
   const [user, setUser] = useState<{
-    name: string;
+    studentId: string;
+    lastName: string;
+    firstName: string;
     email: string;
     createdAt: string;
   } | null>(null);
@@ -43,7 +45,10 @@ const ProfileModal = ({ userId }: { userId: string }) => {
         My Account
       </h2>
       <p className="text-sm md:text-base">
-        <strong>Name:</strong> {user?.name}
+        <strong>Student ID:</strong> {user?.studentId}
+      </p>
+      <p className="text-sm md:text-base">
+        <strong>Name:</strong> {user?.lastName}, {user?.firstName}
       </p>
       <p className="text-sm md:text-base">
         <strong>Email:</strong> {user?.email}

@@ -12,6 +12,7 @@ import API_URL from "@/lib/getApiUrl";
 
 export default function Login() {
   const [email, setEmail] = useState("");
+  const [studentId, setStudentId] = useState("");
   const [password, setPassword] = useState("");
   const { login } = useAuth();
   const { user, isLoading } = useAuth(); // 👈 Get auth state
@@ -19,6 +20,7 @@ export default function Login() {
 
   useEffect(() => {
     if (!isLoading && user) {
+      if (user.mustResetPassword) return;
       const destination = user.role === "ADMIN" ? "/admin" : "/dashboard";
       router.push(destination);
     }
@@ -28,13 +30,23 @@ export default function Login() {
   if (isLoading || user) return null;
 
   const handleLogin = async () => {
-    if (!email.trim() && !password.trim()) {
-      toast.error("All fields are required.");
+    // if (!email.trim() && !password.trim()) {
+    //   toast.error("All fields are required.");
+    //   return;
+    // }
+
+    if (!studentId.trim() && !password.trim()) {
+      toast.error("Please enter your username.");
       return;
     }
 
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      toast.error("Please enter a valid email.");
+    // if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    //   toast.error("Please enter a valid email.");
+    //   return;
+    // }
+
+    if (!studentId.trim()) {
+      toast.error("Please enter your student ID.");
       return;
     }
 
@@ -48,7 +60,7 @@ export default function Login() {
         // ✅ Use API_URL
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ studentId: studentId.trim(), password }),
       });
 
       const data = await res.json();
@@ -59,7 +71,11 @@ export default function Login() {
       localStorage.setItem("token", data.token);
       login(data.user, data.token);
       toast.success("Login successful!");
-      router.push("/dashboard");
+      if (data.user.mustResetPassword) {
+        router.push("/reset-password-required"); // 🔁 go to force-reset page
+      } else {
+        router.push("/dashboard");
+      }
     } catch (error) {
       console.error("Login Error:", error);
       toast.error((error as Error).message || "Something went wrong");
@@ -86,18 +102,18 @@ export default function Login() {
         className="flex flex-col items-center"
       >
         <input
-          type="email"
-          placeholder="Enter your email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className="border-black border-[1px] rounded-xl text-[18px] py-2 px-2 mt-16 mb-5"
+          type="text"
+          placeholder="Username"
+          value={studentId}
+          onChange={(e) => setStudentId(e.target.value)}
+          className="border-black border-[1px] rounded-xl text-[18px] py-2 px-2 mt-16 mb-5 transition"
         />
         <input
           type="password"
-          placeholder="Enter your password"
+          placeholder="Password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="border-black border-[1px] rounded-xl text-[18px] py-2 px-2 mb-12"
+          className="border-black border-[1px] rounded-xl text-[18px] py-2 px-2 mb-12 transition"
         />
 
         <button

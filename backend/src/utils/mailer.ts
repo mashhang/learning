@@ -13,7 +13,8 @@ const FRONTEND_API_URL = getFrontendAPIUrl();
  */
 export const sendVerificationEmail = async (
   to: string,
-  name: string,
+  lastName: string,
+  firstName: string,
   token: string
 ) => {
   const transporter = nodemailer.createTransport({
@@ -31,7 +32,7 @@ export const sendVerificationEmail = async (
     to,
     subject: "Verify your email",
     html: `
-      <h2>Hello, ${name}!</h2>
+      <h2>Hello, ${lastName}, ${firstName} !</h2>
       <p>Thank you for registering. Please click the button below to verify your email address:</p>
       <a href="${verifyUrl}" style="padding: 10px 20px; background: #30608E; color: white; text-decoration: none;">Verify Email</a>
       <p>If you did not create an account, please ignore this email.</p>
@@ -43,7 +44,8 @@ export const sendVerificationEmail = async (
 
 export const sendResetPasswordEmail = async (
   to: string,
-  name: string,
+  lastName: string,
+  firstName: string,
   token: string
 ) => {
   const transporter = nodemailer.createTransport({
@@ -61,12 +63,18 @@ export const sendResetPasswordEmail = async (
     to,
     subject: "Reset Your Password",
     html: `
-      <h2>Hello, ${name}!</h2>
+      <h2>Hello, ${lastName}, ${firstName}!</h2>
       <p>Click the button below to reset your password. This link will expire in 30 minutes:</p>
       <a href="${resetUrl}" style="padding: 10px 20px; background: #E67300; color: white; text-decoration: none;">Reset Password</a>
       <p>If you didn't request this, you can ignore the email.</p>
     `,
   };
 
-  await transporter.sendMail(mailOptions);
+  try {
+    await transporter.sendMail(mailOptions);
+    console.log("✅ Reset email sent to", to);
+  } catch (err) {
+    console.error("❌ Failed to send email:", err);
+    throw err; // allow it to bubble to the API response
+  }
 };

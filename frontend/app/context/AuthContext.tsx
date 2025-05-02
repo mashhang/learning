@@ -5,9 +5,12 @@ import { useRouter } from "next/navigation";
 
 type User = {
   id: string;
-  name: string;
+  studentId: string;
+  lastName: string;
+  firstName: string;
   email: string;
   role: "USER" | "ADMIN";
+  mustResetPassword: boolean;
 };
 
 type AuthContextType = {

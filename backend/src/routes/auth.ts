@@ -25,7 +25,7 @@ export const registerUser = async (
   res: Response
 ): Promise<void> => {
   try {
-    const { name, email, password } = req.body;
+    const { lastName, firstName, email, password } = req.body;
 
     // ✅ Allow only institutional emails
     const allowedDomain = "@itmlyceumalabang.onmicrosoft.com";
@@ -45,7 +45,13 @@ export const registerUser = async (
 
     const hashedPassword = await bcrypt.hash(password, 10);
     const user = await prisma.user.create({
-      data: { name, email, password: hashedPassword, role: "USER" },
+      data: {
+        lastName,
+        firstName,
+        email,
+        password: hashedPassword,
+        role: "USER",
+      },
     });
 
     // Email verification setup
@@ -71,7 +77,7 @@ export const registerUser = async (
       to: email,
       subject: "Verify your email",
       html: `
-        <h2>Welcome to the Learning App, ${name}!</h2>
+        <h2>Welcome to the Learning App, ${lastName} ${firstName}!</h2>
         <p>Please click the button below to verify your email address:</p>
         <a href="${verificationLink}" style="padding: 10px 20px; background: #30608E; color: white; text-decoration: none;">Verify Email</a>
       `,
@@ -131,21 +137,27 @@ export const verifyEmail = async (
  */
 export const loginUser = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { email, password } = req.body;
+    const { studentId, email, password } = req.body;
 
-    const user = await prisma.user.findUnique({ where: { email } });
+    let user;
+
+    if (studentId) {
+      user = await prisma.user.findUnique({ where: { studentId } });
+    } else if (email) {
+      user = await prisma.user.findUnique({ where: { email } });
+    }
 
     if (!user || !(await bcrypt.compare(password, user.password))) {
       res.status(400).json({ error: "Invalid email or password" });
       return;
     }
 
-    if (!user.isVerified) {
-      res
-        .status(403)
-        .json({ error: "Please verify your email before logging in." });
-      return;
-    }
+    // if (!user.isVerified) {
+    //   res
+    //     .status(403)
+    //     .json({ error: "Please verify your email before logging in." });
+    //   return;
+    // }
 
     const token = jwt.sign(
       { userId: String(user.id), role: user.role },
@@ -153,7 +165,14 @@ export const loginUser = async (req: Request, res: Response): Promise<void> => {
       { expiresIn: "1h" }
     );
 
-    res.json({ message: "Login successful", token, user });
+    res.json({
+      message: "Login successful",
+      token,
+      user: {
+        ...user,
+        mustResetPassword: user.mustResetPassword,
+      },
+    });
   } catch (error) {
     console.error("Login Error:", error);
     res.status(500).json({ error: "Something went wrong" });

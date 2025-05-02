@@ -53,7 +53,7 @@ export default function AdminAnnouncements() {
       const payload = {
         title: data.title,
         content: data.content,
-        author: user.name, // ✅ Auto-set admin's name
+        author: `${user.lastName}, ${user.firstName}`, // ✅ Auto-set admin's name
       };
 
       const method = id ? "PUT" : "POST";

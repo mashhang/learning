@@ -10,7 +10,6 @@ import {
   BookOpen,
   ChartNoAxesColumn,
   LibraryBig,
-  Backpack,
   Bell,
   UserRound,
   Bolt,
@@ -344,10 +343,12 @@ const Navbar: React.FC<NavbarProps> = ({
             </div>
             <div className="text-center mb-2">
               {/* ✅ Show logged-in user name */}
-              <p className="font-[350]">{user?.name || "Guest"}</p>
+              <p className="font-[350]">
+                {user?.firstName} {user?.lastName || "Guest"}
+              </p>
               <p className="text-[#3C3C3C] font-[250] text-[12px]">
                 <strong>ID:</strong>
-                <span>{user?.email?.split("@")[0]}</span>
+                <span>{user?.studentId || "ID"}</span>
               </p>
             </div>
             {profilelinks.map((link) => (

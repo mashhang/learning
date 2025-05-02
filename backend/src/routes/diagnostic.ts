@@ -301,13 +301,13 @@ router.get("/admin/diagnostic-results", async (req, res) => {
     // Fetch user info separately
     const users = await prisma.user.findMany({
       where: { id: { in: userIds } },
-      select: { id: true, name: true, email: true },
+      select: { id: true, lastName: true, email: true },
     });
 
     const userMap = users.reduce((acc, user) => {
       acc[user.id] = user;
       return acc;
-    }, {} as Record<string, { id: string; name: string; email: string }>);
+    }, {} as Record<string, { id: string; lastName: string; email: string }>);
 
     // Group diagnostic results
     const grouped: Record<string, any> = {};
@@ -317,7 +317,7 @@ router.get("/admin/diagnostic-results", async (req, res) => {
       if (!grouped[key]) {
         grouped[key] = {
           userId: a.userId,
-          userName: userMap[a.userId]?.name || "Unknown",
+          userName: userMap[a.userId]?.lastName || "Unknown",
           userEmail: userMap[a.userId]?.email || "",
           type: "DIAGNOSTIC",
           total: 0,

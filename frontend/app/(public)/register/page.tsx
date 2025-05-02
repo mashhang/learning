@@ -23,12 +23,18 @@ export default function Register() {
   // Optional: prevent flicker
   if (isLoading || user) return null;
 
-  const [name, setName] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
   const handleRegister = async () => {
-    if (!name.trim() && !email.trim() && !password.trim()) {
+    if (
+      !firstName.trim() &&
+      !lastName.trim() &&
+      !email.trim() &&
+      !password.trim()
+    ) {
       toast.error("All fields are required.");
       return;
     }
@@ -40,8 +46,12 @@ export default function Register() {
       toast.error("Enter your password.");
       return;
     }
-    if (!name.trim()) {
-      toast.error("Enter your name.");
+    if (!firstName.trim()) {
+      toast.error("Enter your first name.");
+      return;
+    }
+    if (!lastName.trim()) {
+      toast.error("Enter your last name.");
       return;
     }
 
@@ -49,7 +59,7 @@ export default function Register() {
       const res = await fetch(`${API_URL}/api/auth/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, password }),
+        body: JSON.stringify({ firstName, lastName, email, password }),
       });
 
       const data = await res.json();
@@ -82,9 +92,15 @@ export default function Register() {
 
       <input
         type="name"
-        placeholder="Name"
-        onChange={(e) => setName(e.target.value)}
+        placeholder="Last Name"
+        onChange={(e) => setLastName(e.target.value)}
         className="border-black border-[1px] rounded-xl text-[18px] py-2 px-2 mt-8 mb-5"
+      />
+      <input
+        type="name"
+        placeholder="First Name"
+        onChange={(e) => setFirstName(e.target.value)}
+        className="border-black border-[1px] rounded-xl text-[18px] py-2 px-2 mb-5"
       />
 
       <input

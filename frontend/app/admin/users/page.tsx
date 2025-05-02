@@ -7,7 +7,9 @@ import API_URL from "@/lib/getApiUrl";
 
 type User = {
   id: string;
-  name: string;
+  studentId: string;
+  firstName: string;
+  lastName: string;
   email: string;
   role: "USER" | "ADMIN";
 };
@@ -15,36 +17,54 @@ type User = {
 export default function UsersAdmin() {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
+  const [studentSearch, setStudentSearch] = useState("");
+  const [adminSearch, setAdminSearch] = useState("");
+  const [data, setData] = useState<User[]>([]);
+  const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
+  const [filteredAdmins, setFilteredAdmins] = useState<User[]>([]);
 
   {
     /* Filter users */
   }
   const studentUsers = users.filter((u) => u.role === "USER");
   const adminUsers = users.filter((u) => u.role === "ADMIN");
+  const [loadingImport, setLoadingImport] = useState(false);
+
+  const fetchUsers = async () => {
+    try {
+      setLoading(true);
+      const res = await fetch(`${API_URL}/api/user`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
+
+      const data = await res.json();
+      setUsers(data);
+      setData(data);
+      setLoading(false);
+    } catch (error) {
+      console.error("Error fetching users:", error);
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    fetch(`${API_URL}/api/user`, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${localStorage.getItem("token")}`, // ✅ Send token
-      },
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        setUsers(data);
-        setLoading(false);
-      })
-      .catch((error) => {
-        console.error("Error fetching users:", error);
-        setLoading(false);
-      });
+    fetchUsers(); // ⬅️ initial fetch
   }, []);
 
   const exportStudentList = () => {
     const csv = [
-      ["Name", "Email", "Role"],
-      ...studentUsers.map((u) => [u.name, u.email, u.role]),
+      ["Student ID", "Last Name", "First Name", "Email", "Role"],
+      ...studentUsers.map((u) => [
+        u.studentId,
+        u.firstName,
+        u.lastName,
+        u.email,
+        u.role,
+      ]),
     ];
 
     const blob = new Blob([csv.map((r) => r.join(",")).join("\n")], {
@@ -58,7 +78,24 @@ export default function UsersAdmin() {
     link.click();
   };
 
-  const downloadUserScores = async (userId: string, userName: string) => {
+  const exportAdminList = () => {
+    const csv = [
+      ["Last Name", "First Name", "Email", "Role"],
+      ...adminUsers.map((u) => [u.lastName, u.firstName, u.email, u.role]),
+    ];
+
+    const blob = new Blob([csv.map((r) => r.join(",")).join("\n")], {
+      type: "text/csv",
+    });
+
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "admin_list.csv";
+    link.click();
+  };
+
+  const downloadUserScores = async (userId: string, studentId: string) => {
     try {
       // Fetch PRE/POST scores
       const prePostRes = await fetch(
@@ -111,7 +148,7 @@ export default function UsersAdmin() {
       link.href = url;
       const emailPrefix =
         users.find((u) => u.id === userId)?.email.split("@")[0] || "user";
-      link.download = `${emailPrefix}_scores.csv`;
+      link.download = `${studentId}_scores.csv`;
 
       link.click();
     } catch (err) {
@@ -136,15 +173,127 @@ export default function UsersAdmin() {
     }
   };
 
+  const handleImportCSV = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setLoadingImport(true); // ✅ Show loader
+
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      const text = event.target?.result as string;
+      const lines = text.split("\n").filter((line) => line.trim() !== "");
+      const [headerLine, ...dataLines] = lines;
+      const headers = headerLine.split(",").map((h) => h.trim());
+
+      const users = dataLines.map((line) => {
+        const values = line.split(",").map((v) => v.trim());
+        const user: Record<string, string> = {};
+        headers.forEach((h, i) => (user[h] = values[i]));
+        return user;
+      });
+
+      try {
+        const res = await fetch(`${API_URL}/api/user/import`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+          body: JSON.stringify({ users }),
+        });
+
+        const result = await res.json();
+        alert(
+          `✅ Imported ${result.created} users.\n❌ Skipped ${
+            result.skipped
+          } existing emails:\n${result.skippedEmails.join("\n")}`
+        );
+        await fetchUsers();
+      } catch (error) {
+        console.error(error);
+        alert("❌ Error importing users.");
+      } finally {
+        setLoadingImport(false); // ✅ Hide loader
+      }
+    };
+
+    reader.readAsText(file);
+  };
+
+  useEffect(() => {
+    // Student filtering
+    const filteredStudents = data.filter((entry) => {
+      const matchesLastName = entry.lastName
+        ?.toLowerCase()
+        .includes(studentSearch.toLowerCase());
+      const matchesFirstName = entry.firstName
+        ?.toLowerCase()
+        .includes(studentSearch.toLowerCase());
+      const matchesStudentId = entry.studentId
+        ?.toLowerCase()
+        .includes(studentSearch.toLowerCase());
+
+      return (
+        entry.role === "USER" &&
+        (matchesLastName || matchesFirstName || matchesStudentId)
+      );
+    });
+
+    // Admin filtering
+    const filteredAdmins = data.filter((entry) => {
+      const matchesLastName = entry.lastName
+        ?.toLowerCase()
+        .includes(adminSearch.toLowerCase());
+      const matchesFirstName = entry.firstName
+        ?.toLowerCase()
+        .includes(adminSearch.toLowerCase());
+      const matchesEmail = entry.email
+        ?.toLowerCase()
+        .includes(adminSearch.toLowerCase());
+
+      return (
+        entry.role === "ADMIN" &&
+        (matchesLastName || matchesFirstName || matchesEmail)
+      );
+    });
+
+    setFilteredUsers(filteredStudents);
+    setFilteredAdmins(filteredAdmins);
+  }, [studentSearch, adminSearch, data]);
+
   if (loading) return <p>Loading users...</p>;
 
   return (
     <div className="m-4">
+      {loadingImport && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+          <div className="bg-white p-6 rounded shadow-lg text-center">
+            <p className="text-lg font-medium">Importing users...</p>
+            <div className="mt-4 animate-spin rounded-full h-8 w-8 border-4 border-blue-500 border-t-transparent mx-auto" />
+          </div>
+        </div>
+      )}
+
       <h1 className="text-2xl font-bold">Manage Users</h1>
 
       {/* === STUDENT USERS TABLE === */}
       <div className="flex justify-between items-center my-2">
         <h2 className="text-lg font-semibold">Students</h2>
+        <input
+          type="text"
+          placeholder="Search student..."
+          className="border px-4 py-2 rounded w-64 text-sm transition"
+          onChange={(e) => setStudentSearch(e.target.value)}
+        />
+
+        <input
+          type="file"
+          accept=".csv"
+          onChange={handleImportCSV}
+          className="text-sm"
+        />
+
         <button
           onClick={exportStudentList}
           className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 text-sm"
@@ -152,60 +301,89 @@ export default function UsersAdmin() {
           Export Student List
         </button>
       </div>
-      <table className="w-full border text-sm mb-10">
-        <thead>
-          <tr className="border-b bg-gray-200">
-            <th className="p-2 text-left">Name</th>
-            <th className="p-2 text-left">Email</th>
-            <th className="p-2 text-left">Role</th>
-            <th className="p-2 text-left">Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {studentUsers.map((user) => (
-            <tr key={user.id} className="border">
-              <td className="p-2 border">{user.name}</td>
-              <td className="p-2 border">{user.email}</td>
-              <td className="p-2 border">{user.role}</td>
-              <td className="p-2 border flex flex-col sm:flex-row gap-2">
-                <button
-                  onClick={() => downloadUserScores(user.id, user.name)}
-                  className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700 text-xs"
-                >
-                  Download Scores
-                </button>
-                <button
-                  onClick={() => resetUserPassword(user.id)}
-                  className="bg-yellow-600 text-white px-3 py-1 rounded hover:bg-yellow-700 text-xs"
-                >
-                  Reset Password
-                </button>
-              </td>
+      <div className="h-[300px] max-h-[300px] overflow-y-auto mb-10 border border-gray-300 rounded">
+        <table className="w-full text-sm">
+          <thead className="bg-gray-200 sticky top-0 z-10">
+            <tr className="border-b border-l">
+              <th className="p-2 text-left">Student ID</th>
+              <th className="p-2 text-left">Last Name</th>
+              <th className="p-2 text-left">First Name</th>
+              <th className="p-2 text-left">Email</th>
+              <th className="p-2 text-left">Role</th>
+              <th className="p-2 text-left">Actions</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {filteredUsers
+              .filter((u) => u.role === "USER")
+              .map((user) => (
+                <tr key={user.id} className="border">
+                  <td className="p-2 ">{user.studentId}</td>
+                  <td className="p-2 border">{user.lastName}</td>
+                  <td className="p-2 border">{user.firstName}</td>
+                  <td className="p-2 border">{user.email}</td>
+                  <td className="p-2 border">{user.role}</td>
+                  <td className="p-2  flex flex-col sm:flex-row gap-2">
+                    <button
+                      onClick={() =>
+                        downloadUserScores(user.id, user.studentId)
+                      }
+                      className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700 text-xs"
+                    >
+                      Download Scores
+                    </button>
+                    <button
+                      onClick={() => resetUserPassword(user.id)}
+                      className="bg-yellow-600 text-white px-3 py-1 rounded hover:bg-yellow-700 text-xs"
+                    >
+                      Reset Password
+                    </button>
+                  </td>
+                </tr>
+              ))}
+          </tbody>
+        </table>
+      </div>
 
       {/* === ADMIN USERS TABLE === */}
-      <h2 className="text-lg font-semibold mb-2">Admins</h2>
-      <table className="w-full border text-sm">
-        <thead>
-          <tr className="border-b bg-gray-200">
-            <th className="p-2 text-left">Name</th>
-            <th className="p-2 text-left">Email</th>
-            <th className="p-2 text-left">Role</th>
-          </tr>
-        </thead>
-        <tbody>
-          {adminUsers.map((user) => (
-            <tr key={user.id} className="border">
-              <td className="p-2 border">{user.name}</td>
-              <td className="p-2 border">{user.email}</td>
-              <td className="p-2 border">{user.role}</td>
+      <div className="flex justify-between items-center my-2">
+        <h2 className="text-lg font-semibold mb-2">Admins</h2>
+        <input
+          type="text"
+          placeholder="Search student..."
+          className="border px-4 py-2 rounded w-64 text-sm transition"
+          onChange={(e) => setAdminSearch(e.target.value)}
+        />
+
+        <button
+          onClick={exportAdminList}
+          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 text-sm"
+        >
+          Export Admin List
+        </button>
+      </div>
+      <div className="h-[300px] max-h-[300px] overflow-y-auto mb-10 border border-gray-300 rounded">
+        <table className="w-full text-sm">
+          <thead className="bg-gray-200 sticky top-0 z-10">
+            <tr className="border-b border-l">
+              <th className="p-2 text-left">Last Name</th>
+              <th className="p-2 text-left">First Name</th>
+              <th className="p-2 text-left">Email</th>
+              <th className="p-2 text-left">Role</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {filteredAdmins.map((user) => (
+              <tr key={user.id} className="border">
+                <td className="p-2">{user.lastName}</td>
+                <td className="p-2 border">{user.firstName}</td>
+                <td className="p-2 border">{user.email}</td>
+                <td className="p-2">{user.role}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

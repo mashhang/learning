@@ -209,7 +209,7 @@ export default function Dashboard() {
                 {formattedDate}
               </h3>
               <h1 className="text-center text-3xl md:text-4xl font-[300]">
-                {greeting}, {user?.name ?? "Guest"}
+                {greeting}, {user?.lastName ?? "Guest"}
               </h1>
             </div>
 

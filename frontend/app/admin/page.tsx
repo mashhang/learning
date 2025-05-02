@@ -42,7 +42,7 @@ export default function AdminDashboard() {
   return (
     <div className="p-6">
       <h1 className="text-2xl font-bold mb-2">Admin Dashboard Overview</h1>
-      <p className="mb-6">Welcome, {user.name}!</p>
+      <p className="mb-6">Welcome, {user.lastName}!</p>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <div className="bg-white shadow-md border border-gray-200 rounded-xl p-5 flex flex-col gap-2">

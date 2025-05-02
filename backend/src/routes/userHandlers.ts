@@ -11,7 +11,14 @@ const prisma = new PrismaClient();
 export const getUsers: RequestHandler = async (_req, res) => {
   try {
     const users = await prisma.user.findMany({
-      select: { id: true, name: true, email: true, role: true }, // Exclude password for security
+      select: {
+        id: true,
+        studentId: true,
+        firstName: true,
+        lastName: true,
+        email: true,
+        role: true,
+      }, // Exclude password for security
     });
 
     res.status(200).json(users);
@@ -31,7 +38,9 @@ export const getUserById: RequestHandler = async (req, res) => {
       where: { id: userId },
       select: {
         id: true,
-        name: true,
+        studentId: true,
+        firstName: true,
+        lastName: true,
         email: true,
         createdAt: true,
         hasTakenDiagnostic: true, // ✅ Add this line
@@ -47,6 +56,70 @@ export const getUserById: RequestHandler = async (req, res) => {
   } catch (error) {
     console.error("Error fetching user:", error);
     res.status(500).json({ error: "Internal Server Error" });
+  }
+};
+
+// POST /api/user/import
+export const importUsersHandler = async (req: Request, res: Response) => {
+  const { users } = req.body;
+
+  if (!Array.isArray(users)) {
+    res.status(400).json({ error: "Invalid data." });
+    return;
+  }
+
+  // ✅ Capitalize helper
+  function capitalize(word: string): string {
+    return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+  }
+
+  try {
+    const skippedEmails: string[] = [];
+    const createdUsers: string[] = [];
+
+    for (const u of users) {
+      const email = u.Email?.toLowerCase()?.trim();
+      if (!email) continue;
+
+      const rawFirstName = u.FirstName?.trim() || "Unnamed";
+      const rawLastName = u.LastName?.trim() || "Lastname";
+
+      const firstName = capitalize(rawFirstName); // ✅ Capitalize firstName
+      const lastName = capitalize(rawLastName); // ✅ Capitalize lastName
+
+      const hashedPassword = await bcrypt.hash(rawLastName.toLowerCase(), 10);
+
+      if (!email) continue;
+
+      const existing = await prisma.user.findUnique({ where: { email } });
+      if (existing) {
+        skippedEmails.push(email);
+        continue;
+      }
+
+      await prisma.user.create({
+        data: {
+          studentId: u.StudentId?.toString() || "",
+          firstName,
+          lastName,
+          email,
+          role: u.Role?.toUpperCase() === "ADMIN" ? "ADMIN" : "USER",
+          password: hashedPassword,
+        },
+      });
+
+      createdUsers.push(email);
+    }
+
+    res.status(200).json({
+      message: "Import complete.",
+      created: createdUsers.length,
+      skipped: skippedEmails.length,
+      skippedEmails,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to import users." });
   }
 };
 
@@ -223,11 +296,37 @@ export const resetPasswordRequestHandler = async (
       },
     });
 
-    await sendResetPasswordEmail(user.email, user.name, token);
+    await sendResetPasswordEmail(
+      user.email,
+      user.lastName,
+      user.firstName,
+      token
+    );
 
     res.status(200).json({ message: "Reset email sent successfully." });
   } catch (err) {
     console.error("Admin-triggered password reset failed:", err);
     res.status(500).json({ error: "Failed to send reset email." });
+  }
+};
+
+export const updatePasswordHandler: RequestHandler = async (req, res) => {
+  const { id } = req.params;
+  const { newPassword } = req.body;
+
+  try {
+    const hashed = await bcrypt.hash(newPassword, 10);
+    await prisma.user.update({
+      where: { id },
+      data: {
+        password: hashed,
+        mustResetPassword: false, // ✅ clear the flag after reset
+      },
+    });
+
+    res.status(200).json({ message: "Password updated successfully." });
+  } catch (error) {
+    console.error("Error updating password:", error);
+    res.status(500).json({ error: "Failed to update password." });
   }
 };
