@@ -184,11 +184,15 @@ export default function CurrentLesson() {
         const prioritized = await res.json();
         setExercises(prioritized);
 
+        console.log("📌 Current Page:", currentPage);
+        console.log("📌 Prioritized Exercises:", prioritized);
+        console.log("📌 Existing Page Mapping:", exercisePerPage);
+
         // ✅ Apply adaptive logic on Page 1 if not assigned yet
         if (
-          currentPage === 1 &&
-          prioritized.length > 0 &&
-          !exercisePerPage[1]
+          currentPage >= 1 &&
+          !exercisePerPage[currentPage] &&
+          prioritized.length > 0
         ) {
           const timeSpent = (Date.now() - pageEnterTime) / 1000;
 
@@ -199,16 +203,26 @@ export default function CurrentLesson() {
             difficulty = "HARD";
           }
 
-          const match =
-            prioritized.find((ex) => ex.difficulty === difficulty) ||
-            prioritized[0];
+          const usedIds = Object.values(exercisePerPage);
+          const available = prioritized.filter(
+            (ex) => !usedIds.includes(ex.id)
+          );
 
-          setExerciseDifficulty(match.difficulty);
+          const match =
+            available.find((ex) => ex.difficulty === difficulty) ||
+            available.find((ex) => ex.difficulty === "MEDIUM") ||
+            available[0]; // fallback
+
           setExercisePerPage((prev) => ({
             ...prev,
-            1: match.id,
+            [currentPage]: match.id,
           }));
+          setExerciseDifficulty(match.difficulty);
           setShowExercise(true);
+
+          console.log(
+            `✅ Assigned exercise "${match.id}" to page ${currentPage}`
+          );
         }
 
         setExerciseIndex(0);
@@ -218,7 +232,7 @@ export default function CurrentLesson() {
     };
 
     fetchPrioritizedExercises();
-  }, [lesson?.id, user?.id]);
+  }, [lesson?.id, user?.id, currentPage]);
 
   if (!lesson || lesson.pages.length === 0) {
     return <p className="text-center mt-5 text-lg">Loading lesson...</p>;
@@ -364,13 +378,13 @@ export default function CurrentLesson() {
                 const timeSpent = (now - pageEnterTime) / 1000;
                 const targetPage = Math.min(currentPage + 1, totalPages);
 
-                const currentExerciseId = exercises.find((ex) => ex.id)?.id;
-                if (currentExerciseId) {
-                  setExercisePerPage((prev) => ({
-                    ...prev,
-                    [currentPage]: currentExerciseId,
-                  }));
-                }
+                // const currentExerciseId = exercises.find((ex) => ex.id)?.id;
+                // if (currentExerciseId) {
+                //   setExercisePerPage((prev) => ({
+                //     ...prev,
+                //     [currentPage]: currentExerciseId,
+                //   }));
+                // }
 
                 setCurrentPage(targetPage);
                 setPageEnterTime(now);
@@ -800,7 +814,7 @@ function ExerciseCard({
               key={i}
               onClick={() => handleChoice(choice)}
               disabled={!!selected}
-              className={`block w-full text-left p-2 my-1 border rounded transition-all select-none
+              className={`block w-full text-left py-2 px-4 my-1 border rounded transition-all select-none
               ${
                 selected && choice === exercise.correctAnswer
                   ? "bg-green-100 border-green-500"

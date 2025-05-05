@@ -128,6 +128,7 @@ export const getLessonById: RequestHandler = async (
         pages: {
           orderBy: { order: "asc" },
         },
+        exampleExercises: true,
       },
     });
     if (!lesson) {
@@ -173,6 +174,7 @@ export const getLessonById: RequestHandler = async (
         ...p,
         existingMedia: p.media,
       })),
+      exampleExercises: lesson.exampleExercises,
     });
   } catch (error) {
     console.error("Error fetching lesson:", error);

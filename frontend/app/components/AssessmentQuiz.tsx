@@ -6,7 +6,9 @@ import { useRouter } from "next/navigation";
 import { InlineMath } from "react-katex";
 import "katex/dist/katex.min.css";
 import API_URL from "@/lib/getApiUrl";
+import { toast } from "sonner";
 import groupBy from "lodash/groupBy";
+import { CgSpinner } from "react-icons/cg";
 
 // const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
 
@@ -21,6 +23,7 @@ export default function AssessmentQuiz({
 }) {
   const router = useRouter();
   const [questions, setQuestions] = useState(lesson.questions);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedAnswers, setSelectedAnswers] = useState<{
@@ -76,42 +79,50 @@ export default function AssessmentQuiz({
   const { user } = useAuth();
 
   const handleSubmit = async () => {
-    const unanswered = questions.some((q) => !selectedAnswers[q.id]);
-    if (unanswered) {
-      alert("Please answer all questions before submitting.");
-      return;
-    }
+    try {
+      setIsSubmitting(true);
+      const unanswered = questions.some((q) => !selectedAnswers[q.id]);
+      if (unanswered) {
+        alert("Please answer all questions before submitting.");
+        return;
+      }
 
-    await fetch(`${API_URL}/api/assessment/submit`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        userId: user?.id,
-        results: timedAnswers,
-        type, // already passed as "pre" or "post"
-      }),
-    });
-
-    if (type === "POST") {
-      await fetch(`${API_URL}/api/progress`, {
-        method: "PATCH",
+      await fetch(`${API_URL}/api/assessment/submit`, {
+        method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           userId: user?.id,
-          lessonId: lesson.id,
-          currentPage: lesson.pages.length,
-          totalPages: lesson.pages.length,
-          forceComplete: true,
+          results: timedAnswers,
+          type, // already passed as "pre" or "post"
         }),
       });
+
+      if (type === "POST") {
+        await fetch(`${API_URL}/api/progress`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            userId: user?.id,
+            lessonId: lesson.id,
+            currentPage: lesson.pages.length,
+            totalPages: lesson.pages.length,
+            forceComplete: true,
+          }),
+        });
+      }
+
+      recordTimeForCurrentQuestion();
+
+      const correct = timedAnswers.filter((a) => a.isCorrect).length;
+      const percentage = Math.round((correct / questions.length) * 100);
+      setScore(percentage);
+      setSubmitted(true);
+    } catch (error) {
+      console.error("Login Error:", error);
+      toast.error((error as Error).message || "Something went wrong");
+    } finally {
+      setIsSubmitting(false); // ✅ End loading
     }
-
-    recordTimeForCurrentQuestion();
-
-    const correct = timedAnswers.filter((a) => a.isCorrect).length;
-    const percentage = Math.round((correct / questions.length) * 100);
-    setScore(percentage);
-    setSubmitted(true);
   };
 
   const current = questions[currentIndex];
@@ -180,9 +191,17 @@ export default function AssessmentQuiz({
           {currentIndex === questions.length - 1 ? (
             <button
               onClick={handleSubmit}
-              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded"
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded flex items-center justify-center"
+              disabled={isSubmitting}
             >
-              Submit
+              {isSubmitting ? (
+                <>
+                  <CgSpinner className="animate-spin mr-2" />
+                  Submitting...
+                </>
+              ) : (
+                "Submit"
+              )}
             </button>
           ) : (
             <button

@@ -7,6 +7,7 @@ import Image from "next/image";
 import { toast } from "sonner";
 import Logo from "../../public/logo.png";
 import API_URL from "@/lib/getApiUrl";
+import { CgSpinner } from "react-icons/cg";
 
 // const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
 
@@ -17,6 +18,7 @@ export default function Login() {
   const { login } = useAuth();
   const { user, isLoading } = useAuth(); // 👈 Get auth state
   const router = useRouter();
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
 
   useEffect(() => {
     if (!isLoading && user) {
@@ -56,6 +58,8 @@ export default function Login() {
     }
 
     try {
+      setIsLoggingIn(true);
+
       const res = await fetch(`${API_URL}/api/auth/login`, {
         // ✅ Use API_URL
         method: "POST",
@@ -79,6 +83,8 @@ export default function Login() {
     } catch (error) {
       console.error("Login Error:", error);
       toast.error((error as Error).message || "Something went wrong");
+    } finally {
+      setIsLoggingIn(false); // ✅ End loading
     }
   };
 
@@ -117,10 +123,18 @@ export default function Login() {
         />
 
         <button
-          className="py-[10px] w-[264px] bg-[#30608E] text-white rounded-xl"
+          className="py-[10px] w-[264px] bg-[#30608E] text-white rounded-xl flex items-center justify-center"
           type="submit"
+          disabled={isLoggingIn}
         >
-          SIGN IN
+          {isLoggingIn ? (
+            <>
+              <CgSpinner className="animate-spin mr-2" />
+              Signing in...
+            </>
+          ) : (
+            "SIGN IN"
+          )}
         </button>
 
         <div className="mt-[25px] w-full h-[1px] bg-[#D6D6D6]"></div>
