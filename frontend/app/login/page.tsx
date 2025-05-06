@@ -119,9 +119,15 @@ export default function Login() {
           placeholder="Password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="border-black border-[1px] rounded-xl text-[18px] py-2 px-2 mb-12 transition"
+          className="border-black border-[1px] rounded-xl text-[18px] py-2 px-2  transition"
         />
 
+        <p
+          onClick={() => router.push("/forgot-password")}
+          className="text-[#A8A8A8] text-xs md:text-sm w-full text-right mb-4 mt-1"
+        >
+          Forgot password?
+        </p>
         <button
           className="py-[10px] w-[264px] bg-[#30608E] text-white rounded-xl flex items-center justify-center"
           type="submit"
@@ -137,16 +143,16 @@ export default function Login() {
           )}
         </button>
 
-        <div className="mt-[25px] w-full h-[1px] bg-[#D6D6D6]"></div>
+        {/* <div className="mt-[25px] w-full h-[1px] bg-[#D6D6D6]"></div>*/}
 
-        <p className="text-[#A8A8A8] my-3">Don’t have an account?</p>
+        {/* <p className="text-[#A8A8A8] my-3">Don’t have an account?</p> */}
       </form>
-      <button
+      {/* <button
         className="py-[10px] w-[264px] border-black border-[1px] text-[#515151] rounded-xl"
         onClick={handleRedirectToRegister} // Add onClick event
       >
         Create New Account
-      </button>
+      </button> */}
     </section>
   );
 }
