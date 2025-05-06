@@ -301,13 +301,25 @@ router.get("/admin/diagnostic-results", async (req, res) => {
     // Fetch user info separately
     const users = await prisma.user.findMany({
       where: { id: { in: userIds } },
-      select: { id: true, lastName: true, email: true },
+      select: {
+        id: true,
+        studentId: true,
+        firstName: true,
+        lastName: true,
+        email: true,
+      },
     });
 
     const userMap = users.reduce((acc, user) => {
-      acc[user.id] = user;
+      acc[user.id] = {
+        studentId: user.studentId,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+      };
+
       return acc;
-    }, {} as Record<string, { id: string; lastName: string; email: string }>);
+    }, {} as Record<string, { studentId: string | null; firstName: string; lastName: string; email: string }>);
 
     // Group diagnostic results
     const grouped: Record<string, any> = {};
@@ -317,7 +329,9 @@ router.get("/admin/diagnostic-results", async (req, res) => {
       if (!grouped[key]) {
         grouped[key] = {
           userId: a.userId,
-          userName: userMap[a.userId]?.lastName || "Unknown",
+          studentId: userMap[a.userId]?.studentId || "-",
+          firstName: userMap[a.userId]?.firstName || "",
+          lastName: userMap[a.userId]?.lastName || "",
           userEmail: userMap[a.userId]?.email || "",
           type: "DIAGNOSTIC",
           total: 0,
@@ -331,7 +345,9 @@ router.get("/admin/diagnostic-results", async (req, res) => {
 
     const results = Object.values(grouped).map((entry: any) => ({
       userId: entry.userId,
-      userName: entry.userName,
+      studentId: entry.studentId,
+      firstName: entry.firstName,
+      lastName: entry.lastName,
       userEmail: entry.userEmail,
       lessonTitle: "Diagnostic Exam",
       type: entry.type,
