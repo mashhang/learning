@@ -254,6 +254,10 @@ export default function CurrentLesson() {
         onFinish={() => {
           router.push(`/pre-assessment?id=${lesson.id}`);
         }}
+        selectedAnswers={selectedAnswers}
+        timedAnswers={[]}
+        setSelectedAnswers={setSelectedAnswers}
+        setTimedAnswers={() => {}}
       />
     );
   }
@@ -284,6 +288,10 @@ export default function CurrentLesson() {
             router.push(`/post-assessment?id=${lesson.id}`);
           }, 1000); // ✅ short delay so toast shows nicely before redirect
         }}
+        selectedAnswers={selectedAnswers}
+        timedAnswers={[]}
+        setSelectedAnswers={setSelectedAnswers}
+        setTimedAnswers={() => {}}
       />
     );
   }
