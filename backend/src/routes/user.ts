@@ -10,6 +10,8 @@ import {
   resetPasswordRequestHandler,
   updatePasswordHandler,
   importUsersHandler,
+  deleteUser,
+  createAdminHandler,
 } from "./userHandlers.js";
 
 const router = Router();
@@ -31,4 +33,6 @@ router.get(
   getQuestionDifficultiesByLesson
 );
 
+router.post("/create-admin", createAdminHandler);
+router.delete("/:id", deleteUser);
 export { router as userRouter };

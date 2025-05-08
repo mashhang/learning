@@ -1,7 +1,10 @@
 import { Request, Response, RequestHandler } from "express";
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
-import { sendResetPasswordEmail } from "../utils/mailer.js";
+import {
+  sendResetPasswordEmail,
+  sendVerificationEmail,
+} from "../utils/mailer.js";
 
 const prisma = new PrismaClient();
 
@@ -328,5 +331,61 @@ export const updatePasswordHandler: RequestHandler = async (req, res) => {
   } catch (error) {
     console.error("Error updating password:", error);
     res.status(500).json({ error: "Failed to update password." });
+  }
+};
+
+// POST /api/user/create-admin
+export const createAdminHandler: RequestHandler = async (req, res) => {
+  const { studentId, firstName, lastName, email, password } = req.body;
+
+  if (!email || !password || !firstName || !lastName) {
+    res.status(400).json({ error: "Missing required fields." });
+  }
+
+  try {
+    const existing = await prisma.user.findUnique({ where: { email } });
+    if (existing) {
+      res.status(409).json({ error: "Email already exists." });
+    }
+
+    const hashed = await bcrypt.hash(password, 10);
+
+    const token = crypto.randomUUID();
+    // const resetTokenExpiry = new Date(Date.now() + 1000 * 60 * 30); // 30 mins
+
+    await prisma.user.create({
+      data: {
+        studentId: studentId || "",
+        firstName,
+        lastName,
+        email: email.toLowerCase(),
+        password: hashed,
+        role: "ADMIN",
+        verificationToken: token,
+        isVerified: false,
+      },
+    });
+
+    res.status(201).json({ message: "Admin created successfully." });
+    await sendVerificationEmail(email, lastName, firstName, token);
+  } catch (err) {
+    console.error("❌ Failed to create admin:", err);
+    res.status(500).json({ error: "Failed to create admin." });
+  }
+};
+
+// DELETE /api/user/:id
+export const deleteUser: RequestHandler = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    await prisma.user.delete({
+      where: { id },
+    });
+
+    res.status(200).json({ message: "User deleted successfully." });
+  } catch (error) {
+    console.error("❌ Failed to delete user:", error);
+    res.status(500).json({ error: "Internal server error." });
   }
 };

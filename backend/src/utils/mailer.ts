@@ -25,7 +25,8 @@ export const sendVerificationEmail = async (
     },
   });
 
-  const verifyUrl = `${API_URL}/verify?token=${token}`; // 👈 Frontend link that triggers backend verification
+  // const verifyUrl = `${API_URL}/verify?token=${token}`; // 👈 Frontend link that triggers backend verification
+  const verifyUrl = `${API_URL}/api/auth/verify-email?token=${token}`;
 
   const mailOptions = {
     from: process.env.EMAIL_USER,
@@ -33,7 +34,7 @@ export const sendVerificationEmail = async (
     subject: "Verify your email",
     html: `
       <h2>Hello, ${lastName}, ${firstName} !</h2>
-      <p>Thank you for registering. Please click the button below to verify your email address:</p>
+      <p>Welcome to our website. Please click the button below to verify your email address:</p>
       <a href="${verifyUrl}" style="padding: 10px 20px; background: #30608E; color: white; text-decoration: none;">Verify Email</a>
       <p>If you did not create an account, please ignore this email.</p>
     `,

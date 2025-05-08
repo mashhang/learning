@@ -634,3 +634,27 @@ export const deleteChoiceImage: RequestHandler = (async (req, res) => {
     res.status(500).json({ error: "Internal Server Error" });
   }
 }) as RequestHandler;
+
+/**
+ * ✅ GET DISTINCT SKILL TAGS FOR A LESSON
+ */
+export const getSkillTagsByLessonId = async (req: Request, res: Response) => {
+  const { lessonId } = req.params;
+
+  try {
+    const tags = await prisma.question.findMany({
+      where: { lessonId },
+      select: { skillTag: true },
+      distinct: ["skillTag"],
+    });
+
+    const filtered = tags
+      .map((t) => t.skillTag)
+      .filter((t): t is string => !!t); // remove nulls
+
+    res.status(200).json(filtered);
+  } catch (error) {
+    console.error("❌ Error fetching skillTags:", error);
+    res.status(500).json({ error: "Failed to fetch skill tags" });
+  }
+};

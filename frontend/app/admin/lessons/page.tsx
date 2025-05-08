@@ -103,7 +103,7 @@ export default function LessonsAdmin() {
             <th className="p-2 text-center w-24">Questions</th>
             <th className="p-2 text-center w-24">Exercises</th>
             <th className="p-2 text-center w-28">Status</th> {/* ✅ Add this */}
-            <th className="p-2 text-center w-40">Actions</th>
+            <th className="p-2 text-center w-24">Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -148,12 +148,12 @@ export default function LessonsAdmin() {
                   onClick={(e) => e.stopPropagation()} // prevent triggering row click
                 >
                   <div className="flex justify-center items-center space-x-2">
-                    <Link
+                    {/* <Link
                       href={`/admin/lessons/${lesson.id}/exercises`}
                       className="text-green-600 ml-2"
                     >
                       Exercises
-                    </Link>
+                    </Link> */}
 
                     <DeleteLessonButton
                       lesson={lesson}

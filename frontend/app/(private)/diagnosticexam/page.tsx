@@ -222,34 +222,95 @@ export default function DiagnosticExam() {
   // ---------- Developer shortcut: Shift+D to auto-answer all ----------
   useEffect(() => {
     const handleDevKey = (e: KeyboardEvent) => {
-      if (e.shiftKey && e.key === "D") {
-        console.log("🧪 Developer mode: Auto-selecting answers...");
+      if (!shuffledQuestions.length) return;
 
-        // Pick first non-empty choice for each question
+      // Developer shortcut: Shift + D = Random answers (already in your code)
+      if (e.shiftKey && e.key === "D") {
+        console.log("🧪 Developer mode: Random answers");
+
         const autoAnswers: { [key: string]: string } = {};
         shuffledQuestions.forEach((q) => {
-          const validChoices = q.choices.filter((c) => c && c.trim() !== "");
-          if (validChoices.length > 0) {
-            const randomChoice =
-              validChoices[Math.floor(Math.random() * validChoices.length)];
-            autoAnswers[q.id] = randomChoice;
-          }
+          const randomChoice =
+            q.choices[Math.floor(Math.random() * q.choices.length)];
+          autoAnswers[q.id] = randomChoice;
         });
 
-        setSelectedAnswers(autoAnswers);
-
-        // Also auto-fill timedAnswers
-        const now = Date.now();
         const autoTimed = shuffledQuestions.map((q) => ({
           questionId: q.id,
           lessonId: q.lessonId,
-          timeTaken: Math.floor(Math.random() * (599 - 10 + 1)) + 10, // 10 to 599 seconds
+          timeTaken: Math.floor(Math.random() * (599 - 10 + 1)) + 10,
           isCorrect: autoAnswers[q.id] === q.correctAnswer,
         }));
 
+        setSelectedAnswers(autoAnswers);
         setTimedAnswers(autoTimed);
-        setQuestionStartTime(now);
-        // alert("🧪 Auto-answered all questions.");
+        setQuestionStartTime(Date.now());
+      }
+
+      // Developer shortcut: Shift + 9 = 90% correct
+      if (e.shiftKey && e.key === "O") {
+        console.log("🧪 Developer mode: 90% correct answers");
+
+        const total = shuffledQuestions.length;
+        const correctCount = Math.floor(total * 0.9);
+
+        const correctSet = new Set(
+          shuffledQuestions
+            .slice(0, correctCount)
+            .map((q) => [q.id, q.correctAnswer])
+        );
+
+        const autoAnswers: { [key: string]: string } = {};
+        const autoTimed: any[] = [];
+
+        shuffledQuestions.forEach((q, index) => {
+          const isCorrect = index < correctCount;
+          const answer = isCorrect
+            ? q.correctAnswer
+            : q.choices.find((c) => c !== q.correctAnswer)!;
+
+          autoAnswers[q.id] = answer;
+          autoTimed.push({
+            questionId: q.id,
+            lessonId: q.lessonId,
+            timeTaken: Math.floor(Math.random() * (599 - 10 + 1)) + 10,
+            isCorrect,
+          });
+        });
+
+        setSelectedAnswers(autoAnswers);
+        setTimedAnswers(autoTimed);
+        setQuestionStartTime(Date.now());
+      }
+
+      // Developer shortcut: Shift + 5 = 50% correct
+      if (e.shiftKey && e.key === "T") {
+        console.log("🧪 Developer mode: 50% correct answers");
+
+        const total = shuffledQuestions.length;
+        const correctCount = Math.floor(total * 0.5);
+
+        const autoAnswers: { [key: string]: string } = {};
+        const autoTimed: any[] = [];
+
+        shuffledQuestions.forEach((q, index) => {
+          const isCorrect = index < correctCount;
+          const answer = isCorrect
+            ? q.correctAnswer
+            : q.choices.find((c) => c !== q.correctAnswer)!;
+
+          autoAnswers[q.id] = answer;
+          autoTimed.push({
+            questionId: q.id,
+            lessonId: q.lessonId,
+            timeTaken: Math.floor(Math.random() * (599 - 10 + 1)) + 10,
+            isCorrect,
+          });
+        });
+
+        setSelectedAnswers(autoAnswers);
+        setTimedAnswers(autoTimed);
+        setQuestionStartTime(Date.now());
       }
     };
 

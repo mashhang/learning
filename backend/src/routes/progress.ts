@@ -39,8 +39,19 @@ const handler: RequestHandler = async (req, res) => {
     });
 
     if (!existing) {
-      res.status(404).json({ error: "Progress row not found. Cannot update." });
-      return; // ✅ Add this so it doesn't proceed
+      await prisma.userLessonPriority.create({
+        data: {
+          user: { connect: { id: userId } },
+          lesson: { connect: { id: lessonId } },
+          progress: newProgress,
+          currentPage,
+          priority: 0,
+        },
+      });
+
+      res
+        .status(201)
+        .json({ message: "Progress row created", progress: newProgress });
     }
 
     // ✅ Proceed to update
@@ -105,6 +116,7 @@ router.get("/ordered/:userId", async (req, res) => {
         progress: priorityData.progress ?? 0,
         updatedAt: priorityData.updatedAt ?? null,
         priority: priorityData.priority ?? 0,
+        videoUrl: lesson.videoUrl || null,
         pages: lesson.pages.map((p) => ({
           content: p.content,
           media: p.media

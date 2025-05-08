@@ -22,6 +22,14 @@ export default function UsersAdmin() {
   const [data, setData] = useState<User[]>([]);
   const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
   const [filteredAdmins, setFilteredAdmins] = useState<User[]>([]);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [newAdmin, setNewAdmin] = useState({
+    studentId: "",
+    firstName: "",
+    lastName: "",
+    email: "",
+    password: "",
+  });
 
   {
     /* Filter users */
@@ -221,6 +229,34 @@ export default function UsersAdmin() {
     reader.readAsText(file);
   };
 
+  const handleAddAdmin = async () => {
+    const res = await fetch(`${API_URL}/api/user/create-admin`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${localStorage.getItem("token")}`,
+      },
+      body: JSON.stringify(newAdmin),
+    });
+
+    const result = await res.json();
+
+    if (res.ok) {
+      alert("✅ Admin created!");
+      setShowAddModal(false);
+      setNewAdmin({
+        studentId: "",
+        firstName: "",
+        lastName: "",
+        email: "",
+        password: "",
+      });
+      fetchUsers();
+    } else {
+      alert("❌ " + result.error);
+    }
+  };
+
   useEffect(() => {
     // Student filtering
     const filteredStudents = data.filter((entry) => {
@@ -261,6 +297,30 @@ export default function UsersAdmin() {
     setFilteredUsers(filteredStudents);
     setFilteredAdmins(filteredAdmins);
   }, [studentSearch, adminSearch, data]);
+
+  const handleDeleteUser = async (userId: string) => {
+    if (!confirm("Are you sure you want to delete this user?")) return;
+
+    try {
+      const res = await fetch(`${API_URL}/api/user/${userId}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
+
+      if (res.ok) {
+        alert("✅ User deleted!");
+        fetchUsers(); // Refresh list
+      } else {
+        const err = await res.json();
+        alert("❌ Failed to delete: " + err.error);
+      }
+    } catch (err) {
+      console.error(err);
+      alert("❌ Error deleting user.");
+    }
+  };
 
   if (loading) return <p>Loading users...</p>;
 
@@ -309,8 +369,8 @@ export default function UsersAdmin() {
               <th className="p-2 text-left">Last Name</th>
               <th className="p-2 text-left">First Name</th>
               <th className="p-2 text-left">Email</th>
-              <th className="p-2 text-left">Role</th>
-              <th className="p-2 text-left">Actions</th>
+              <th className="p-2 text-center">Role</th>
+              <th className="p-2 text-center w-52">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -322,8 +382,8 @@ export default function UsersAdmin() {
                   <td className="p-2 border">{user.lastName}</td>
                   <td className="p-2 border">{user.firstName}</td>
                   <td className="p-2 border">{user.email}</td>
-                  <td className="p-2 border">{user.role}</td>
-                  <td className="p-2  flex flex-col sm:flex-row gap-2">
+                  <td className="p-2 text-center border">{user.role}</td>
+                  <td className="p-2  flex flex-col sm:flex-row gap-2 text-center">
                     <button
                       onClick={() =>
                         downloadUserScores(user.id, user.studentId)
@@ -337,6 +397,12 @@ export default function UsersAdmin() {
                       className="bg-yellow-600 text-white px-3 py-1 rounded hover:bg-yellow-700 text-xs"
                     >
                       Reset Password
+                    </button>
+                    <button
+                      onClick={() => handleDeleteUser(user.id)}
+                      className="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700 text-xs"
+                    >
+                      Delete
                     </button>
                   </td>
                 </tr>
@@ -356,6 +422,13 @@ export default function UsersAdmin() {
         />
 
         <button
+          onClick={() => setShowAddModal(true)}
+          className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 text-sm"
+        >
+          Add Admin
+        </button>
+
+        <button
           onClick={exportAdminList}
           className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 text-sm"
         >
@@ -369,7 +442,8 @@ export default function UsersAdmin() {
               <th className="p-2 text-left">Last Name</th>
               <th className="p-2 text-left">First Name</th>
               <th className="p-2 text-left">Email</th>
-              <th className="p-2 text-left">Role</th>
+              <th className="p-2 text-center w-40">Role</th>
+              <th className="p-2 text-center w-40">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -378,12 +452,71 @@ export default function UsersAdmin() {
                 <td className="p-2">{user.lastName}</td>
                 <td className="p-2 border">{user.firstName}</td>
                 <td className="p-2 border">{user.email}</td>
-                <td className="p-2">{user.role}</td>
+                <td className="p-2 text-center border">{user.role}</td>
+                <td className="p-2 text-center flex flex-col sm:flex-row gap-2">
+                  <button
+                    onClick={() => resetUserPassword(user.id)}
+                    className="bg-yellow-600 text-white px-3 py-1 rounded hover:bg-yellow-700 text-xs"
+                  >
+                    Reset Password
+                  </button>
+                  <button
+                    onClick={() => handleDeleteUser(user.id)}
+                    className="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700 text-xs"
+                  >
+                    Delete
+                  </button>
+                </td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
+      {showAddModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-white p-6 rounded shadow-lg w-full max-w-md">
+            <h2 className="text-lg font-semibold mb-4">Add Admin</h2>
+            <div className="space-y-2">
+              {["studentId", "firstName", "lastName", "email", "password"].map(
+                (field) => (
+                  <input
+                    key={field}
+                    type={field === "password" ? "password" : "text"}
+                    placeholder={
+                      {
+                        studentId: "Username",
+                        firstName: "First Name",
+                        lastName: "Last Name",
+                        email: "Email Address",
+                        password: "Password",
+                      }[field as keyof typeof newAdmin]
+                    }
+                    className="w-full border px-3 py-2 rounded text-sm"
+                    value={newAdmin[field as keyof typeof newAdmin]}
+                    onChange={(e) =>
+                      setNewAdmin({ ...newAdmin, [field]: e.target.value })
+                    }
+                  />
+                )
+              )}
+            </div>
+            <div className="flex justify-end mt-4 gap-2">
+              <button
+                onClick={() => setShowAddModal(false)}
+                className="text-gray-600 hover:text-black text-sm"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleAddAdmin}
+                className="bg-blue-600 text-white px-4 py-1.5 rounded text-sm hover:bg-blue-700"
+              >
+                Create
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
