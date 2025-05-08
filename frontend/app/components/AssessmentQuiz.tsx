@@ -16,21 +16,31 @@ export default function AssessmentQuiz({
   type,
   lesson,
   onFinish,
+  selectedAnswers,
+  timedAnswers,
+  setSelectedAnswers,
+  setTimedAnswers,
 }: {
   type: "PRE" | "POST";
   lesson: any;
   onFinish: () => void;
+  selectedAnswers: { [key: string]: string };
+  timedAnswers: any[];
+  setSelectedAnswers: React.Dispatch<
+    React.SetStateAction<{ [key: string]: string }>
+  >;
+  setTimedAnswers: React.Dispatch<React.SetStateAction<any[]>>;
 }) {
   const router = useRouter();
   const [questions, setQuestions] = useState(lesson.questions);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [selectedAnswers, setSelectedAnswers] = useState<{
-    [key: string]: string | null;
-  }>({});
+  // const [selectedAnswers, setSelectedAnswers] = useState<{
+  //   [key: string]: string | null;
+  // }>({});
   const [questionStartTime, setQuestionStartTime] = useState(Date.now());
-  const [timedAnswers, setTimedAnswers] = useState<any[]>([]);
+  // const [timedAnswers, setTimedAnswers] = useState<any[]>([]);
   const [submitted, setSubmitted] = useState(false);
   const [score, setScore] = useState<number | null>(null);
 
@@ -124,6 +134,10 @@ export default function AssessmentQuiz({
       setIsSubmitting(false); // ✅ End loading
     }
   };
+
+  useEffect(() => {
+    setQuestions(lesson.questions);
+  }, [lesson.questions]);
 
   const current = questions[currentIndex];
 
@@ -256,8 +270,8 @@ export default function AssessmentQuiz({
                 const record = timedAnswers.find((a) => a.questionId === q.id);
                 return (
                   <li key={q.id} className="mb-2 border-b pb-1">
-                    <p className="font-medium">
-                      Q{index + 1}: {q.question}
+                    <p className="font-medium flex gap-1">
+                      Q{index + 1}:<InlineMath>{q.question}</InlineMath>
                     </p>
                     <p>
                       🕐 {record?.timeTaken}s |{" "}

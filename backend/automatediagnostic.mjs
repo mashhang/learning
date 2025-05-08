@@ -5,18 +5,18 @@ import fs from "fs";
 
 // === CONFIGURATION ===
 const LESSONS_FILE = "./lessons.json"; // fetched from your backend
-const TARGET_SCORE_PERCENT = 25; // ✅ change this to 25, 50, 100
-const OUTPUT_FILE = `./mockResults-${TARGET_SCORE_PERCENT}1.json`;
+const TARGET_SCORE_PERCENT = 75; // ✅ change this to 25, 50, 100
+const OUTPUT_FILE = `./mockResults-${TARGET_SCORE_PERCENT}.json`;
 const MAX_EXPECTED_TIME = 20;
 const QUESTION_LIMIT = 100;
 // const USER_ID = "04ab8ced-0753-41fa-a21a-7c9bd0d06f54"; // change if needed
 
 // === STUDENT INFO ===
 const studentInfo = {
-  userId: "e295b8d6-0e13-415d-9bae-572365431b66", // ✅ Replace with valid user ID
-  studentId: "1148-005", // ✅ Replace with student number
-  lastName: "Mendoza",
-  firstName: "Maria",
+  userId: "ffe4ff21-ad2d-4a7b-8db3-8bb3fbd3fbe4", // ✅ Replace with valid user ID
+  studentId: "1148-002", // ✅ Replace with student number
+  lastName: "Cruz",
+  firstName: "Joshua",
 };
 
 const lessons = JSON.parse(fs.readFileSync(LESSONS_FILE, "utf-8"));
