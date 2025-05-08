@@ -17,6 +17,10 @@ export default function PostAssessmentPage() {
   const lessonId = searchParams.get("id");
 
   const [lesson, setLesson] = useState<any>(null);
+  const [selectedAnswers, setSelectedAnswers] = useState<{
+    [key: string]: string;
+  }>({});
+  const [timedAnswers, setTimedAnswers] = useState<any[]>([]);
 
   useEffect(() => {
     if (!lessonId || !user?.id) return;
@@ -56,6 +60,10 @@ export default function PostAssessmentPage() {
       onFinish={() => {
         router.push("/dashboard"); // or next lesson
       }}
+      selectedAnswers={selectedAnswers}
+      setSelectedAnswers={setSelectedAnswers}
+      timedAnswers={timedAnswers}
+      setTimedAnswers={setTimedAnswers}
     />
   );
 }
