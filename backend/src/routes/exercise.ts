@@ -30,6 +30,7 @@ router.post("/exercises", async (req, res) => {
     const data = exercises.map((ex: any) => ({
       lessonId,
       question: ex.question,
+      exerciseEquation: ex.exerciseEquation ?? null,
       choices: ex.choices,
       correctAnswer: ex.correctAnswer,
       difficulty: ex.difficulty,
@@ -37,6 +38,7 @@ router.post("/exercises", async (req, res) => {
       isChoiceImage: ex.isChoiceImage ?? false,
       questionImage: ex.questionImage ?? null,
       explanation: ex.explanation?.trim() || null,
+      explanationEquation: ex.explanationEquation?.trim() || null,
     }));
 
     // ✅ Step 3: Create new exercises
@@ -78,9 +80,11 @@ router.put("/exercises/:id", async (req, res) => {
   const { id } = req.params;
   const {
     question,
+    exerciseEquation,
     choices,
     correctAnswer,
     explanation,
+    explanationEquation,
     difficulty,
     skillTag,
   } = req.body;
@@ -90,9 +94,11 @@ router.put("/exercises/:id", async (req, res) => {
       where: { id },
       data: {
         question,
+        exerciseEquation,
         choices,
         correctAnswer,
         explanation,
+        explanationEquation,
         difficulty,
         skillTag,
       },
@@ -110,9 +116,11 @@ router.post("/exercise", async (req, res) => {
   const {
     lessonId,
     question,
+    exerciseEquation,
     choices,
     correctAnswer,
     explanation,
+    explanationEquation,
     difficulty,
     skillTag,
   } = req.body;
@@ -122,9 +130,11 @@ router.post("/exercise", async (req, res) => {
       data: {
         lessonId,
         question,
+        exerciseEquation,
         choices,
         correctAnswer,
         explanation,
+        explanationEquation,
         difficulty,
         skillTag,
       },
@@ -242,6 +252,7 @@ router.get("/exercises-all", async (req, res) => {
       lessonTitle: ex.lesson.title,
       chapterTitle: ex.lesson.chapter.title,
       question: ex.question,
+      exerciseEquation: ex.exerciseEquation ?? null,
       choices: ex.choices,
       correctAnswer: ex.correctAnswer,
     }));

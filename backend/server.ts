@@ -8,6 +8,7 @@ import progressRoutes from "./src/routes/progress.js";
 import questionRoutes from "./src/routes/question.js"; // ✅ adjust path if needed
 import announcementRoutes from "./src/routes/announcement/announcement.js";
 import userAnnouncementRoutes from "./src/routes/userAnnouncement.js";
+import exportRoutes from "./src/routes/export.js";
 
 import {
   registerUser,
@@ -62,6 +63,8 @@ app.use("/api/user", userRouter);
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 // app.use("/api", userLessonPriorityRoutes); // ✅ Add this line
 app.use("/api", uploadRouter);
+
+app.use(exportRoutes);
 
 // ✅ AUTH ROUTES
 app.post("/api/auth/register", registerUser); // Takes (req, res)

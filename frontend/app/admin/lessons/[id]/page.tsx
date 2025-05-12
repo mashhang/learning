@@ -21,6 +21,7 @@ type LessonPage = {
 type Question = {
   id: string;
   question: string;
+  questionEquation?: string;
   questionImage?: File | null;
   choices: string[];
   choiceImages?: (File | null)[];
@@ -32,11 +33,13 @@ type Question = {
 type ExampleExercise = {
   id: string;
   question: string;
+  exerciseEquation?: string;
   choices: string[];
   correctAnswer: string;
   difficulty: "EASY" | "MEDIUM" | "HARD";
   skillTag?: string;
   explanation: string; // ✅ Add this
+  explanationEquation?: string;
 };
 
 export default function EditLesson() {
@@ -55,15 +58,18 @@ export default function EditLesson() {
   });
   const [tempQuestion, setTempQuestion] = useState({
     question: "",
+    questionEquation: "",
     choices: ["", "", "", ""],
     correctAnswer: "",
     skillTag: "",
   });
   const [tempExercise, setTempExercise] = useState({
     question: "",
+    exerciseEquation: "",
     choices: ["", "", "", ""],
     correctAnswer: "",
     explanation: "",
+    explanationEquation: "",
     difficulty: "EASY" as "EASY" | "MEDIUM" | "HARD",
     skillTag: "",
   });
@@ -92,6 +98,7 @@ export default function EditLesson() {
     videoUrl: "",
     pages: [{ content: "", media: null, existingMedia: null }],
     questions: [],
+
     exercises: [],
   });
 
@@ -138,12 +145,14 @@ export default function EditLesson() {
               choiceImages: q.choices.map((c: string) =>
                 c.startsWith("/uploads/") ? c : null
               ),
+              questionEquation: q.questionEquation || "",
             }))
           : [];
 
         const formattedExercises = exercisesData.map((ex: any) => ({
           ...ex,
           explanation: ex.explanation ?? "",
+          exerciseEquation: ex.exerciseEquation || "",
         }));
 
         setChapters(chaptersData);
@@ -525,6 +534,7 @@ export default function EditLesson() {
                         onClick={() => {
                           setTempQuestion({
                             question: "",
+                            questionEquation: "",
                             choices: ["", "", "", ""],
                             correctAnswer: "",
                             skillTag: "",
@@ -571,6 +581,7 @@ export default function EditLesson() {
                               setEditQuestionIndex(globalIndex);
                               setTempQuestion({
                                 question: q.question,
+                                questionEquation: q.questionEquation || "",
                                 choices: [...q.choices],
                                 correctAnswer: q.correctAnswer,
                                 skillTag: q.skillTag ?? "",
@@ -578,8 +589,13 @@ export default function EditLesson() {
                               setShowQuestionModal(true);
                             }}
                           >
-                            <td className="border px-3 py-2">
-                              <InlineMath math={q.question} />
+                            <td className="border px-3 py-2 whitespace-pre-line">
+                              <div className="text-gray-900">{q.question}</div>
+                              {q.questionEquation && (
+                                <div className="text-[#333333]">
+                                  <InlineMath math={q.questionEquation} />
+                                </div>
+                              )}
                             </td>
                             <td className="border px-3 py-2">
                               {q.choices.map((c, i) => (
@@ -695,9 +711,11 @@ export default function EditLesson() {
                         onClick={() => {
                           setTempExercise({
                             question: "",
+                            exerciseEquation: "",
                             choices: ["", "", "", ""],
                             correctAnswer: "",
                             explanation: "",
+                            explanationEquation: "",
                             difficulty: "EASY",
                             skillTag: "",
                           });
@@ -750,9 +768,12 @@ export default function EditLesson() {
                             onClick={() => {
                               setTempExercise({
                                 question: ex.question,
+                                exerciseEquation: ex.exerciseEquation || "",
                                 choices: [...ex.choices],
                                 correctAnswer: ex.correctAnswer,
                                 explanation: ex.explanation,
+                                explanationEquation:
+                                  ex.explanationEquation || "",
                                 difficulty: ex.difficulty,
                                 skillTag: ex.skillTag ?? "",
                               });
@@ -761,7 +782,12 @@ export default function EditLesson() {
                             }}
                           >
                             <td className="border px-3 py-2">
-                              <InlineMath math={ex.question} />
+                              <div className="text-gray-900">{ex.question}</div>
+                              {ex.exerciseEquation && (
+                                <div className="text-blue-700 mt-1">
+                                  <InlineMath math={ex.exerciseEquation} />
+                                </div>
+                              )}
                             </td>
                             <td className="border px-3 py-2">
                               {ex.choices.map((c, j) => (
@@ -774,7 +800,14 @@ export default function EditLesson() {
                               <InlineMath>{ex.correctAnswer}</InlineMath>
                             </td>
                             <td className="border px-3 py-2">
-                              <InlineMath>{ex.explanation}</InlineMath>
+                              <div className="text-gray-900">
+                                {ex.explanation}
+                              </div>
+                              {ex.explanationEquation && (
+                                <div className="text-blue-700 mt-1">
+                                  <InlineMath math={ex.explanationEquation} />
+                                </div>
+                              )}
                             </td>
                             <td className="border px-3 py-2">
                               {ex.difficulty}

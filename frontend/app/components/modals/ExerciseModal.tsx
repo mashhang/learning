@@ -7,11 +7,13 @@ import MathInput from "@/app/components/MathInput";
 type ExampleExercise = {
   id: string;
   question: string;
+  exerciseEquation?: string;
   choices: string[];
   correctAnswer: string;
   difficulty: "EASY" | "MEDIUM" | "HARD";
   skillTag?: string;
   explanation: string;
+  explanationEquation: string;
 };
 
 type Props = {
@@ -20,18 +22,22 @@ type Props = {
   editIndex: number | null;
   initialData: {
     question: string;
+    exerciseEquation: string;
     choices: string[];
     correctAnswer: string;
     explanation: string;
+    explanationEquation: string;
     difficulty: "EASY" | "MEDIUM" | "HARD";
     skillTag: string;
   };
   onSaveToServer: (
     data: {
       question: string;
+      exerciseEquation: string;
       choices: string[];
       correctAnswer: string;
       explanation: string;
+      explanationEquation: string;
       difficulty: "EASY" | "MEDIUM" | "HARD";
       skillTag: string;
     },
@@ -53,15 +59,27 @@ export default function ExerciseModal({
   const [latexMode, setLatexMode] = useState(false); // ⬅️ new: toggles raw LaTeX input view
   const [rawInputMode, setRawInputMode] = useState<{
     question: boolean;
+    exerciseEquation: boolean;
     choices: boolean[];
     answer: boolean;
     explanation: boolean;
+    explanationEquation: boolean;
   }>({
     question: false,
+    exerciseEquation: false,
     choices: [false, false, false, false],
     answer: false,
     explanation: false,
+    explanationEquation: false,
   });
+
+  const [exerciseEquation, setExerciseEquation] = useState(
+    initialData.exerciseEquation || ""
+  );
+
+  const [explanationEquation, setExplanationEquation] = useState(
+    initialData.explanationEquation || ""
+  );
 
   const [question, setQuestion] = useState(initialData.question);
   const [choices, setChoices] = useState(initialData.choices);
@@ -73,7 +91,13 @@ export default function ExerciseModal({
   const [skillTag, setSkillTag] = useState("");
 
   const [focusedField, setFocusedField] = useState<{
-    type: "question" | "choice" | "answer" | "explanation";
+    type:
+      | "question"
+      | "exerciseEquation"
+      | "choice"
+      | "answer"
+      | "explanation"
+      | "explanationEquation";
     index?: number;
   } | null>(null);
 
@@ -89,7 +113,9 @@ export default function ExerciseModal({
       return prev + before + after; // you can add caret positioning later if needed
     };
 
-    if (focusedField.type === "question") {
+    if (focusedField.type === "exerciseEquation") {
+      setExerciseEquation((prev) => insertWithCursor(prev));
+    } else if (focusedField.type === "question") {
       setQuestion((prev) => insertWithCursor(prev));
     } else if (
       focusedField.type === "choice" &&
@@ -106,6 +132,8 @@ export default function ExerciseModal({
       setCorrectAnswer((prev) => insertWithCursor(prev));
     } else if (focusedField.type === "explanation") {
       setExplanation((prev) => insertWithCursor(prev));
+    } else if (focusedField.type === "explanationEquation") {
+      setExplanationEquation((prev) => insertWithCursor(prev));
     }
   };
 
@@ -164,63 +192,8 @@ export default function ExerciseModal({
           </label>
         </div>
 
-        {mathMode ? (
-          <div className="relative">
-            {latexMode ? (
-              <input
-                type="text"
-                className="w-full border p-2 pr-10" // pr-10 = space for fx button
-                value={question}
-                onChange={(e) => setQuestion(e.target.value)}
-              />
-            ) : (
-              <MathInput
-                value={question}
-                onFocus={() => {
-                  setFocusedField({ type: "question" });
-                  setShowKeypad(true);
-                }}
-                onChange={(v) => setQuestion(v)}
-                placeholder="Enter Question"
-              />
-            )}
-
-            {latexMode && (
-              <button
-                onClick={() => {
-                  setLatexMode(false);
-                  setShowKeypad(true);
-                }}
-                className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-600"
-              >
-                fx
-              </button>
-            )}
-
-            {!latexMode &&
-              focusedField?.type === "question" &&
-              (showKeypad || isExiting) && (
-                <div
-                  ref={keypadRef}
-                  className={`origin-top transition-all ${
-                    isExiting ? "animate-keypadExit" : "animate-keypad"
-                  }`}
-                >
-                  <MathKeypad
-                    onInsert={(latex) => {
-                      if (latex === "\\text{Switch to LaTeX}") {
-                        setLatexMode(true); // ✅ Switch view
-                        setShowKeypad(false); // ✅ Hide keypad
-                      } else {
-                        handleInsertLatex(latex);
-                      }
-                    }}
-                    onClear={() => setQuestion("")}
-                  />
-                </div>
-              )}
-          </div>
-        ) : (
+        <div className="mb-4 mt-1">
+          <label className="text-sm font-medium block">Question</label>
           <input
             type="text"
             placeholder="Question"
@@ -229,7 +202,46 @@ export default function ExerciseModal({
             onFocus={() => setFocusedField({ type: "question" })}
             onChange={(e) => setQuestion(e.target.value)}
           />
-        )}
+
+          <label className="text-sm font-medium block">Equation</label>
+          {mathMode ? (
+            <>
+              <MathInput
+                value={exerciseEquation}
+                onFocus={() => {
+                  setFocusedField({ type: "exerciseEquation" });
+                  setShowKeypad(true);
+                }}
+                onChange={(v) => setExerciseEquation(v)}
+                placeholder="\\frac{2x}{3} + 5 = 10"
+              />
+            </>
+          ) : (
+            <input
+              type="text"
+              className="w-full border p-2 mb-2"
+              value={exerciseEquation}
+              onChange={(e) => setExerciseEquation(e.target.value)}
+            />
+          )}
+        </div>
+
+        {focusedField?.type === "exerciseEquation" &&
+          (showKeypad || isExiting) && (
+            <div
+              ref={keypadRef}
+              className={`origin-top transition-all ${
+                isExiting ? "animate-keypadExit" : "animate-keypad"
+              }`}
+            >
+              <MathKeypad
+                onInsert={(latex) => {
+                  handleInsertLatex(latex);
+                }}
+                onClear={() => setExerciseEquation("")}
+              />
+            </div>
+          )}
 
         {[0, 1, 2, 3].map((i) => (
           <div key={i} className="relative">
@@ -397,75 +409,58 @@ export default function ExerciseModal({
           />
         )}
 
-        <div className="mb-4">
-          <label className="block font-medium mb-1">Explanation</label>
-          {mathMode ? (
-            rawInputMode.explanation ? (
-              <>
-                <textarea
-                  placeholder="Explain why the correct answer is right..."
-                  className="w-full border p-2 pr-10 rounded"
-                  rows={4}
-                  value={explanation}
-                  onChange={(e) => setExplanation(e.target.value)}
-                />
-                <button
-                  className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-600"
-                  onClick={() =>
-                    setRawInputMode((prev) => ({ ...prev, explanation: false }))
-                  }
-                >
-                  fx
-                </button>
-              </>
-            ) : (
-              <>
-                <MathInput
-                  value={explanation}
-                  onFocus={() => {
-                    setFocusedField({ type: "explanation" });
-                    setShowKeypad(true);
-                  }}
-                  onChange={(v) => setExplanation(v)}
-                  placeholder="Explanation"
-                />
-                {focusedField?.type === "explanation" &&
-                  (showKeypad || isExiting) && (
-                    <div
-                      ref={keypadRef}
-                      className={`origin-top transition-all ${
-                        isExiting ? "animate-keypadExit" : "animate-keypad"
-                      }`}
-                    >
-                      <MathKeypad
-                        onInsert={(latex) => {
-                          if (latex === "\\text{Switch to LaTeX}") {
-                            setRawInputMode((prev) => ({
-                              ...prev,
-                              explanation: true,
-                            }));
-                            setShowKeypad(false);
-                          } else {
-                            handleInsertLatex(latex);
-                          }
-                        }}
-                        onClear={() => setExplanation("")}
-                      />
-                    </div>
-                  )}
-              </>
-            )
-          ) : (
-            <textarea
-              placeholder="Explain why the correct answer is right..."
-              className="w-full border p-2 rounded"
-              rows={4}
-              value={explanation}
-              onFocus={() => setFocusedField({ type: "explanation" })}
-              onChange={(e) => setExplanation(e.target.value)}
+        <label className="text-sm font-medium block mt-4 mb-1">
+          Explanation
+        </label>
+        <textarea
+          placeholder="Explain why the correct answer is right..."
+          className="w-full border p-2 rounded"
+          rows={4}
+          value={explanation}
+          onFocus={() => setFocusedField({ type: "explanation" })}
+          onChange={(e) => setExplanation(e.target.value)}
+        />
+
+        <label className="text-sm font-medium block mb-1">
+          Explanation Equation
+        </label>
+        {mathMode ? (
+          <>
+            <MathInput
+              value={explanationEquation}
+              onFocus={() => {
+                setFocusedField({ type: "explanationEquation" });
+                setShowKeypad(true);
+              }}
+              onChange={(v) => setExplanationEquation(v)}
+              placeholder="Explanation Equation"
             />
-          )}
-        </div>
+            {focusedField?.type === "explanationEquation" &&
+              (showKeypad || isExiting) && (
+                <div
+                  ref={keypadRef}
+                  className={`origin-top transition-all z-20 relative ${
+                    isExiting ? "animate-keypadExit" : "animate-keypad"
+                  }`}
+                >
+                  <MathKeypad
+                    onInsert={(latex) => {
+                      handleInsertLatex(latex);
+                    }}
+                    onClear={() => setExplanationEquation("")}
+                  />
+                </div>
+              )}
+          </>
+        ) : (
+          <input
+            type="text"
+            placeholder="Explanation Equation"
+            className="w-full border p-2 mb-4"
+            value={explanationEquation}
+            onChange={(e) => setExplanationEquation(e.target.value)}
+          />
+        )}
 
         <div className="mb-4">
           <label className="block font-medium mb-1">Skill Tag</label>
@@ -504,9 +499,11 @@ export default function ExerciseModal({
               await onSaveToServer(
                 {
                   question,
+                  exerciseEquation,
                   choices,
                   correctAnswer,
                   explanation,
+                  explanationEquation,
                   difficulty,
                   skillTag,
                 },

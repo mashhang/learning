@@ -442,7 +442,7 @@ export default function UsersAdmin() {
               <th className="p-2 text-left">Last Name</th>
               <th className="p-2 text-left">First Name</th>
               <th className="p-2 text-left">Email</th>
-              <th className="p-2 text-center w-40">Role</th>
+              <th className="p-2 text-center w-20">Role</th>
               <th className="p-2 text-center w-40">Actions</th>
             </tr>
           </thead>

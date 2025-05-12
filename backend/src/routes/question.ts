@@ -6,13 +6,15 @@ const router = Router();
 
 // This route is for adding a new question to a lesson
 router.post("/questions", async (req, res) => {
-  const { lessonId, question, choices, correctAnswer } = req.body;
+  const { lessonId, question, questionEquation, choices, correctAnswer } =
+    req.body;
 
   try {
     const newQuestion = await prisma.question.create({
       data: {
         lessonId,
         question,
+        questionEquation,
         choices,
         correctAnswer,
         isChoiceImage: false,
@@ -29,14 +31,21 @@ router.post("/questions", async (req, res) => {
 //UPDATE
 router.put("/questions/:id", async (req, res) => {
   const { id } = req.params;
-  const { question, choices, correctAnswer, isChoiceImage, questionImage } =
-    req.body;
+  const {
+    question,
+    questionEquation,
+    choices,
+    correctAnswer,
+    isChoiceImage,
+    questionImage,
+  } = req.body;
 
   try {
     const updated = await prisma.question.update({
       where: { id },
       data: {
         question,
+        questionEquation,
         choices,
         correctAnswer,
         isChoiceImage: isChoiceImage ?? false,

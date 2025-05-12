@@ -8,6 +8,7 @@ import { toast } from "sonner";
 export type Question = {
   id: string;
   question: string;
+  questionEquation?: string;
   questionImage?: File | null;
   choices: string[];
   choiceImages?: (File | null)[];
@@ -22,6 +23,7 @@ type Props = {
   editIndex: number | null;
   initialData: {
     question: string;
+    questionEquation?: string;
     choices: string[];
     correctAnswer: string;
     skillTag?: string;
@@ -29,6 +31,7 @@ type Props = {
   onSaveToServer: (
     data: {
       question: string;
+      questionEquation?: string;
       choices: string[];
       correctAnswer: string;
       skillTag?: string;
@@ -48,7 +51,11 @@ export default function QuestionModal({
   const keypadRef = useRef<HTMLDivElement>(null);
   const [showKeypad, setShowKeypad] = useState(false);
   const [isExiting, setIsExiting] = useState(false);
-  const [latexMode, setLatexMode] = useState(false); // ⬅️ new: toggles raw LaTeX input view
+  const [latexMode, setLatexMode] = useState(false);
+  const [questionEquation, setQuestionEquation] = useState(
+    initialData.questionEquation || ""
+  );
+
   const [rawInputMode, setRawInputMode] = useState<{
     question: boolean;
     choices: boolean[];
@@ -65,7 +72,7 @@ export default function QuestionModal({
   const [correctAnswer, setCorrectAnswer] = useState(initialData.correctAnswer);
 
   const [focusedField, setFocusedField] = useState<{
-    type: "question" | "choice" | "answer";
+    type: "question" | "equation" | "choice" | "answer";
     index?: number;
   } | null>(null);
 
@@ -83,6 +90,8 @@ export default function QuestionModal({
 
     if (focusedField.type === "question") {
       setQuestion((prev) => insertWithCursor(prev));
+    } else if (focusedField.type === "equation") {
+      setQuestionEquation((prev) => insertWithCursor(prev));
     } else if (
       focusedField.type === "choice" &&
       focusedField.index !== undefined
@@ -112,6 +121,7 @@ export default function QuestionModal({
 
   useEffect(() => {
     setQuestion(initialData.question);
+    setQuestionEquation(initialData.questionEquation || "");
     setChoices(initialData.choices);
     setCorrectAnswer(initialData.correctAnswer);
     setSkillTag(initialData.skillTag || "");
@@ -152,71 +162,60 @@ export default function QuestionModal({
           </label>
         </div>
 
+        <input
+          type="text"
+          placeholder="Enter Question"
+          className="w-full border p-2 mb-2"
+          value={question}
+          onFocus={() => setFocusedField({ type: "question" })}
+          onChange={(e) => setQuestion(e.target.value)}
+        />
+
         {mathMode ? (
-          <div className="relative">
-            {latexMode ? (
-              <input
-                type="text"
-                className="w-full border p-2 pr-10" // pr-10 = space for fx button
-                value={question}
-                onChange={(e) => setQuestion(e.target.value)}
-              />
-            ) : (
-              <MathInput
-                value={question}
-                onFocus={() => {
-                  setFocusedField({ type: "question" });
-                  setShowKeypad(true);
-                }}
-                onChange={(v) => setQuestion(v)}
-                placeholder="Enter Question"
-              />
-            )}
+          <>
+            {/* ✅ NEW: MathInput for questionEquation */}
+            <label className="text-sm font-medium block mb-1">
+              Question Equation
+            </label>
+            <MathInput
+              value={questionEquation}
+              onFocus={() => {
+                setFocusedField({ type: "equation" }); // optional
+                setShowKeypad(true);
+              }}
+              onChange={(v) => setQuestionEquation(v)}
+              placeholder="\\frac{2x}{3} + 5 = 10"
+            />
 
-            {latexMode && (
-              <button
-                onClick={() => {
-                  setLatexMode(false);
-                  setShowKeypad(true);
-                }}
-                className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-600"
+            {focusedField?.type === "equation" && (showKeypad || isExiting) && (
+              <div
+                ref={keypadRef}
+                className={`origin-top transition-all ${
+                  isExiting ? "animate-keypadExit" : "animate-keypad"
+                }`}
               >
-                fx
-              </button>
+                <MathKeypad
+                  onInsert={(latex) => {
+                    handleInsertLatex(latex);
+                  }}
+                  onClear={() => setQuestionEquation("")}
+                />
+              </div>
             )}
-
-            {!latexMode &&
-              focusedField?.type === "question" &&
-              (showKeypad || isExiting) && (
-                <div
-                  ref={keypadRef}
-                  className={`origin-top transition-all ${
-                    isExiting ? "animate-keypadExit" : "animate-keypad"
-                  }`}
-                >
-                  <MathKeypad
-                    onInsert={(latex) => {
-                      if (latex === "\\text{Switch to LaTeX}") {
-                        setLatexMode(true); // ✅ Switch view
-                        setShowKeypad(false); // ✅ Hide keypad
-                      } else {
-                        handleInsertLatex(latex);
-                      }
-                    }}
-                    onClear={() => setQuestion("")}
-                  />
-                </div>
-              )}
-          </div>
+          </>
         ) : (
-          <input
-            type="text"
-            placeholder="Enter Question"
-            className="w-full border p-2 mb-2"
-            value={question}
-            onFocus={() => setFocusedField({ type: "question" })}
-            onChange={(e) => setQuestion(e.target.value)}
-          />
+          <>
+            <label className="text-sm font-medium block mt-4 mb-1">
+              Question Equation (LaTeX)
+            </label>
+            <input
+              type="text"
+              placeholder="\\frac{2x}{3} + 5 = 10"
+              className="w-full border p-2 mb-4"
+              value={questionEquation}
+              onChange={(e) => setQuestionEquation(e.target.value)}
+            />
+          </>
         )}
 
         {[0, 1, 2, 3].map((i) => (
@@ -412,7 +411,13 @@ export default function QuestionModal({
               }
 
               await onSaveToServer(
-                { question, choices, correctAnswer, skillTag },
+                {
+                  question,
+                  questionEquation,
+                  choices,
+                  correctAnswer,
+                  skillTag,
+                },
                 editIndex
               );
               toast.success(

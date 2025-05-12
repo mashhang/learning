@@ -28,6 +28,9 @@ export default function AssessmentHistoryPage() {
   const [typeFilter, setTypeFilter] = useState("ALL");
   const [timerMinutes, setTimerMinutes] = useState<number>(60);
 
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+
   useEffect(() => {
     fetch(`${API_URL}/api/settings/diagnostic-timer`)
       .then((res) => res.json())
@@ -38,21 +41,37 @@ export default function AssessmentHistoryPage() {
   useEffect(() => {
     async function fetchData() {
       const [assessmentRes, diagnosticRes] = await Promise.all([
-        fetch(`${API_URL}/api/assessment/admin/assessments`),
+        fetch(
+          `${API_URL}/api/assessment/admin/assessments?page=${page}&limit=20`
+        ),
         fetch(`${API_URL}/api/diagnostic/admin/diagnostic-results`),
       ]);
 
-      const assessmentData = await assessmentRes.json();
-      const diagnosticData = await diagnosticRes.json();
+      const assessmentJson = await assessmentRes.json();
+      const diagnosticJson = await diagnosticRes.json();
 
-      const combined = [...assessmentData, ...diagnosticData];
+      const assessmentData = assessmentJson.results;
+      const diagnosticData = diagnosticJson;
 
-      setData(combined);
-      setFiltered(combined);
+      if (!Array.isArray(assessmentData) || !Array.isArray(diagnosticData)) {
+        console.error("Invalid assessment or diagnostic data", {
+          assessmentData,
+          diagnosticData,
+        });
+        return;
+      }
+
+      setData(assessmentData); // already paginated by backend
+      setFiltered(assessmentData);
+      setTotalPages(assessmentJson.totalPages || 1);
     }
 
     fetchData();
-  }, []);
+  }, [page]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [search, typeFilter]);
 
   useEffect(() => {
     let result = [...data];
@@ -157,6 +176,27 @@ export default function AssessmentHistoryPage() {
           ))}
         </tbody>
       </table>
+      <div className="flex justify-between items-center mt-4">
+        <button
+          onClick={() => setPage((prev) => Math.max(prev - 1, 1))}
+          disabled={page === 1}
+          className="px-4 py-2 rounded bg-gray-200 disabled:opacity-50"
+        >
+          Previous
+        </button>
+
+        <span className="text-sm text-gray-600">
+          Page {page} of {totalPages}
+        </span>
+
+        <button
+          onClick={() => setPage((prev) => Math.min(prev + 1, totalPages))}
+          disabled={page === totalPages}
+          className="px-4 py-2 rounded bg-gray-200 disabled:opacity-50"
+        >
+          Next
+        </button>
+      </div>
 
       {filtered.length === 0 && (
         <p className="text-gray-500 mt-4 italic">No assessment data found.</p>

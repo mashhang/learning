@@ -65,6 +65,7 @@ export default function CurrentLesson() {
   const [exerciseIndex, setExerciseIndex] = useState(0);
   const [showSummary, setShowSummary] = useState(false);
   const [showVideoModal, setShowVideoModal] = useState(false);
+  const [showImagePreview, setShowImagePreview] = useState(false);
 
   const [pageEnterTime, setPageEnterTime] = useState<number>(Date.now());
   const [showExercise, setShowExercise] = useState<boolean>(false);
@@ -435,15 +436,12 @@ export default function CurrentLesson() {
                   Your browser does not support the video tag.
                 </video>
               ) : (
-                <Image
+                <img
                   src={pageMedia}
                   alt="Lesson Media"
-                  width={800}
-                  height={800}
-                  className="w-full h-auto rounded-lg select-none"
+                  onClick={() => setShowImagePreview(true)}
+                  className="w-full h-auto rounded-lg select-none cursor-zoom-in"
                   draggable="false"
-                  priority
-                  unoptimized
                 />
               )}
             </div>
@@ -766,6 +764,25 @@ export default function CurrentLesson() {
                 ➕ Generate Another
               </button>
             </div>
+          </div>
+        </div>
+      )}
+      {showImagePreview && (
+        <div
+          className="fixed inset-0 z-50 bg-black bg-opacity-80 flex items-center justify-center"
+          onClick={() => setShowImagePreview(false)}
+        >
+          <div className="relative w-full h-full flex items-center justify-center p-4 sm:p-0">
+            <img
+              src={pageMedia!}
+              alt="Zoomed Lesson Media"
+              className="rounded shadow-lg max-h-[90vh] sm:max-h-[90vh] sm:max-w-[90vw]
+                   rotate-0 sm:rotate-0
+                   [@media(max-width:640px)]:rotate-90 
+                   [@media(max-width:640px)]:max-w-[90vh] 
+                   [@media(max-width:640px)]:max-h-[90vw]"
+              draggable="false"
+            />
           </div>
         </div>
       )}

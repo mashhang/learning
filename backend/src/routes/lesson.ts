@@ -36,6 +36,7 @@ export const getLessons: RequestHandler = async (_req, res) => {
           select: {
             id: true,
             question: true,
+            questionEquation: true,
             questionImage: true, // ✅ include this
             choices: true,
             correctAnswer: true,
@@ -80,6 +81,7 @@ export const getLessons: RequestHandler = async (_req, res) => {
         questions: lesson.questions.map((q) => ({
           id: q.id,
           question: q.question,
+          questionEquation: q.questionEquation,
           questionImage:
             q.questionImage && !q.questionImage.startsWith("http")
               ? `${API_URL}${q.questionImage.startsWith("/") ? "" : "/"}${
@@ -140,6 +142,7 @@ export const getLessonById: RequestHandler = async (
     const questionsWithURL = lesson.questions.map((q) => ({
       id: q.id,
       question: q.question,
+      questionEquation: q.questionEquation,
       choices: q.choices,
       correctAnswer: q.correctAnswer,
       isChoiceImage: q.isChoiceImage,
@@ -324,6 +327,7 @@ export const updateLesson = async (
         },
         update: {
           question: q.question || null,
+          questionEquation: q.questionEquation || null,
           questionImage: questionImagePath,
           choices,
           correctAnswer: q.correctAnswer,
@@ -332,6 +336,7 @@ export const updateLesson = async (
         create: {
           lessonId,
           question: q.question || null,
+          questionEquation: q.questionEquation || null,
           questionImage: questionImagePath,
           choices,
           correctAnswer: q.correctAnswer,

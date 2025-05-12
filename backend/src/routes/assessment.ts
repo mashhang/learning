@@ -6,29 +6,54 @@ const router = Router();
 
 // GET /api/admin/assessments?userId=...&lessonId=...&type=PRE|POST
 router.get("/admin/assessments", async (req, res) => {
-  const { userId, lessonId, type } = req.query;
+  const { userId, lessonId, type, page = "1", limit = "20" } = req.query;
 
   try {
     const filters: any = {};
     if (userId) filters.userId = String(userId);
     if (lessonId) filters.lessonId = String(lessonId);
-    if (type) filters.type = String(type); // PRE or POST
+    if (type) filters.type = String(type);
+
+    const pageNumber = parseInt(page as string) || 1;
+    const pageSize = parseInt(limit as string) || 20;
+    const skip = (pageNumber - 1) * pageSize;
+
+    console.log("➡️ Fetching assessments with filters:", filters, {
+      skip,
+      take: pageSize,
+    });
 
     const answers = await prisma.assessmentAnswer.findMany({
       where: filters,
       include: {
-        user: true,
-        lesson: true,
+        user: {
+          select: {
+            id: true,
+            studentId: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+          },
+        },
+        lesson: {
+          select: {
+            id: true,
+            title: true,
+          },
+        },
       },
       orderBy: { createdAt: "desc" },
     });
 
-    // Group by user + lesson + type
-    const grouped: Record<string, any> = {};
+    const filteredAnswers = answers.filter((a) => a.user && a.lesson);
+
+    // Move pagination AFTER grouping
+    const groupedMap: Record<string, any> = {};
+
     for (const a of answers) {
       const key = `${a.userId}_${a.lessonId}_${a.type}`;
-      if (!grouped[key]) {
-        grouped[key] = {
+      if (!groupedMap[key]) {
+        groupedMap[key] = {
           user: a.user,
           lesson: a.lesson,
           type: a.type,
@@ -37,12 +62,12 @@ router.get("/admin/assessments", async (req, res) => {
           createdAt: a.createdAt,
         };
       }
-
-      grouped[key].total += 1;
-      if (a.isCorrect) grouped[key].correct += 1;
+      groupedMap[key].total += 1;
+      if (a.isCorrect) groupedMap[key].correct += 1;
     }
 
-    const results = Object.values(grouped).map((entry: any) => ({
+    // ⛳ Convert to array and paginate this instead
+    const groupedArray = Object.values(groupedMap).map((entry: any) => ({
       userId: entry.user.id,
       studentId: entry.user.studentId,
       lastName: entry.user.lastName,
@@ -56,10 +81,19 @@ router.get("/admin/assessments", async (req, res) => {
       createdAt: entry.createdAt,
     }));
 
-    res.json(results);
-  } catch (err) {
-    console.error("❌ Failed to load assessment results:", err);
-    res.status(500).json({ error: "Failed to fetch assessment results" });
+    const totalGrouped = groupedArray.length;
+    const pagedGrouped = groupedArray.slice(skip, skip + pageSize);
+
+    res.json({
+      results: pagedGrouped,
+      page: pageNumber,
+      totalPages: Math.ceil(totalGrouped / pageSize),
+      totalRecords: totalGrouped,
+    });
+  } catch (err: any) {
+    console.error("❌ Failed to load assessment results:");
+    console.error("Error message:", err.message);
+    res.status(500).json({ error: err.message });
   }
 });
 

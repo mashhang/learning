@@ -87,6 +87,7 @@ model Question {
   lessonId          String
   lesson            Lesson             @relation(fields: [lessonId], references: [id], onDelete: Cascade)
   question          String?
+  questionEquation  String? // ✅ equation for math questions
   questionImage     String? // ✅ image file path
   choices           String[] // Array of choices
   isChoiceImage     Boolean            @default(false) // ✅ whether choices are images
@@ -159,9 +160,11 @@ model ExampleExercise {
   lessonId    String
   lesson      Lesson   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
   question     String   // Markdown or HTML (for question/problem statement)
+  exerciseEquation  String?
   choices     String[] // Multiple choice options
   correctAnswer String
   explanation String? // Why the answer is correct or incorrect
+  explanationEquation String? // Optional equation for explanation
   skillTag    String?  // Optional: "mapping", "domain", etc.
   difficulty  DifficultyLevel @default(MEDIUM)
   isChoiceImage Boolean @default(false)
