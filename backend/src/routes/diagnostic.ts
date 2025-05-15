@@ -364,4 +364,26 @@ router.get("/admin/diagnostic-results", async (req, res) => {
   }
 });
 
+// GET /api/admin/diagnostic-summary
+router.get("/admin/diagnostic-summary", async (req, res) => {
+  try {
+    const answers = await prisma.diagnosticAnswer.findMany();
+
+    const userIds = [...new Set(answers.map((a) => a.userId))];
+    const studentsTaken = userIds.length;
+
+    const totalCorrect = answers.filter((a) => a.isCorrect).length;
+    const totalQuestions = answers.length;
+    const average =
+      totalQuestions > 0
+        ? Math.round((totalCorrect / totalQuestions) * 100)
+        : 0;
+
+    res.status(200).json({ count: studentsTaken, average });
+  } catch (err) {
+    console.error("❌ Error fetching diagnostic summary:", err);
+    res.status(500).json({ error: "Failed to compute diagnostic stats" });
+  }
+});
+
 export default router;

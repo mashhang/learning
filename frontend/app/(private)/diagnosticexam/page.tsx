@@ -24,6 +24,7 @@ import { AlertTriangle } from "lucide-react";
 type Question = {
   id: string;
   question?: string;
+  questionEquation?: string;
   questionImage?: string; // ✅ correct field name
   choices: string[];
   correctAnswer: string;
@@ -718,13 +719,21 @@ export default function DiagnosticExam() {
                       </div>
 
                       {/* Question Text */}
-                      {shuffledQuestions[currentIndex].question && (
-                        <div className="overflow-x-auto max-w-full">
-                          <div className="inline-block min-w-fit text-gray-800 text-sm lg:text-base leading-relaxed select-none">
-                            <MathJax inline>
-                              {`\\( ${shuffledQuestions[currentIndex].question} \\)`}
-                            </MathJax>
-                          </div>
+                      {(shuffledQuestions[currentIndex].question ||
+                        shuffledQuestions[currentIndex].questionEquation) && (
+                        <div className="mb-4">
+                          {shuffledQuestions[currentIndex].question && (
+                            <p className="text-gray-800 text-base lg:text-lg leading-relaxed">
+                              {shuffledQuestions[currentIndex].question}
+                            </p>
+                          )}
+                          {shuffledQuestions[currentIndex].questionEquation && (
+                            <div className="mt-2 text-base text-gray-800">
+                              <MathJax inline>
+                                {`\\( ${shuffledQuestions[currentIndex].questionEquation} \\)`}
+                              </MathJax>
+                            </div>
+                          )}
                         </div>
                       )}
 
@@ -915,11 +924,25 @@ export default function DiagnosticExam() {
 
                   {/* Diagnostic Result Component */}
                   <DiagnosticResultSummary
+                    user={{
+                      fullName: `${user?.firstName ?? ""} ${
+                        user?.lastName ?? ""
+                      }`,
+                      // address: user?.address ?? "N/A",
+                      email: user?.email ?? "N/A",
+                      id: user?.studentId ?? user?.id ?? "N/A",
+                    }}
+                    exam={{
+                      title: "Diagnostic Exam in General Mathematics",
+                      reference: `DXGM-${user?.id?.slice(0, 5) ?? "00000"}`,
+                      date: new Date().toLocaleDateString("en-US", {
+                        year: "numeric",
+                        month: "long",
+                        day: "numeric",
+                      }),
+                    }}
                     score={score}
-                    correctCount={correctCount}
-                    totalCount={totalCount}
-                    strengths={groupedStrengths}
-                    weaknesses={groupedWeaknesses}
+                    requiredScore={70}
                     chartData={chartData}
                   />
 

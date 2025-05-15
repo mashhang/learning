@@ -165,14 +165,18 @@ export default function PreAssessmentPage() {
     <AssessmentQuiz
       type="PRE"
       lesson={lesson}
+      lessonId={lesson.id}
       selectedAnswers={selectedAnswers}
       timedAnswers={timedAnswers}
       setSelectedAnswers={setSelectedAnswers}
       setTimedAnswers={setTimedAnswers}
-      onFinish={() => {
-        // 👈 After finishing pre-assessment, go to the lesson
-        router.push(`/current?id=${lesson.id}`);
-      }}
+      score={0}
+      correctCount={0}
+      incorrectCount={0}
+      averageTime={0}
+      onFinish={() => router.push(`/current?id=${lesson.id}`)}
+      onClose={() => router.push("/dashboard")}
+      onContinue={(lessonId: string) => router.push(`/current/?id=${lessonId}`)}
     />
   );
 }

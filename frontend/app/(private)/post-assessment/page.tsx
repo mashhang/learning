@@ -57,13 +57,20 @@ export default function PostAssessmentPage() {
     <AssessmentQuiz
       type="POST"
       lesson={lesson}
+      lessonId={lesson.id}
+      selectedAnswers={selectedAnswers}
+      timedAnswers={timedAnswers}
+      setSelectedAnswers={setSelectedAnswers}
+      setTimedAnswers={setTimedAnswers}
+      score={0}
+      correctCount={0}
+      incorrectCount={0}
+      averageTime={0}
       onFinish={() => {
         router.push("/dashboard"); // or next lesson
       }}
-      selectedAnswers={selectedAnswers}
-      setSelectedAnswers={setSelectedAnswers}
-      timedAnswers={timedAnswers}
-      setTimedAnswers={setTimedAnswers}
+      onClose={() => router.push("/dashboard")}
+      onContinue={(lessonId: string) => router.push(`/current/?id=${lessonId}`)}
     />
   );
 }

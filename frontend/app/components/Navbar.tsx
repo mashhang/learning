@@ -10,9 +10,14 @@ import {
   BookOpen,
   ChartNoAxesColumn,
   LibraryBig,
+  Library,
   Bell,
   UserRound,
   Bolt,
+  Notebook,
+  BookOpenText,
+  BarChartBig,
+  Users2,
   CircleHelp,
   LogOut,
   X,
@@ -72,43 +77,111 @@ const Navbar: React.FC<NavbarProps> = ({
       });
   }, [user]);
 
-  const links = [
-    {
-      icon: <LayoutDashboard strokeWidth={1.25} />,
-      label: "Dashboard",
-      href: "/dashboard",
-    },
-    {
-      icon: <BookOpen strokeWidth={1.25} />,
-      label: "My Lessons",
-      href: "/mylesson",
-    },
-    {
-      icon: <ChartNoAxesColumn strokeWidth={1.25} />,
-      label: "Progress Report",
-      href: "/progress",
-    },
-  ];
+  // const links = [
+  //   {
+  //     icon: <LayoutDashboard strokeWidth={1.25} />,
+  //     label: "Dashboard",
+  //     href: "/dashboard",
+  //   },
+  //   {
+  //     icon: <BookOpen strokeWidth={1.25} />,
+  //     label: "My Lessons",
+  //     href: "/mylesson",
+  //   },
+  //   {
+  //     icon: <ChartNoAxesColumn strokeWidth={1.25} />,
+  //     label: "Progress Report",
+  //     href: "/progress",
+  //   },
+  // ];
 
-  const qalinks = [
-    {
-      icon: <LibraryBig strokeWidth={1.25} />,
-      label: "Current Lessons",
-      // href: firstLessonId ? `/current?id=${firstLessonId}` : "/current", // ✅ Dynamically link
-      // href: firstLessonId ? `/current?id=${firstLessonId}` : "/current", // ✅ Use dynamic top-priority lesson
-      href: firstLessonId ? `/current?id=${firstLessonId}` : "#", // safer fallback
-    },
-    // {
-    //   icon: <Backpack strokeWidth={1.25} />,
-    //   label: "Assignments",
-    //   href: "/assignments",
-    // },
-    {
-      icon: <Bell strokeWidth={1.25} />,
-      label: "Announcements",
-      href: "/announcements",
-    },
-  ];
+  const links =
+    user?.role === "ADMIN"
+      ? [
+          {
+            icon: <LayoutDashboard strokeWidth={1.25} />,
+            label: "Dashboard",
+            href: "/admin",
+          },
+          {
+            icon: <Notebook strokeWidth={1.25} />,
+            label: "Chapters",
+            href: "/admin/chapters",
+          },
+          {
+            icon: <BookOpenText strokeWidth={1.25} />,
+            label: "Lessons",
+            href: "/admin/lessons",
+          },
+          {
+            icon: <BarChartBig strokeWidth={1.25} />,
+            label: "Assessments",
+            href: "/admin/assessments",
+          },
+          {
+            icon: <Users2 strokeWidth={1.25} />,
+            label: "Users",
+            href: "/admin/users",
+          },
+          {
+            icon: <Bell strokeWidth={1.25} />,
+            label: "Announcements",
+            href: "/admin/announcements",
+          },
+        ]
+      : [
+          {
+            icon: <LayoutDashboard strokeWidth={1.25} />,
+            label: "Dashboard",
+            href: "/dashboard",
+          },
+          {
+            icon: <BookOpen strokeWidth={1.25} />,
+            label: "My Lessons",
+            href: "/mylesson",
+          },
+          {
+            icon: <ChartNoAxesColumn strokeWidth={1.25} />,
+            label: "Progress Report",
+            href: "/progress",
+          },
+        ];
+
+  const qalinks =
+    user?.role !== "ADMIN"
+      ? [
+          {
+            icon: <LibraryBig strokeWidth={1.25} />,
+            label: "Current Lessons",
+            href: firstLessonId ? `/current?id=${firstLessonId}` : "#",
+          },
+          {
+            icon: <Bell strokeWidth={1.25} />,
+            label: "Announcements",
+            href: "/announcements",
+          },
+        ]
+      : [];
+
+  // const qalinks = [
+  //   {
+  //     icon: <LibraryBig strokeWidth={1.25} />,
+  //     label: "Current Lessons",
+  //     // href: firstLessonId ? `/current?id=${firstLessonId}` : "/current", // ✅ Dynamically link
+  //     // href: firstLessonId ? `/current?id=${firstLessonId}` : "/current", // ✅ Use dynamic top-priority lesson
+  //     href: firstLessonId ? `/current?id=${firstLessonId}` : "#", // safer fallback
+  //   },
+  //   // {
+  //   //   icon: <Backpack strokeWidth={1.25} />,
+  //   //   label: "Assignments",
+  //   //   href: "/assignments",
+  //   // },
+  //   {
+  //     icon: <Bell strokeWidth={1.25} />,
+  //     label: "Announcements",
+  //     href: "/announcements",
+  //   },
+  // ];
 
   const profilelinks = [
     {
@@ -239,7 +312,7 @@ const Navbar: React.FC<NavbarProps> = ({
           </p>
           <Link
             className={`${!isAuthenticated ? "text-center pb-1" : ""}`}
-            href={"/dashboard"}
+            href={user?.role === "ADMIN" ? "/admin" : "/dashboard"}
           >
             <Image
               className="p-1"
@@ -315,19 +388,24 @@ const Navbar: React.FC<NavbarProps> = ({
             ))}
           </div>
           <div className=" mt-7 mb-3 h-[1px] w-full bg-[#E6E6E6]" />
-          <h1 className="ml-5 font-[500] mb-1">Quick Access</h1>
-          {qalinks.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className={`flex mx-5 p-2 rounded-md hover:bg-zinc-300 hover:transition-all ${
-                isActive(link.href) ? "bg-[#D7E5F3]" : ""
-              }`}
-            >
-              <span className="mr-3">{link.icon}</span>
-              {link.label}
-            </Link>
-          ))}
+          {user?.role !== "ADMIN" && (
+            <>
+              <div className="mt-7 mb-3 h-[1px] w-full bg-[#E6E6E6]" />
+              <h1 className="ml-5 font-[500] mb-1">Quick Access</h1>
+              {qalinks.map((link) => (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className={`flex mx-5 p-2 rounded-md hover:bg-zinc-300 hover:transition-all ${
+                    isActive(link.href) ? "bg-[#D7E5F3]" : ""
+                  }`}
+                >
+                  <span className="mr-3">{link.icon}</span>
+                  {link.label}
+                </Link>
+              ))}
+            </>
+          )}
         </nav>
       </div>
 

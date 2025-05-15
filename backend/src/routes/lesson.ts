@@ -390,7 +390,6 @@ export const deleteLesson: RequestHandler = async (req, res): Promise<void> => {
   try {
     const lessonId = req.params.id;
 
-    // Check if the lesson exists before deleting
     const existingLesson = await prisma.lesson.findUnique({
       where: { id: lessonId },
     });
@@ -400,6 +399,17 @@ export const deleteLesson: RequestHandler = async (req, res): Promise<void> => {
       return;
     }
 
+    // 🔥 Delete all related records in the correct order
+    await prisma.userSkillPerformance.deleteMany({ where: { lessonId } });
+    await prisma.userQuestionPerformance.deleteMany({ where: { lessonId } });
+    await prisma.assessmentAnswer.deleteMany({ where: { lessonId } });
+    await prisma.diagnosticAnswer.deleteMany({ where: { lessonId } });
+    await prisma.userLessonPriority.deleteMany({ where: { lessonId } });
+    await prisma.lessonPage.deleteMany({ where: { lessonId } });
+    await prisma.question.deleteMany({ where: { lessonId } });
+    await prisma.exampleExercise.deleteMany({ where: { lessonId } });
+
+    // ✅ Then delete the lesson
     await prisma.lesson.delete({ where: { id: lessonId } });
 
     res.status(200).json({ message: "Lesson deleted successfully" });
@@ -661,5 +671,77 @@ export const getSkillTagsByLessonId = async (req: Request, res: Response) => {
   } catch (error) {
     console.error("❌ Error fetching skillTags:", error);
     res.status(500).json({ error: "Failed to fetch skill tags" });
+  }
+};
+
+export const getLessonEngagementStats: RequestHandler = async (req, res) => {
+  try {
+    const lessons = await prisma.lesson.findMany({
+      include: {
+        chapter: {
+          select: {
+            title: true,
+            order: true,
+          },
+        },
+      },
+    });
+
+    const allAssessments = await prisma.assessmentAnswer.findMany();
+    const allProgress = await prisma.userLessonPriority.findMany();
+
+    const stats = lessons.map((lesson) => {
+      const lessonId = lesson.id;
+
+      const completedCount = allProgress.filter(
+        (p) => p.lessonId === lessonId && p.progress === 1
+      ).length;
+
+      const preAnswers = allAssessments.filter(
+        (a) => a.lessonId === lessonId && a.type === "PRE"
+      );
+      const postAnswers = allAssessments.filter(
+        (a) => a.lessonId === lessonId && a.type === "POST"
+      );
+
+      const preUsers = new Set(preAnswers.map((a) => a.userId));
+      const postUsers = new Set(postAnswers.map((a) => a.userId));
+
+      const avgPreScore =
+        preAnswers.length > 0
+          ? Math.round(
+              (preAnswers.filter((a) => a.isCorrect).length /
+                preAnswers.length) *
+                100
+            )
+          : null;
+
+      const avgPostScore =
+        postAnswers.length > 0
+          ? Math.round(
+              (postAnswers.filter((a) => a.isCorrect).length /
+                postAnswers.length) *
+                100
+            )
+          : null;
+
+      return {
+        id: lessonId,
+        title: lesson.title,
+        chapterTitle: lesson.chapter?.title ?? "Uncategorized",
+        chapterOrder: lesson.chapter?.order ?? 999,
+        order: lesson.order ?? 999,
+        completedCount,
+        preCount: preUsers.size,
+        postCount: postUsers.size,
+        avgPreScore,
+        avgPostScore,
+      };
+    });
+
+    res.status(200).json(stats);
+  } catch (err) {
+    console.error("❌ Error computing lesson engagement stats:", err);
+    res.status(500).json({ error: "Internal Server Error" });
   }
 };

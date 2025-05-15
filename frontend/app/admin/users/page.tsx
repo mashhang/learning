@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import API_URL from "@/lib/getApiUrl";
+import { useSidebar } from "@/app/context/SidebarContext";
 
 // const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
 
@@ -15,6 +16,9 @@ type User = {
 };
 
 export default function UsersAdmin() {
+  const { isSidebarOpen, sidebarWidth } = useSidebar();
+  const [screenWidth, setScreenWidth] = useState(0);
+
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [studentSearch, setStudentSearch] = useState("");
@@ -325,73 +329,152 @@ export default function UsersAdmin() {
   if (loading) return <p>Loading users...</p>;
 
   return (
-    <div className="m-4">
-      {loadingImport && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-          <div className="bg-white p-6 rounded shadow-lg text-center">
-            <p className="text-lg font-medium">Importing users...</p>
-            <div className="mt-4 animate-spin rounded-full h-8 w-8 border-4 border-blue-500 border-t-transparent mx-auto" />
+    <div
+      className="transition-all duration-300 ease-in-out h-screen"
+      style={{
+        marginLeft:
+          typeof window !== "undefined" &&
+          window.innerWidth >= 768 &&
+          isSidebarOpen
+            ? "224px" // Tailwind's w-56 (14rem)
+            : "0",
+        width:
+          typeof window !== "undefined" &&
+          window.innerWidth >= 768 &&
+          isSidebarOpen
+            ? "calc(100% - 224px)"
+            : "100%",
+      }}
+    >
+      <div className="p-8 my-4">
+        {loadingImport && (
+          <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+            <div className="bg-white p-6 rounded shadow-lg text-center">
+              <p className="text-lg font-medium">Importing users...</p>
+              <div className="mt-4 animate-spin rounded-full h-8 w-8 border-4 border-blue-500 border-t-transparent mx-auto" />
+            </div>
           </div>
+        )}
+
+        <h1 className="text-2xl font-bold">Manage Users</h1>
+
+        {/* === STUDENT USERS TABLE === */}
+        <div className="flex justify-between items-center my-2">
+          <h2 className="text-lg font-semibold">Students</h2>
+          <input
+            type="text"
+            placeholder="Search student..."
+            className="border px-4 py-2 rounded w-64 text-sm transition"
+            onChange={(e) => setStudentSearch(e.target.value)}
+          />
+
+          <input
+            type="file"
+            accept=".csv"
+            onChange={handleImportCSV}
+            className="text-sm"
+          />
+
+          <button
+            onClick={exportStudentList}
+            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 text-sm"
+          >
+            Export Student List
+          </button>
         </div>
-      )}
+        <div className="h-[300px] max-h-[300px] overflow-y-auto mb-10 border border-gray-300 rounded">
+          <table className="bg-white w-full text-sm">
+            <thead className="bg-gray-200 sticky top-0 z-10">
+              <tr className="border-b border-l">
+                <th className="p-2 text-left">Student ID</th>
+                <th className="p-2 text-left">Last Name</th>
+                <th className="p-2 text-left">First Name</th>
+                <th className="p-2 text-left">Email</th>
+                <th className="p-2 text-center">Role</th>
+                <th className="p-2 text-center w-52">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredUsers
+                .filter((u) => u.role === "USER")
+                .map((user) => (
+                  <tr key={user.id} className="border">
+                    <td className="p-2 ">{user.studentId}</td>
+                    <td className="p-2 border">{user.lastName}</td>
+                    <td className="p-2 border">{user.firstName}</td>
+                    <td className="p-2 border">{user.email}</td>
+                    <td className="p-2 text-center border">{user.role}</td>
+                    <td className="p-2  flex flex-col sm:flex-row gap-2 text-center">
+                      <button
+                        onClick={() =>
+                          downloadUserScores(user.id, user.studentId)
+                        }
+                        className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700 text-xs"
+                      >
+                        Download Scores
+                      </button>
+                      <button
+                        onClick={() => resetUserPassword(user.id)}
+                        className="bg-yellow-600 text-white px-3 py-1 rounded hover:bg-yellow-700 text-xs"
+                      >
+                        Reset Password
+                      </button>
+                      <button
+                        onClick={() => handleDeleteUser(user.id)}
+                        className="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700 text-xs"
+                      >
+                        Delete
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+            </tbody>
+          </table>
+        </div>
 
-      <h1 className="text-2xl font-bold">Manage Users</h1>
+        {/* === ADMIN USERS TABLE === */}
+        <div className="flex justify-between items-center my-2">
+          <h2 className="text-lg font-semibold mb-2">Admins</h2>
+          <input
+            type="text"
+            placeholder="Search student..."
+            className="border px-4 py-2 rounded w-64 text-sm transition"
+            onChange={(e) => setAdminSearch(e.target.value)}
+          />
 
-      {/* === STUDENT USERS TABLE === */}
-      <div className="flex justify-between items-center my-2">
-        <h2 className="text-lg font-semibold">Students</h2>
-        <input
-          type="text"
-          placeholder="Search student..."
-          className="border px-4 py-2 rounded w-64 text-sm transition"
-          onChange={(e) => setStudentSearch(e.target.value)}
-        />
+          <button
+            onClick={() => setShowAddModal(true)}
+            className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 text-sm"
+          >
+            Add Admin
+          </button>
 
-        <input
-          type="file"
-          accept=".csv"
-          onChange={handleImportCSV}
-          className="text-sm"
-        />
-
-        <button
-          onClick={exportStudentList}
-          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 text-sm"
-        >
-          Export Student List
-        </button>
-      </div>
-      <div className="h-[300px] max-h-[300px] overflow-y-auto mb-10 border border-gray-300 rounded">
-        <table className="w-full text-sm">
-          <thead className="bg-gray-200 sticky top-0 z-10">
-            <tr className="border-b border-l">
-              <th className="p-2 text-left">Student ID</th>
-              <th className="p-2 text-left">Last Name</th>
-              <th className="p-2 text-left">First Name</th>
-              <th className="p-2 text-left">Email</th>
-              <th className="p-2 text-center">Role</th>
-              <th className="p-2 text-center w-52">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredUsers
-              .filter((u) => u.role === "USER")
-              .map((user) => (
+          <button
+            onClick={exportAdminList}
+            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 text-sm"
+          >
+            Export Admin List
+          </button>
+        </div>
+        <div className="h-[300px] max-h-[300px] overflow-y-auto mb-10 border border-gray-300 rounded">
+          <table className="w-full text-sm">
+            <thead className="bg-gray-200 sticky top-0 z-10">
+              <tr className="border-b border-l">
+                <th className="p-2 text-left">Last Name</th>
+                <th className="p-2 text-left">First Name</th>
+                <th className="p-2 text-left">Email</th>
+                <th className="p-2 text-center w-20">Role</th>
+                <th className="p-2 text-center w-40">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredAdmins.map((user) => (
                 <tr key={user.id} className="border">
-                  <td className="p-2 ">{user.studentId}</td>
-                  <td className="p-2 border">{user.lastName}</td>
+                  <td className="p-2">{user.lastName}</td>
                   <td className="p-2 border">{user.firstName}</td>
                   <td className="p-2 border">{user.email}</td>
                   <td className="p-2 text-center border">{user.role}</td>
-                  <td className="p-2  flex flex-col sm:flex-row gap-2 text-center">
-                    <button
-                      onClick={() =>
-                        downloadUserScores(user.id, user.studentId)
-                      }
-                      className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700 text-xs"
-                    >
-                      Download Scores
-                    </button>
+                  <td className="p-2 text-center flex flex-col sm:flex-row gap-2">
                     <button
                       onClick={() => resetUserPassword(user.id)}
                       className="bg-yellow-600 text-white px-3 py-1 rounded hover:bg-yellow-700 text-xs"
@@ -407,78 +490,21 @@ export default function UsersAdmin() {
                   </td>
                 </tr>
               ))}
-          </tbody>
-        </table>
-      </div>
-
-      {/* === ADMIN USERS TABLE === */}
-      <div className="flex justify-between items-center my-2">
-        <h2 className="text-lg font-semibold mb-2">Admins</h2>
-        <input
-          type="text"
-          placeholder="Search student..."
-          className="border px-4 py-2 rounded w-64 text-sm transition"
-          onChange={(e) => setAdminSearch(e.target.value)}
-        />
-
-        <button
-          onClick={() => setShowAddModal(true)}
-          className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 text-sm"
-        >
-          Add Admin
-        </button>
-
-        <button
-          onClick={exportAdminList}
-          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 text-sm"
-        >
-          Export Admin List
-        </button>
-      </div>
-      <div className="h-[300px] max-h-[300px] overflow-y-auto mb-10 border border-gray-300 rounded">
-        <table className="w-full text-sm">
-          <thead className="bg-gray-200 sticky top-0 z-10">
-            <tr className="border-b border-l">
-              <th className="p-2 text-left">Last Name</th>
-              <th className="p-2 text-left">First Name</th>
-              <th className="p-2 text-left">Email</th>
-              <th className="p-2 text-center w-20">Role</th>
-              <th className="p-2 text-center w-40">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredAdmins.map((user) => (
-              <tr key={user.id} className="border">
-                <td className="p-2">{user.lastName}</td>
-                <td className="p-2 border">{user.firstName}</td>
-                <td className="p-2 border">{user.email}</td>
-                <td className="p-2 text-center border">{user.role}</td>
-                <td className="p-2 text-center flex flex-col sm:flex-row gap-2">
-                  <button
-                    onClick={() => resetUserPassword(user.id)}
-                    className="bg-yellow-600 text-white px-3 py-1 rounded hover:bg-yellow-700 text-xs"
-                  >
-                    Reset Password
-                  </button>
-                  <button
-                    onClick={() => handleDeleteUser(user.id)}
-                    className="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700 text-xs"
-                  >
-                    Delete
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-      {showAddModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-          <div className="bg-white p-6 rounded shadow-lg w-full max-w-md">
-            <h2 className="text-lg font-semibold mb-4">Add Admin</h2>
-            <div className="space-y-2">
-              {["studentId", "firstName", "lastName", "email", "password"].map(
-                (field) => (
+            </tbody>
+          </table>
+        </div>
+        {showAddModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+            <div className="bg-white p-6 rounded shadow-lg w-full max-w-md">
+              <h2 className="text-lg font-semibold mb-4">Add Admin</h2>
+              <div className="space-y-2">
+                {[
+                  "studentId",
+                  "firstName",
+                  "lastName",
+                  "email",
+                  "password",
+                ].map((field) => (
                   <input
                     key={field}
                     type={field === "password" ? "password" : "text"}
@@ -497,26 +523,26 @@ export default function UsersAdmin() {
                       setNewAdmin({ ...newAdmin, [field]: e.target.value })
                     }
                   />
-                )
-              )}
-            </div>
-            <div className="flex justify-end mt-4 gap-2">
-              <button
-                onClick={() => setShowAddModal(false)}
-                className="text-gray-600 hover:text-black text-sm"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleAddAdmin}
-                className="bg-blue-600 text-white px-4 py-1.5 rounded text-sm hover:bg-blue-700"
-              >
-                Create
-              </button>
+                ))}
+              </div>
+              <div className="flex justify-end mt-4 gap-2">
+                <button
+                  onClick={() => setShowAddModal(false)}
+                  className="text-gray-600 hover:text-black text-sm"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleAddAdmin}
+                  className="bg-blue-600 text-white px-4 py-1.5 rounded text-sm hover:bg-blue-700"
+                >
+                  Create
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }

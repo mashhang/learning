@@ -1,63 +1,55 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useAuth } from "@/app/context/AuthContext";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/app/context/AuthContext";
+import Navbar from "@/app/components/Navbar";
+import { SidebarProvider, useSidebar } from "@/app/context/SidebarContext";
 
 export default function AdminLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const { user, logout, isLoading } = useAuth();
+  const { user, isLoading } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
-    if (!isLoading && (!user || user.role !== "ADMIN")) {
+    if (!isLoading && !user) {
       router.push("/login");
     }
   }, [isLoading, user, router]);
 
-  // ✅ Don't render anything while loading or unauthorized
-  if (isLoading || !user || user.role !== "ADMIN") return null;
+  if (isLoading || !user) return null;
 
   return (
-    <div className="flex">
-      <aside className="w-64 bg-gray-800 text-white min-h-screen p-4">
-        <h2 className="text-xl font-bold">Admin Panel</h2>
-        <nav className="mt-4">
-          <ul>
-            <li className="mb-2">
-              <a href="/admin">Dashboard</a>
-            </li>
-            <li className="mb-2">
-              <a href="/admin/chapters">Chapters</a>
-            </li>
-            <li className="mb-2">
-              <a href="/admin/lessons">Lessons</a>
-            </li>
-            <li className="mb-2">
-              <a href="/admin/assessments">Assessments</a>
-            </li>
-            <li className="mb-2">
-              <a href="/admin/users">Users</a>
-            </li>
-            <li className="mb-4">
-              <a href="/admin/announcements">Announcements</a>
-            </li>
-          </ul>
-        </nav>
+    <SidebarProvider>
+      <InnerAdminLayout>{children}</InnerAdminLayout>
+    </SidebarProvider>
+  );
+}
 
-        {/* ✅ Logout Button */}
-        <button
-          onClick={logout}
-          className="w-full bg-red-600 hover:bg-red-700 text-white py-2 rounded-md mt-6"
-        >
-          Logout
-        </button>
-      </aside>
+function InnerAdminLayout({ children }: { children: React.ReactNode }) {
+  const { isSidebarOpen, toggleSidebar } = useSidebar();
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const toggleProfile = () => setIsProfileOpen((prev) => !prev);
 
-      <main className="flex-1 p-6 max-w-screen overflow-hidden">
+  return (
+    <div className="min-h-screen">
+      <Navbar
+        isAuthenticated={true}
+        isSidebarOpen={isSidebarOpen}
+        isProfileOpen={isProfileOpen}
+        toggleSidebar={toggleSidebar}
+        toggleProfile={toggleProfile}
+      />
+      <main
+        className="flex-1 p-6 max-w-screen overflow-hidden bg-no-repeat bg-cover bg-center bg-fixed"
+        style={{
+          backgroundImage: `url('/bg-mylesson.png')`,
+          minHeight: "100vh",
+        }}
+      >
         {children}
       </main>
     </div>

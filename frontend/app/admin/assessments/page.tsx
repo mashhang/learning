@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 
 import API_URL from "@/lib/getApiUrl";
+import { useSidebar } from "@/app/context/SidebarContext";
 
 // const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
 
@@ -22,6 +23,9 @@ type AssessmentEntry = {
 };
 
 export default function AssessmentHistoryPage() {
+  const { isSidebarOpen, sidebarWidth } = useSidebar();
+  const [screenWidth, setScreenWidth] = useState(0);
+
   const [data, setData] = useState<AssessmentEntry[]>([]);
   const [filtered, setFiltered] = useState<AssessmentEntry[]>([]);
   const [search, setSearch] = useState("");
@@ -97,110 +101,128 @@ export default function AssessmentHistoryPage() {
   }, [search, typeFilter, data]);
 
   return (
-    <div>
-      <h1 className="text-2xl font-bold mb-4">Assessment History</h1>
+    <div
+      className="transition-all duration-300 ease-in-out min-h-screen overflow-auto"
+      style={{
+        marginLeft:
+          typeof window !== "undefined" &&
+          window.innerWidth >= 768 &&
+          isSidebarOpen
+            ? "224px" // Tailwind's w-56 (14rem)
+            : "0",
+        width:
+          typeof window !== "undefined" &&
+          window.innerWidth >= 768 &&
+          isSidebarOpen
+            ? "calc(100% - 224px)"
+            : "100%",
+      }}
+    >
+      <div className="p-8 mt-4">
+        <h1 className="text-2xl font-bold mb-4">Assessment History</h1>
 
-      <div className="flex items-center gap-4 mb-6">
-        <input
-          type="text"
-          placeholder="Search student..."
-          className="border px-4 py-2 rounded w-64"
-          onChange={(e) => setSearch(e.target.value)}
-        />
-        <select
-          className="border px-4 py-2 rounded"
-          value={typeFilter}
-          onChange={(e) => setTypeFilter(e.target.value)}
-        >
-          <option value="ALL">All Types</option>
-          <option value="DIAGNOSTIC">Diagnostic Exam</option>
-          <option value="PRE">Pre-Assessment</option>
-          <option value="POST">Post-Assessment</option>
-        </select>
-      </div>
+        <div className="flex items-center gap-4 mb-6">
+          <input
+            type="text"
+            placeholder="Search student..."
+            className="border px-4 py-2 rounded w-64"
+            onChange={(e) => setSearch(e.target.value)}
+          />
+          <select
+            className="border px-4 py-2 rounded"
+            value={typeFilter}
+            onChange={(e) => setTypeFilter(e.target.value)}
+          >
+            <option value="ALL">All Types</option>
+            <option value="DIAGNOSTIC">Diagnostic Exam</option>
+            <option value="PRE">Pre-Assessment</option>
+            <option value="POST">Post-Assessment</option>
+          </select>
+        </div>
 
-      <div className="mb-6">
-        <label className="font-semibold mr-2">
-          Diagnostic Exam Timer (minutes):
-        </label>
-        <input
-          type="number"
-          value={timerMinutes}
-          onChange={(e) => setTimerMinutes(Number(e.target.value))}
-          className="border px-2 py-1 rounded w-24 mr-2"
-        />
-        <button
-          onClick={async () => {
-            await fetch(`${API_URL}/api/settings/diagnostic-timer`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ diagnosticTimerMinutes: timerMinutes }),
-            });
-            alert("Timer updated!");
-          }}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-1 rounded"
-        >
-          Save
-        </button>
-      </div>
+        <div className="mb-6">
+          <label className="font-semibold mr-2">
+            Diagnostic Exam Timer (minutes):
+          </label>
+          <input
+            type="number"
+            value={timerMinutes}
+            onChange={(e) => setTimerMinutes(Number(e.target.value))}
+            className="border px-2 py-1 rounded w-24 mr-2"
+          />
+          <button
+            onClick={async () => {
+              await fetch(`${API_URL}/api/settings/diagnostic-timer`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ diagnosticTimerMinutes: timerMinutes }),
+              });
+              alert("Timer updated!");
+            }}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-1 rounded"
+          >
+            Save
+          </button>
+        </div>
 
-      <table className="w-full text-left border">
-        <thead className="bg-gray-100">
-          <tr>
-            <th className="p-2 border">Student ID</th>
-            <th className="p-2 border">Student</th>
-            <th className="p-2 border">Lesson</th>
-            <th className="p-2 border">Type</th>
-            <th className="p-2 border">Score</th>
-            <th className="p-2 border">Date Taken</th>
-          </tr>
-        </thead>
-        <tbody>
-          {filtered.map((entry, idx) => (
-            <tr key={idx} className="border-t">
-              <td className="p-2">{entry.studentId}</td>
-              {/* <td className="p-2">{entry.userEmail?.split("@")[0] || "-"}</td> */}
-              <td className="p-2">
-                {entry.lastName}, {entry.firstName}
-                {/* {entry.userName} */}
-              </td>
-              <td className="p-2">{entry.lessonTitle}</td>
-              <td className="p-2">{entry.type}</td>
-              <td className="p-2">
-                {entry.score}% ({entry.correct}/{entry.total})
-              </td>
-              <td className="p-2">
-                {new Date(entry.createdAt).toLocaleDateString()}
-              </td>
+        <table className="bg-white w-full text-left border">
+          <thead className="bg-gray-100">
+            <tr>
+              <th className="p-2 border">Student ID</th>
+              <th className="p-2 border">Student</th>
+              <th className="p-2 border">Lesson</th>
+              <th className="p-2 border">Type</th>
+              <th className="p-2 border">Score</th>
+              <th className="p-2 border">Date Taken</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
-      <div className="flex justify-between items-center mt-4">
-        <button
-          onClick={() => setPage((prev) => Math.max(prev - 1, 1))}
-          disabled={page === 1}
-          className="px-4 py-2 rounded bg-gray-200 disabled:opacity-50"
-        >
-          Previous
-        </button>
+          </thead>
+          <tbody>
+            {filtered.map((entry, idx) => (
+              <tr key={idx} className="border-t">
+                <td className="p-2">{entry.studentId}</td>
+                {/* <td className="p-2">{entry.userEmail?.split("@")[0] || "-"}</td> */}
+                <td className="p-2">
+                  {entry.lastName}, {entry.firstName}
+                  {/* {entry.userName} */}
+                </td>
+                <td className="p-2">{entry.lessonTitle}</td>
+                <td className="p-2">{entry.type}</td>
+                <td className="p-2">
+                  {entry.score}% ({entry.correct}/{entry.total})
+                </td>
+                <td className="p-2">
+                  {new Date(entry.createdAt).toLocaleDateString()}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        <div className="flex justify-between items-center mt-4">
+          <button
+            onClick={() => setPage((prev) => Math.max(prev - 1, 1))}
+            disabled={page === 1}
+            className="px-4 py-2 rounded bg-gray-200 disabled:opacity-50"
+          >
+            Previous
+          </button>
 
-        <span className="text-sm text-gray-600">
-          Page {page} of {totalPages}
-        </span>
+          <span className="text-sm text-gray-600">
+            Page {page} of {totalPages}
+          </span>
 
-        <button
-          onClick={() => setPage((prev) => Math.min(prev + 1, totalPages))}
-          disabled={page === totalPages}
-          className="px-4 py-2 rounded bg-gray-200 disabled:opacity-50"
-        >
-          Next
-        </button>
+          <button
+            onClick={() => setPage((prev) => Math.min(prev + 1, totalPages))}
+            disabled={page === totalPages}
+            className="px-4 py-2 rounded bg-gray-200 disabled:opacity-50"
+          >
+            Next
+          </button>
+        </div>
+
+        {filtered.length === 0 && (
+          <p className="text-gray-500 mt-4 italic">No assessment data found.</p>
+        )}
       </div>
-
-      {filtered.length === 0 && (
-        <p className="text-gray-500 mt-4 italic">No assessment data found.</p>
-      )}
     </div>
   );
 }

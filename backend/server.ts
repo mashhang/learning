@@ -33,6 +33,7 @@ import {
   updateLesson,
   deleteLesson,
   getSkillTagsByLessonId,
+  getLessonEngagementStats,
 } from "./src/routes/lesson.js";
 
 import { userRouter } from "./src/routes/user.js";
@@ -91,6 +92,7 @@ app.get("/api/lessons", getLessons);
 app.get("/api/lessons/:id", getLessonById);
 app.post("/api/lessons", authenticateUser, createLesson);
 app.get("/api/lessons/:lessonId/skill-tags", getSkillTagsByLessonId);
+app.get("/api/admin/lesson-engagement", getLessonEngagementStats);
 
 app.put("/api/lessons/:id", authenticateUser, upload.any(), updateLesson);
 app.delete("/api/lessons/:id", authenticateUser, deleteLesson); // ✅ Now correctly includes `authenticateUser`

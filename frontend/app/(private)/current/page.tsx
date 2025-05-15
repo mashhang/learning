@@ -829,7 +829,14 @@ function ExerciseCard({
   return (
     <div className="bg-white shadow-md rounded-md p-4 mb-6 border border-gray-200 select-none">
       {/* <h3 className="font-semibold text-md mb-4">{exercise.question}</h3> */}
-      <MathPreview value={exercise.question} />
+      <div className="mb-3">
+        <p className="text-md font-medium text-gray-800">{exercise.question}</p>
+        {exercise.exerciseEquation && (
+          <div className="mt-1">
+            <MathPreview value={exercise.exerciseEquation} />
+          </div>
+        )}
+      </div>
 
       <div className="flex flex-col lg:flex-row gap-4">
         {/* Left Column: Question Choices */}
@@ -880,14 +887,19 @@ function ExerciseCard({
                 )}
 
                 {/* Explanation Section */}
-                {exercise.explanation && (
+                {(exercise.explanation || exercise.explanationEquation) && (
                   <div className="mt-2 bg-gray-100 p-3 rounded border-l-4 border-blue-500">
                     <p className="font-semibold text-blue-700 mb-1">
                       Explanation:
                     </p>
-                    <p className="text-gray-700 ">
-                      <MathPreview value={exercise.explanation} />
-                    </p>
+                    {exercise.explanation && (
+                      <p className="text-gray-700">{exercise.explanation}</p>
+                    )}
+                    {exercise.explanationEquation && (
+                      <div className="mt-2">
+                        <MathPreview value={exercise.explanationEquation} />
+                      </div>
+                    )}
                   </div>
                 )}
               </div>

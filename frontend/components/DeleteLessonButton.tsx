@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import API_URL from "@/lib/getApiUrl";
 
 type DeleteLessonButtonProps = {
   lesson: { id: string; title: string };
@@ -32,13 +33,10 @@ export default function DeleteLessonButton({
     }
 
     try {
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/lessons/${lesson.id}`,
-        {
-          method: "DELETE",
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
+      const res = await fetch(`${API_URL}/api/lessons/${lesson.id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
 
       if (res.ok) {
         setLessons((prev) => prev.filter((l) => l.id !== lesson.id));
