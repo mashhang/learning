@@ -252,13 +252,18 @@ export default function CurrentLesson() {
       <AssessmentQuiz
         type="PRE"
         lesson={lesson}
-        onFinish={() => {
-          router.push(`/pre-assessment?id=${lesson.id}`);
-        }}
+        lessonId={lesson.id}
+        score={score}
+        correctCount={Object.values(answerResults).filter((x) => x).length}
+        incorrectCount={Object.values(answerResults).filter((x) => !x).length}
+        averageTime={0} // update this if you're tracking timing
         selectedAnswers={selectedAnswers}
-        timedAnswers={[]}
+        timedAnswers={[]} // or your real time-tracked data
         setSelectedAnswers={setSelectedAnswers}
         setTimedAnswers={() => {}}
+        onFinish={() => router.push(`/pre-assessment?id=${lesson.id}`)}
+        onClose={() => router.push("/dashboard")}
+        onContinue={(id) => router.push(`/current?id=${id}`)}
       />
     );
   }
@@ -268,31 +273,18 @@ export default function CurrentLesson() {
       <AssessmentQuiz
         type="POST"
         lesson={lesson}
-        onFinish={async () => {
-          await fetch(`${API_URL}/api/progress`, {
-            method: "PATCH",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              userId: user?.id,
-              lessonId: lesson.id,
-              currentPage: totalPages,
-              totalPages,
-              forceComplete: true,
-            }),
-          });
-
-          toast.success("🎉 Lesson Completed!", {
-            duration: 3000, // 3 seconds
-          });
-
-          setTimeout(() => {
-            router.push(`/post-assessment?id=${lesson.id}`);
-          }, 1000); // ✅ short delay so toast shows nicely before redirect
-        }}
+        lessonId={lesson.id}
+        score={score}
+        correctCount={Object.values(answerResults).filter((x) => x).length}
+        incorrectCount={Object.values(answerResults).filter((x) => !x).length}
+        averageTime={0} // update this if you're tracking timing
         selectedAnswers={selectedAnswers}
-        timedAnswers={[]}
+        timedAnswers={[]} // or your real time-tracked data
         setSelectedAnswers={setSelectedAnswers}
         setTimedAnswers={() => {}}
+        onFinish={() => router.push(`/pre-assessment?id=${lesson.id}`)}
+        onClose={() => router.push("/dashboard")}
+        onContinue={(id) => router.push(`/current?id=${id}`)}
       />
     );
   }
