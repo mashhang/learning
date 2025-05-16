@@ -9,6 +9,7 @@ import API_URL from "@/lib/getApiUrl";
 import { toast } from "sonner";
 import groupBy from "lodash/groupBy";
 import { CgSpinner } from "react-icons/cg";
+import MathPreview from "./MathPreview";
 
 // const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
 
@@ -328,7 +329,7 @@ export default function AssessmentQuiz({
                     </div>
                     {q.questionEquation && (
                       <div className=" mb-2">
-                        <span>{q.questionEquation}</span>
+                        <MathPreview value={q.questionEquation} />
                       </div>
                     )}
                     <div className="text-sm text-gray-600">
