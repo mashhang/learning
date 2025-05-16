@@ -36,8 +36,12 @@ export default function MyLessons() {
       });
       const data = await res.json();
       console.log("🧪 Ordered Lessons", data);
+
+      // ✅ Filter out DRAFT lessons
+      const published = data.filter((l: any) => l.status !== "DRAFT");
+
       setLessons(
-        data.map((l: any) => ({
+        published.map((l: any) => ({
           ...l,
           lessonId: l.lessonId || l.id, // ✅ fallback to `id`
         }))

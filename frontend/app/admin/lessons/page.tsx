@@ -71,7 +71,7 @@ export default function LessonsAdmin() {
 
   return (
     <div
-      className="transition-all duration-300 ease-in-out h-screen"
+      className="transition-all duration-300 ease-in-out min-h-screen overflow-auto"
       style={{
         marginLeft:
           typeof window !== "undefined" &&
@@ -155,7 +155,7 @@ export default function LessonsAdmin() {
                     {lesson.exerciseCount}
                   </td>
                   <td className="p-2 text-center border">
-                    {lesson.status === "published" ? (
+                    {lesson.status === "PUBLISHED" ? (
                       <span className="bg-green-100 text-green-700 px-2 py-1 rounded text-sm">
                         🟢 Published
                       </span>

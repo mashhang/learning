@@ -86,6 +86,9 @@ router.get("/ordered/:userId", async (req, res) => {
 
   try {
     const lessons = await prisma.lesson.findMany({
+      where: {
+        status: "PUBLISHED", // 🛑 This hides DRAFT lessons
+      },
       include: {
         chapter: true,
         pages: {
