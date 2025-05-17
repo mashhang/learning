@@ -177,6 +177,7 @@ export default function PreAssessmentPage() {
       onFinish={() => router.push(`/current?id=${lesson.id}`)}
       onClose={() => router.push("/dashboard")}
       onContinue={(lessonId: string) => router.push(`/current/?id=${lessonId}`)}
+      questions={lesson.questions}
     />
   );
 }
