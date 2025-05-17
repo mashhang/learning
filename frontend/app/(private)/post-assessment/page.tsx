@@ -71,6 +71,7 @@ export default function PostAssessmentPage() {
       }}
       onClose={() => router.push("/dashboard")}
       onContinue={(lessonId: string) => router.push(`/current/?id=${lessonId}`)}
+      questions={lesson.questions}
     />
   );
 }
