@@ -37,6 +37,10 @@ type Lesson = {
   progress: number;
   updatedAt?: string | null;
   pages: LessonPage[];
+  questions: {
+    id: string;
+    skillTag: string | null;
+  }[];
 };
 
 type ExampleExercise = {
