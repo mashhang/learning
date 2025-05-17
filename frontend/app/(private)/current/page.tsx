@@ -264,6 +264,7 @@ export default function CurrentLesson() {
         onFinish={() => router.push(`/pre-assessment?id=${lesson.id}`)}
         onClose={() => router.push("/dashboard")}
         onContinue={(id) => router.push(`/current?id=${id}`)}
+        questions={lesson.questions}
       />
     );
   }
@@ -285,6 +286,7 @@ export default function CurrentLesson() {
         onFinish={() => router.push(`/pre-assessment?id=${lesson.id}`)}
         onClose={() => router.push("/dashboard")}
         onContinue={(id) => router.push(`/current?id=${id}`)}
+        questions={lesson.questions}
       />
     );
   }
