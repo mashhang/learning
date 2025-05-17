@@ -332,6 +332,7 @@ export const updateLesson = async (
           choices,
           correctAnswer: q.correctAnswer,
           isChoiceImage: q.isChoiceImage || false,
+          skillTag: q.skillTag,
         },
         create: {
           lessonId,
@@ -341,6 +342,7 @@ export const updateLesson = async (
           choices,
           correctAnswer: q.correctAnswer,
           isChoiceImage: q.isChoiceImage || false,
+          skillTag: q.skillTag,
         },
       });
     }

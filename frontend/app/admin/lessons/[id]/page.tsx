@@ -8,6 +8,7 @@ import LessonPageModal from "@/app/components/modals/LessonPageModal";
 import ExerciseModal from "@/app/components/modals/ExerciseModal";
 import { Trash2 } from "lucide-react";
 import API_URL from "@/lib/getApiUrl";
+import { useSidebar } from "@/app/context/SidebarContext";
 
 // const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
 
@@ -45,6 +46,7 @@ type ExampleExercise = {
 export default function EditLesson() {
   const router = useRouter();
   const { id } = useParams();
+  const { isSidebarOpen, sidebarWidth } = useSidebar();
   const [activeTab, setActiveTab] = useState<
     "info" | "pages" | "questions" | "exercises"
   >("info");
@@ -334,720 +336,759 @@ export default function EditLesson() {
 
   return (
     //max-w-[1610px]
-    <div className="p-4 overflow-x-hidden max-w-screen-lg mx-auto">
-      <h1 className="text-2xl font-bold mb-4">Edit Lesson</h1>
+    <div
+      className="transition-all duration-300 ease-in-out min-h-screen overflow-auto"
+      style={{
+        marginLeft:
+          typeof window !== "undefined" &&
+          window.innerWidth >= 768 &&
+          isSidebarOpen
+            ? "224px" // Tailwind's w-56 (14rem)
+            : "0",
+        width:
+          typeof window !== "undefined" &&
+          window.innerWidth >= 768 &&
+          isSidebarOpen
+            ? "calc(100% - 224px)"
+            : "100%",
+      }}
+    >
+      <div className="p-8 my-4 overflow-x-hidden mx-auto">
+        <h1 className="text-2xl font-bold mb-4">Edit Lesson</h1>
 
-      <div className="flex space-x-4 border-b mb-4">
-        {[
-          { key: "info", label: "General Info" },
-          { key: "pages", label: "Lesson Pages" },
-          { key: "questions", label: "Questions" },
-          { key: "exercises", label: "Exercises" },
-        ].map((tab) => (
-          <button
-            key={tab.key}
-            type="button"
-            onClick={() => setActiveTab(tab.key as any)}
-            className={`px-4 py-2 text-sm font-medium border-b-2 ${
-              activeTab === tab.key
-                ? "border-blue-500 text-blue-600"
-                : "border-transparent text-gray-500"
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
+        <div className="flex space-x-4 border-b mb-4">
+          {[
+            { key: "info", label: "General Info" },
+            { key: "pages", label: "Lesson Pages" },
+            { key: "questions", label: "Questions" },
+            { key: "exercises", label: "Exercises" },
+          ].map((tab) => (
+            <button
+              key={tab.key}
+              type="button"
+              onClick={() => setActiveTab(tab.key as any)}
+              className={`px-4 py-2 text-sm font-medium border-b-2 ${
+                activeTab === tab.key
+                  ? "border-blue-500 text-blue-600"
+                  : "border-transparent text-gray-500"
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
 
-      <div className="max-h-[calc(100vh-120px)] overflow-y-auto pr-4">
-        <form onSubmit={handleUpdate} encType="multipart/form-data">
-          {activeTab === "info" && (
-            <>
-              <div className="mb-4">
-                <input
-                  type="text"
-                  value={lesson.title}
-                  onChange={(e) => handleLessonChange("title", e.target.value)}
-                  className="border p-2 w-full mb-2"
-                  placeholder="Lesson Title"
-                />
+        <div className="max-h-[calc(100vh-120px)] overflow-y-auto pr-4">
+          <form onSubmit={handleUpdate} encType="multipart/form-data">
+            {activeTab === "info" && (
+              <>
+                <div className="mb-4">
+                  <input
+                    type="text"
+                    value={lesson.title}
+                    onChange={(e) =>
+                      handleLessonChange("title", e.target.value)
+                    }
+                    className="border p-2 w-full mb-2"
+                    placeholder="Lesson Title"
+                  />
 
-                <input
-                  type="text"
-                  value={lesson.videoUrl || ""}
-                  onChange={(e) =>
-                    handleLessonChange("videoUrl", e.target.value)
-                  }
-                  className="border p-2 w-full mb-2"
-                  placeholder="Video URL (optional)"
-                />
+                  <input
+                    type="text"
+                    value={lesson.videoUrl || ""}
+                    onChange={(e) =>
+                      handleLessonChange("videoUrl", e.target.value)
+                    }
+                    className="border p-2 w-full mb-2"
+                    placeholder="Video URL (optional)"
+                  />
 
-                <select
-                  value={status}
-                  onChange={(e) => setStatus(e.target.value)}
-                  className="border p-2 w-full bg-white"
-                >
-                  <option value="DRAFT">Draft</option>
-                  <option value="PUBLISHED">Published</option>
-                </select>
-
-                <button
-                  type="submit"
-                  className="bg-green-500 text-white px-4 py-1 rounded mt-4"
-                >
-                  Update Lesson
-                </button>
-              </div>
-            </>
-          )}
-
-          {activeTab === "pages" && (
-            <>
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-bold">
-                  Lesson Pages
-                  <span className="text-sm font-normal text-gray-500 ml-2">
-                    ({lesson.pages.length} total)
-                  </span>
-                </h2>
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    className="bg-blue-500 text-white px-4 py-1 rounded"
-                    onClick={() => setShowPageModal(true)}
+                  <select
+                    value={status}
+                    onChange={(e) => setStatus(e.target.value)}
+                    className="border p-2 w-full bg-white"
                   >
-                    + Add Page
-                  </button>
+                    <option value="DRAFT">Draft</option>
+                    <option value="PUBLISHED">Published</option>
+                  </select>
+
                   <button
                     type="submit"
-                    className="bg-green-500 text-white px-4 py-1 rounded"
+                    className="bg-green-500 text-white px-4 py-1 rounded mt-4"
                   >
                     Update Lesson
                   </button>
                 </div>
-              </div>
+              </>
+            )}
 
-              <table className="w-full border-collapse border text-sm">
-                <thead className="bg-gray-100">
-                  <tr>
-                    <th className="border px-3 py-2 text-left">Content</th>
-                    <th className="border px-3 py-2 text-left">Media</th>
-                    <th className="border px-3 py-2 text-center">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {lesson.pages.map((page, i) => (
-                    <tr
-                      key={i}
-                      className="cursor-pointer hover:bg-gray-50"
-                      onClick={() => {
-                        setEditPageIndex(i);
-                        setTempPage({
-                          content: page.content,
-                          media: null, // don’t preload File object
-                          existingMedia: page.existingMedia ?? null, // ✅ send for preview
-                        });
-                        setShowPageModal(true);
-                      }}
+            {activeTab === "pages" && (
+              <>
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className="text-xl font-bold">
+                    Lesson Pages
+                    <span className="text-sm font-normal text-gray-500 ml-2">
+                      ({lesson.pages.length} total)
+                    </span>
+                  </h2>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      className="bg-blue-500 text-white px-4 py-1 rounded"
+                      onClick={() => setShowPageModal(true)}
                     >
-                      {/* <td className="border px-4 py-2 max-w-[400px] whitespace-normal break-words">
+                      + Add Page
+                    </button>
+                    <button
+                      type="submit"
+                      className="bg-green-500 text-white px-4 py-1 rounded"
+                    >
+                      Update Lesson
+                    </button>
+                  </div>
+                </div>
+
+                <table className="w-full border-collapse border text-sm">
+                  <thead className="bg-gray-100">
+                    <tr>
+                      <th className="border px-3 py-2 text-left">Content</th>
+                      <th className="border px-3 py-2 text-left">Media</th>
+                      <th className="border px-3 py-2 text-center">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {lesson.pages.map((page, i) => (
+                      <tr
+                        key={i}
+                        className="cursor-pointer hover:bg-gray-50"
+                        onClick={() => {
+                          setEditPageIndex(i);
+                          setTempPage({
+                            content: page.content,
+                            media: null, // don’t preload File object
+                            existingMedia: page.existingMedia ?? null, // ✅ send for preview
+                          });
+                          setShowPageModal(true);
+                        }}
+                      >
+                        {/* <td className="border px-4 py-2 max-w-[400px] whitespace-normal break-words">
                         {/* <BlockMath math={page.content} />
                         {page.content}
                       </td> */}
-                      <td className="border px-3 py-2 max-w-[400px] whitespace-normal break-words">
-                        <div
-                          dangerouslySetInnerHTML={{
-                            __html: `<math-field read-only style="pointer-events: none; width: 100%; font-size: 1rem;">${page.content}</math-field>`,
-                          }}
-                        />
-                      </td>
+                        <td className="border px-3 py-2 max-w-[400px] whitespace-normal break-words">
+                          <div
+                            dangerouslySetInnerHTML={{
+                              __html: `<math-field read-only style="pointer-events: none; width: 100%; font-size: 1rem;">${page.content}</math-field>`,
+                            }}
+                          />
+                        </td>
 
-                      <td className="border px-3 py-2">
-                        {page.existingMedia || page.media ? (
-                          (() => {
-                            const rawPath = page.existingMedia ?? "";
+                        <td className="border px-3 py-2">
+                          {page.existingMedia || page.media ? (
+                            (() => {
+                              const rawPath = page.existingMedia ?? "";
 
-                            // ✅ Detect Supabase URL — skip prefixing
-                            const fullUrl = (() => {
-                              if (!rawPath) return "";
-                              if (rawPath.startsWith("http")) return rawPath;
-                              return `${API_URL}${
-                                rawPath.startsWith("/") ? "" : "/"
-                              }${rawPath}`;
-                            })();
+                              // ✅ Detect Supabase URL — skip prefixing
+                              const fullUrl = (() => {
+                                if (!rawPath) return "";
+                                if (rawPath.startsWith("http")) return rawPath;
+                                return `${API_URL}${
+                                  rawPath.startsWith("/") ? "" : "/"
+                                }${rawPath}`;
+                              })();
 
-                            return rawPath.endsWith(".mp4") ? (
-                              <video className="w-32" controls src={fullUrl} />
-                            ) : (
-                              <img
-                                className="w-20 rounded border"
-                                src={fullUrl}
-                                alt="Media"
-                              />
+                              return rawPath.endsWith(".mp4") ? (
+                                <video
+                                  className="w-32"
+                                  controls
+                                  src={fullUrl}
+                                />
+                              ) : (
+                                <img
+                                  className="w-20 rounded border"
+                                  src={fullUrl}
+                                  alt="Media"
+                                />
+                              );
+                            })()
+                          ) : (
+                            <span className="text-gray-500">No media</span>
+                          )}
+                        </td>
+                        <td
+                          className="border px-3 py-2 text-center cursor-pointer text-red-400 hover:text-red-700 transition"
+                          onClick={(e) => {
+                            e.stopPropagation();
+
+                            const confirmDelete = window.confirm(
+                              "Are you sure you want to delete this page?"
                             );
-                          })()
-                        ) : (
-                          <span className="text-gray-500">No media</span>
-                        )}
-                      </td>
-                      <td
-                        className="border px-3 py-2 text-center cursor-pointer text-red-400 hover:text-red-700 transition"
-                        onClick={(e) => {
-                          e.stopPropagation();
+                            if (!confirmDelete) return;
 
-                          const confirmDelete = window.confirm(
-                            "Are you sure you want to delete this page?"
+                            setLesson((prev) => ({
+                              ...prev,
+                              pages: prev.pages.filter(
+                                (_, index) => index !== i
+                              ),
+                            }));
+                          }}
+                        >
+                          <Trash2 size={24} className="mx-auto" />
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </>
+            )}
+
+            {activeTab === "questions" && (
+              <>
+                <div className="relative">
+                  <div className="sticky top-0 bg-white pb-2">
+                    <div className="flex justify-between items-center mb-4">
+                      <h2 className="text-xl font-bold">
+                        Edit Questions
+                        <span className="text-sm font-normal text-gray-500 ml-2">
+                          ({lesson.questions.length} total)
+                        </span>
+                      </h2>
+
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          className="bg-blue-500 text-white px-4 py-1 rounded"
+                          onClick={() => {
+                            setTempQuestion({
+                              question: "",
+                              questionEquation: "",
+                              choices: ["", "", "", ""],
+                              correctAnswer: "",
+                              skillTag: "",
+                            });
+                            setEditQuestionIndex(null); // new item
+                            setShowQuestionModal(true);
+                          }}
+                        >
+                          + Add Question
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="overflow-x-auto max-h-[calc(100vh-320px)]">
+                    <table className="min-w-full table-auto border-collapse text-sm">
+                      <thead className="bg-gray-100">
+                        <tr>
+                          <th className="sticky top-0 bg-gray-100 px-3 py-2 text-left border">
+                            Question
+                          </th>
+                          <th className="sticky top-0 bg-gray-100 px-3 py-2 text-left border">
+                            Choices
+                          </th>
+                          <th className="sticky top-0 bg-gray-100 px-3 py-2 text-left border">
+                            Correct Answer
+                          </th>
+                          <th className="sticky top-0 bg-gray-100 px-3 py-2 text-center border">
+                            Actions
+                          </th>
+                        </tr>
+                      </thead>
+
+                      <tbody>
+                        {paginatedQuestions.map((q, index) => {
+                          const globalIndex =
+                            (currentQuestionPage - 1) * questionsPerPage +
+                            index;
+
+                          return (
+                            <tr
+                              key={globalIndex}
+                              className="cursor-pointer hover:bg-gray-50"
+                              onClick={() => {
+                                setEditQuestionIndex(globalIndex);
+                                setTempQuestion({
+                                  question: q.question,
+                                  questionEquation: q.questionEquation || "",
+                                  choices: [...q.choices],
+                                  correctAnswer: q.correctAnswer,
+                                  skillTag: q.skillTag ?? "",
+                                });
+                                setShowQuestionModal(true);
+                              }}
+                            >
+                              <td className="border px-3 py-2 whitespace-pre-line">
+                                <div className="text-gray-900">
+                                  {q.question}
+                                </div>
+                                {q.questionEquation && (
+                                  <div className="text-[#333333]">
+                                    <InlineMath math={q.questionEquation} />
+                                  </div>
+                                )}
+                              </td>
+                              <td className="border px-3 py-2">
+                                {q.choices.map((c, i) => (
+                                  <div key={i}>
+                                    <InlineMath math={c} />
+                                  </div>
+                                ))}
+                              </td>
+                              <td className="border px-3 py-2">
+                                <InlineMath math={q.correctAnswer} />
+                              </td>
+                              <td
+                                className="border px-3 py-2 text-center cursor-pointer text-red-400 hover:text-red-700 transition"
+                                onClick={async (e) => {
+                                  e.stopPropagation();
+                                  const confirmDelete = window.confirm(
+                                    "Are you sure you want to delete this question?"
+                                  );
+                                  if (!confirmDelete) return;
+
+                                  const questionToDelete =
+                                    lesson.questions[globalIndex];
+                                  const token = localStorage.getItem("token");
+
+                                  try {
+                                    await fetch(
+                                      `${API_URL}/api/questions/${questionToDelete.id}`,
+                                      {
+                                        method: "DELETE",
+                                        headers: {
+                                          Authorization: `Bearer ${token}`,
+                                        },
+                                      }
+                                    );
+
+                                    setLesson((prev) => ({
+                                      ...prev,
+                                      questions: prev.questions.filter(
+                                        (_, i) => i !== globalIndex
+                                      ),
+                                    }));
+
+                                    setCurrentQuestionPage(1);
+                                  } catch (error) {
+                                    alert("Failed to delete question");
+                                    console.error(
+                                      "Delete question error:",
+                                      error
+                                    );
+                                  }
+                                }}
+                              >
+                                <Trash2 size={24} className="mx-auto" />
+                              </td>
+                            </tr>
                           );
-                          if (!confirmDelete) return;
-
-                          setLesson((prev) => ({
-                            ...prev,
-                            pages: prev.pages.filter((_, index) => index !== i),
-                          }));
-                        }}
-                      >
-                        <Trash2 size={24} className="mx-auto" />
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </>
-          )}
-
-          {activeTab === "questions" && (
-            <>
-              <div className="relative">
-                <div className="sticky top-0 z-10 bg-white pb-2">
-                  <div className="flex justify-between items-center mb-4">
-                    <h2 className="text-xl font-bold">
-                      Edit Questions
-                      <span className="text-sm font-normal text-gray-500 ml-2">
-                        ({lesson.questions.length} total)
-                      </span>
-                    </h2>
-
-                    <div className="flex gap-2">
-                      <button
-                        type="button"
-                        className="bg-blue-500 text-white px-4 py-1 rounded"
-                        onClick={() => {
-                          setTempQuestion({
-                            question: "",
-                            questionEquation: "",
-                            choices: ["", "", "", ""],
-                            correctAnswer: "",
-                            skillTag: "",
-                          });
-                          setEditQuestionIndex(null); // new item
-                          setShowQuestionModal(true);
-                        }}
-                      >
-                        + Add Question
-                      </button>
-                    </div>
+                        })}
+                      </tbody>
+                    </table>
                   </div>
-                </div>
 
-                <div className="overflow-x-auto max-h-[calc(100vh-320px)]">
-                  <table className="min-w-full table-auto border-collapse text-sm">
-                    <thead className="bg-gray-100">
-                      <tr>
-                        <th className="sticky top-0 bg-gray-100 px-3 py-2 text-left z-10 border">
-                          Question
-                        </th>
-                        <th className="sticky top-0 bg-gray-100 px-3 py-2 text-left z-10 border">
-                          Choices
-                        </th>
-                        <th className="sticky top-0 bg-gray-100 px-3 py-2 text-left z-10 border">
-                          Correct Answer
-                        </th>
-                        <th className="sticky top-0 bg-gray-100 px-3 py-2 text-center z-10 border">
-                          Actions
-                        </th>
-                      </tr>
-                    </thead>
+                  <div className="mt-4 flex justify-end gap-2">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setCurrentQuestionPage((prev) => Math.max(prev - 1, 1))
+                      }
+                      disabled={currentQuestionPage === 1}
+                      className="px-3 py-1 border rounded disabled:opacity-50"
+                    >
+                      Prev
+                    </button>
 
-                    <tbody>
-                      {paginatedQuestions.map((q, index) => {
-                        const globalIndex =
-                          (currentQuestionPage - 1) * questionsPerPage + index;
-
-                        return (
-                          <tr
-                            key={globalIndex}
-                            className="cursor-pointer hover:bg-gray-50"
-                            onClick={() => {
-                              setEditQuestionIndex(globalIndex);
-                              setTempQuestion({
-                                question: q.question,
-                                questionEquation: q.questionEquation || "",
-                                choices: [...q.choices],
-                                correctAnswer: q.correctAnswer,
-                                skillTag: q.skillTag ?? "",
-                              });
-                              setShowQuestionModal(true);
-                            }}
-                          >
-                            <td className="border px-3 py-2 whitespace-pre-line">
-                              <div className="text-gray-900">{q.question}</div>
-                              {q.questionEquation && (
-                                <div className="text-[#333333]">
-                                  <InlineMath math={q.questionEquation} />
-                                </div>
-                              )}
-                            </td>
-                            <td className="border px-3 py-2">
-                              {q.choices.map((c, i) => (
-                                <div key={i}>
-                                  <InlineMath math={c} />
-                                </div>
-                              ))}
-                            </td>
-                            <td className="border px-3 py-2">
-                              <InlineMath math={q.correctAnswer} />
-                            </td>
-                            <td
-                              className="border px-3 py-2 text-center cursor-pointer text-red-400 hover:text-red-700 transition"
-                              onClick={async (e) => {
-                                e.stopPropagation();
-                                const confirmDelete = window.confirm(
-                                  "Are you sure you want to delete this question?"
-                                );
-                                if (!confirmDelete) return;
-
-                                const questionToDelete =
-                                  lesson.questions[globalIndex];
-                                const token = localStorage.getItem("token");
-
-                                try {
-                                  await fetch(
-                                    `${API_URL}/api/questions/${questionToDelete.id}`,
-                                    {
-                                      method: "DELETE",
-                                      headers: {
-                                        Authorization: `Bearer ${token}`,
-                                      },
-                                    }
-                                  );
-
-                                  setLesson((prev) => ({
-                                    ...prev,
-                                    questions: prev.questions.filter(
-                                      (_, i) => i !== globalIndex
-                                    ),
-                                  }));
-
-                                  setCurrentQuestionPage(1);
-                                } catch (error) {
-                                  alert("Failed to delete question");
-                                  console.error(
-                                    "Delete question error:",
-                                    error
-                                  );
-                                }
-                              }}
-                            >
-                              <Trash2 size={24} className="mx-auto" />
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-
-                <div className="mt-4 flex justify-end gap-2">
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setCurrentQuestionPage((prev) => Math.max(prev - 1, 1))
-                    }
-                    disabled={currentQuestionPage === 1}
-                    className="px-3 py-1 border rounded disabled:opacity-50"
-                  >
-                    Prev
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setCurrentQuestionPage((prev) =>
-                        prev <
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setCurrentQuestionPage((prev) =>
+                          prev <
+                          Math.ceil(lesson.questions.length / questionsPerPage)
+                            ? prev + 1
+                            : prev
+                        )
+                      }
+                      disabled={
+                        currentQuestionPage ===
                         Math.ceil(lesson.questions.length / questionsPerPage)
-                          ? prev + 1
-                          : prev
-                      )
-                    }
-                    disabled={
-                      currentQuestionPage ===
-                      Math.ceil(lesson.questions.length / questionsPerPage)
-                    }
-                    className="px-3 py-1 border rounded disabled:opacity-50"
-                  >
-                    Next
-                  </button>
-                </div>
-              </div>
-            </>
-          )}
-
-          {activeTab === "exercises" && (
-            <>
-              <div className="relative">
-                <div className="sticky top-0 z-10 bg-white pb-2">
-                  <div className="flex justify-between items-center mb-4">
-                    <h2 className="text-xl font-bold">
-                      Edit Exercises
-                      <span className="text-sm font-normal text-gray-500 ml-2">
-                        ({lesson.exercises.length} total)
-                      </span>
-                    </h2>
-
-                    <div className="flex gap-2">
-                      <button
-                        type="button"
-                        className="bg-blue-500 text-white px-4 py-1 rounded"
-                        onClick={() => {
-                          setTempExercise({
-                            question: "",
-                            exerciseEquation: "",
-                            choices: ["", "", "", ""],
-                            correctAnswer: "",
-                            explanation: "",
-                            explanationEquation: "",
-                            difficulty: "EASY",
-                            skillTag: "",
-                          });
-                          setEditExerciseIndex(null); // new item
-                          setShowExerciseModal(true);
-                        }}
-                      >
-                        + Add Exercise
-                      </button>
-                    </div>
+                      }
+                      className="px-3 py-1 border rounded disabled:opacity-50"
+                    >
+                      Next
+                    </button>
                   </div>
                 </div>
+              </>
+            )}
 
-                <div className="overflow-x-auto max-h-[calc(100vh-320px)]">
-                  <table className="min-w-full table-auto border-collapse text-sm">
-                    <thead className="bg-gray-100">
-                      <tr>
-                        <th className="sticky top-0 bg-gray-100 border px-3 py-2 z-10">
-                          Question
-                        </th>
-                        <th className="sticky top-0 bg-gray-100 border px-3 py-2 z-10">
-                          Choices
-                        </th>
-                        <th className="sticky top-0 bg-gray-100 border px-3 py-2 z-10">
-                          Correct
-                        </th>
-                        <th className="sticky top-0 bg-gray-100 border px-3 py-2 z-10">
-                          Explanation
-                        </th>
-                        <th className="sticky top-0 bg-gray-100 border px-3 py-2 z-10">
-                          Difficulty
-                        </th>
-                        <th className="sticky top-0 bg-gray-100 border px-3 py-2 z-10">
-                          Skill Tag
-                        </th>
-                        <th className="sticky top-0 bg-gray-100 border px-3 py-2 z-10 text-center">
-                          Actions
-                        </th>
-                      </tr>
-                    </thead>
+            {activeTab === "exercises" && (
+              <>
+                <div className="relative">
+                  <div className="sticky top-0 bg-white pb-2">
+                    <div className="flex justify-between items-center mb-4">
+                      <h2 className="text-xl font-bold">
+                        Edit Exercises
+                        <span className="text-sm font-normal text-gray-500 ml-2">
+                          ({lesson.exercises.length} total)
+                        </span>
+                      </h2>
 
-                    <tbody>
-                      {paginatedExercises.map((ex, i) => {
-                        const globalIndex =
-                          (currentExercisePage - 1) * ExerciseitemsPerPage + i;
-                        return (
-                          <tr
-                            key={globalIndex}
-                            className="hover:bg-gray-50 cursor-pointer"
-                            onClick={() => {
-                              setTempExercise({
-                                question: ex.question,
-                                exerciseEquation: ex.exerciseEquation || "",
-                                choices: [...ex.choices],
-                                correctAnswer: ex.correctAnswer,
-                                explanation: ex.explanation,
-                                explanationEquation:
-                                  ex.explanationEquation || "",
-                                difficulty: ex.difficulty,
-                                skillTag: ex.skillTag ?? "",
-                              });
-                              setEditExerciseIndex(globalIndex); // ✅ Correct full index
-                              setShowExerciseModal(true);
-                            }}
-                          >
-                            <td className="border px-3 py-2">
-                              <div className="text-gray-900">{ex.question}</div>
-                              {ex.exerciseEquation && (
-                                <div className="text-blue-700 mt-1">
-                                  <InlineMath math={ex.exerciseEquation} />
-                                </div>
-                              )}
-                            </td>
-                            <td className="border px-3 py-2">
-                              {ex.choices.map((c, j) => (
-                                <div key={j}>
-                                  <InlineMath>{c}</InlineMath>
-                                </div>
-                              ))}
-                            </td>
-                            <td className="border px-3 py-2">
-                              <InlineMath>{ex.correctAnswer}</InlineMath>
-                            </td>
-                            <td className="border px-3 py-2">
-                              <div className="text-gray-900">
-                                {ex.explanation}
-                              </div>
-                              {ex.explanationEquation && (
-                                <div className="text-blue-700 mt-1">
-                                  <InlineMath math={ex.explanationEquation} />
-                                </div>
-                              )}
-                            </td>
-                            <td className="border px-3 py-2">
-                              {ex.difficulty}
-                            </td>
-                            <td className="border px-3 py-2">{ex.skillTag}</td>
-                            <td
-                              className="border px-3 py-2 text-center cursor-pointer text-red-400 hover:text-red-700 transition"
-                              onClick={async (e) => {
-                                e.stopPropagation(); // prevent row click
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          className="bg-blue-500 text-white px-4 py-1 rounded"
+                          onClick={() => {
+                            setTempExercise({
+                              question: "",
+                              exerciseEquation: "",
+                              choices: ["", "", "", ""],
+                              correctAnswer: "",
+                              explanation: "",
+                              explanationEquation: "",
+                              difficulty: "EASY",
+                              skillTag: "",
+                            });
+                            setEditExerciseIndex(null); // new item
+                            setShowExerciseModal(true);
+                          }}
+                        >
+                          + Add Exercise
+                        </button>
+                      </div>
+                    </div>
+                  </div>
 
-                                const confirmDelete = window.confirm(
-                                  "Are you sure you want to delete this exercise?"
-                                );
-                                if (!confirmDelete) return;
+                  <div className="overflow-x-auto max-h-[calc(100vh-320px)]">
+                    <table className="min-w-full table-auto border-collapse text-sm">
+                      <thead className="bg-gray-100">
+                        <tr>
+                          <th className="sticky top-0 bg-gray-100 border px-3 py-2">
+                            Question
+                          </th>
+                          <th className="sticky top-0 bg-gray-100 border px-3 py-2">
+                            Choices
+                          </th>
+                          <th className="sticky top-0 bg-gray-100 border px-3 py-2">
+                            Correct
+                          </th>
+                          <th className="sticky top-0 bg-gray-100 border px-3 py-2">
+                            Explanation
+                          </th>
+                          <th className="sticky top-0 bg-gray-100 border px-3 py-2">
+                            Difficulty
+                          </th>
+                          <th className="sticky top-0 bg-gray-100 border px-3 py-2">
+                            Skill Tag
+                          </th>
+                          <th className="sticky top-0 bg-gray-100 border px-3 py-2 text-center">
+                            Actions
+                          </th>
+                        </tr>
+                      </thead>
 
-                                const exerciseToDelete =
-                                  lesson.exercises[globalIndex];
-                                const token = localStorage.getItem("token");
-
-                                try {
-                                  await fetch(
-                                    `${API_URL}/api/exercises/${exerciseToDelete.id}`,
-                                    {
-                                      method: "DELETE",
-                                      headers: {
-                                        Authorization: `Bearer ${token}`,
-                                      },
-                                    }
-                                  );
-
-                                  setLesson((prev) => ({
-                                    ...prev,
-                                    exercises: prev.exercises.filter(
-                                      (_, idx) => idx !== globalIndex
-                                    ),
-                                  }));
-                                } catch (error) {
-                                  alert("Failed to delete exercise");
-                                  console.error("Delete error:", error);
-                                }
+                      <tbody>
+                        {paginatedExercises.map((ex, i) => {
+                          const globalIndex =
+                            (currentExercisePage - 1) * ExerciseitemsPerPage +
+                            i;
+                          return (
+                            <tr
+                              key={globalIndex}
+                              className="hover:bg-gray-50 cursor-pointer"
+                              onClick={() => {
+                                setTempExercise({
+                                  question: ex.question,
+                                  exerciseEquation: ex.exerciseEquation || "",
+                                  choices: [...ex.choices],
+                                  correctAnswer: ex.correctAnswer,
+                                  explanation: ex.explanation,
+                                  explanationEquation:
+                                    ex.explanationEquation || "",
+                                  difficulty: ex.difficulty,
+                                  skillTag: ex.skillTag ?? "",
+                                });
+                                setEditExerciseIndex(globalIndex); // ✅ Correct full index
+                                setShowExerciseModal(true);
                               }}
                             >
-                              <Trash2 size={24} className="mx-auto" />
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
+                              <td className="border px-3 py-2">
+                                <div className="text-gray-900">
+                                  {ex.question}
+                                </div>
+                                {ex.exerciseEquation && (
+                                  <div className="text-blue-700 mt-1">
+                                    <InlineMath math={ex.exerciseEquation} />
+                                  </div>
+                                )}
+                              </td>
+                              <td className="border px-3 py-2">
+                                {ex.choices.map((c, j) => (
+                                  <div key={j}>
+                                    <InlineMath>{c}</InlineMath>
+                                  </div>
+                                ))}
+                              </td>
+                              <td className="border px-3 py-2">
+                                <InlineMath>{ex.correctAnswer}</InlineMath>
+                              </td>
+                              <td className="border px-3 py-2">
+                                <div className="text-gray-900">
+                                  {ex.explanation}
+                                </div>
+                                {ex.explanationEquation && (
+                                  <div className="text-blue-700 mt-1">
+                                    <InlineMath math={ex.explanationEquation} />
+                                  </div>
+                                )}
+                              </td>
+                              <td className="border px-3 py-2">
+                                {ex.difficulty}
+                              </td>
+                              <td className="border px-3 py-2">
+                                {ex.skillTag}
+                              </td>
+                              <td
+                                className="border px-3 py-2 text-center cursor-pointer text-red-400 hover:text-red-700 transition"
+                                onClick={async (e) => {
+                                  e.stopPropagation(); // prevent row click
 
-                {/* ✅ Add pagination controls here */}
-                <div className="mt-4 flex justify-end gap-2">
-                  <button
-                    type="button" // ✅ Add this
-                    onClick={() =>
-                      setCurrentExercisePage((prev) => Math.max(prev - 1, 1))
-                    }
-                    disabled={currentExercisePage === 1}
-                    className="px-3 py-1 border rounded disabled:opacity-50"
-                  >
-                    Prev
-                  </button>
+                                  const confirmDelete = window.confirm(
+                                    "Are you sure you want to delete this exercise?"
+                                  );
+                                  if (!confirmDelete) return;
 
-                  <button
-                    type="button" // ✅ Add this
-                    onClick={() =>
-                      setCurrentExercisePage((prev) =>
-                        prev <
+                                  const exerciseToDelete =
+                                    lesson.exercises[globalIndex];
+                                  const token = localStorage.getItem("token");
+
+                                  try {
+                                    await fetch(
+                                      `${API_URL}/api/exercises/${exerciseToDelete.id}`,
+                                      {
+                                        method: "DELETE",
+                                        headers: {
+                                          Authorization: `Bearer ${token}`,
+                                        },
+                                      }
+                                    );
+
+                                    setLesson((prev) => ({
+                                      ...prev,
+                                      exercises: prev.exercises.filter(
+                                        (_, idx) => idx !== globalIndex
+                                      ),
+                                    }));
+                                  } catch (error) {
+                                    alert("Failed to delete exercise");
+                                    console.error("Delete error:", error);
+                                  }
+                                }}
+                              >
+                                <Trash2 size={24} className="mx-auto" />
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* ✅ Add pagination controls here */}
+                  <div className="mt-4 flex justify-end gap-2">
+                    <button
+                      type="button" // ✅ Add this
+                      onClick={() =>
+                        setCurrentExercisePage((prev) => Math.max(prev - 1, 1))
+                      }
+                      disabled={currentExercisePage === 1}
+                      className="px-3 py-1 border rounded disabled:opacity-50"
+                    >
+                      Prev
+                    </button>
+
+                    <button
+                      type="button" // ✅ Add this
+                      onClick={() =>
+                        setCurrentExercisePage((prev) =>
+                          prev <
+                          Math.ceil(
+                            lesson.exercises.length / ExerciseitemsPerPage
+                          )
+                            ? prev + 1
+                            : prev
+                        )
+                      }
+                      disabled={
+                        currentExercisePage ===
                         Math.ceil(
                           lesson.exercises.length / ExerciseitemsPerPage
                         )
-                          ? prev + 1
-                          : prev
-                      )
-                    }
-                    disabled={
-                      currentExercisePage ===
-                      Math.ceil(lesson.exercises.length / ExerciseitemsPerPage)
-                    }
-                    className="px-3 py-1 border rounded disabled:opacity-50"
-                  >
-                    Next
-                  </button>
+                      }
+                      className="px-3 py-1 border rounded disabled:opacity-50"
+                    >
+                      Next
+                    </button>
+                  </div>
                 </div>
-              </div>
-            </>
-          )}
-        </form>
-      </div>
+              </>
+            )}
+          </form>
+        </div>
 
-      {/* QUESTION MODAL*/}
-      <QuestionModal
-        isOpen={showQuestionModal}
-        onClose={() => {
-          setShowQuestionModal(false);
-          setEditQuestionIndex(null);
-        }}
-        editIndex={editQuestionIndex}
-        initialData={tempQuestion}
-        onSaveToServer={async (data, index) => {
-          const token = localStorage.getItem("token");
+        {/* QUESTION MODAL*/}
+        <QuestionModal
+          isOpen={showQuestionModal}
+          onClose={() => {
+            setShowQuestionModal(false);
+            setEditQuestionIndex(null);
+          }}
+          editIndex={editQuestionIndex}
+          initialData={tempQuestion}
+          onSaveToServer={async (data, index) => {
+            const token = localStorage.getItem("token");
 
-          if (index !== null) {
-            // 🟡 Update existing question
-            const updated = [...lesson.questions];
-            const questionId = lesson.questions[index].id;
+            if (index !== null) {
+              // 🟡 Update existing question
+              const updated = [...lesson.questions];
+              const questionId = lesson.questions[index].id;
 
-            const res = await fetch(`${API_URL}/api/questions/${questionId}`, {
-              method: "PUT",
-              headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${token}`,
-              },
-              body: JSON.stringify({
-                ...data,
-                isChoiceImage: false,
-                questionImage: null,
-              }),
-            });
+              const res = await fetch(
+                `${API_URL}/api/questions/${questionId}`,
+                {
+                  method: "PUT",
+                  headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                  },
+                  body: JSON.stringify({
+                    ...data,
+                    isChoiceImage: false,
+                    questionImage: null,
+                  }),
+                }
+              );
 
-            const saved = await res.json();
+              const saved = await res.json();
 
-            updated[index] = saved;
-            setLesson((prev) => ({ ...prev, questions: updated }));
-          } else {
-            // 🟢 Create new question
-            const res = await fetch(`${API_URL}/api/questions`, {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${token}`,
-              },
-              body: JSON.stringify({ ...data, lessonId: id }),
-            });
-
-            const saved = await res.json();
-
-            setLesson((prev) => ({
-              ...prev,
-              questions: [...prev.questions, saved],
-            }));
-          }
-        }}
-      />
-
-      {/* PAGES MODAL*/}
-      <LessonPageModal
-        isOpen={showPageModal}
-        onClose={() => {
-          setShowPageModal(false);
-          setTempPage({ content: "", media: null });
-          setEditPageIndex(null); // reset index
-        }}
-        tempPage={tempPage}
-        setTempPage={setTempPage}
-        editMode={editPageIndex !== null}
-        onSave={() => {
-          if (editPageIndex !== null) {
-            const updatedPages = [...lesson.pages];
-            updatedPages[editPageIndex] = {
-              ...updatedPages[editPageIndex],
-              content: tempPage.content,
-              media: tempPage.media,
-            };
-            setLesson((prev) => ({ ...prev, pages: updatedPages }));
-          } else {
-            setLesson((prev) => ({
-              ...prev,
-              pages: [...prev.pages, { ...tempPage }],
-            }));
-          }
-          setTempPage({ content: "", media: null });
-          setShowPageModal(false);
-          setEditPageIndex(null);
-        }}
-      />
-      {/* EXERCISE MODAL*/}
-      <ExerciseModal
-        isOpen={showExerciseModal}
-        onClose={() => {
-          setShowExerciseModal(false);
-          setEditExerciseIndex(null);
-        }}
-        editIndex={editExerciseIndex} // ✅ Pass it
-        initialData={tempExercise}
-        onSaveToServer={async (data, index) => {
-          const token = localStorage.getItem("token");
-
-          // Update existing exercise
-          if (index !== null) {
-            const updated = [...lesson.exercises];
-            updated[index] = {
-              ...updated[index],
-              ...data,
-            };
-            setLesson((prev) => ({ ...prev, exercises: updated }));
-
-            // 📨 Send PUT or PATCH to your backend
-            await fetch(
-              `${API_URL}/api/exercises/${lesson.exercises[index].id}`,
-              {
-                method: "PUT",
+              updated[index] = saved;
+              setLesson((prev) => ({ ...prev, questions: updated }));
+            } else {
+              // 🟢 Create new question
+              const res = await fetch(`${API_URL}/api/questions`, {
+                method: "POST",
                 headers: {
                   "Content-Type": "application/json",
                   Authorization: `Bearer ${token}`,
                 },
-                body: JSON.stringify(updated[index]),
-              }
-            );
-          } else {
-            // Add new
-            const newExercise = {
-              ...data,
-              difficulty: "EASY",
-              skillTag: "",
-            };
+                body: JSON.stringify({ ...data, lessonId: id }),
+              });
 
-            const res = await fetch(`${API_URL}/api/exercise`, {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${token}`,
-              },
-              body: JSON.stringify({
-                ...newExercise,
-                lessonId: id,
-              }),
-            });
+              const saved = await res.json();
 
-            const saved = await res.json();
+              setLesson((prev) => ({
+                ...prev,
+                questions: [...prev.questions, saved],
+              }));
+            }
+          }}
+        />
 
-            // Update local state
-            setLesson((prev) => ({
-              ...prev,
-              exercises: [...prev.exercises, saved],
-            }));
-          }
-        }}
-      />
+        {/* PAGES MODAL*/}
+        <LessonPageModal
+          isOpen={showPageModal}
+          onClose={() => {
+            setShowPageModal(false);
+            setTempPage({ content: "", media: null });
+            setEditPageIndex(null); // reset index
+          }}
+          tempPage={tempPage}
+          setTempPage={setTempPage}
+          editMode={editPageIndex !== null}
+          onSave={() => {
+            if (editPageIndex !== null) {
+              const updatedPages = [...lesson.pages];
+              updatedPages[editPageIndex] = {
+                ...updatedPages[editPageIndex],
+                content: tempPage.content,
+                media: tempPage.media,
+              };
+              setLesson((prev) => ({ ...prev, pages: updatedPages }));
+            } else {
+              setLesson((prev) => ({
+                ...prev,
+                pages: [...prev.pages, { ...tempPage }],
+              }));
+            }
+            setTempPage({ content: "", media: null });
+            setShowPageModal(false);
+            setEditPageIndex(null);
+          }}
+        />
+        {/* EXERCISE MODAL*/}
+        <ExerciseModal
+          isOpen={showExerciseModal}
+          onClose={() => {
+            setShowExerciseModal(false);
+            setEditExerciseIndex(null);
+          }}
+          editIndex={editExerciseIndex} // ✅ Pass it
+          initialData={tempExercise}
+          onSaveToServer={async (data, index) => {
+            const token = localStorage.getItem("token");
+
+            // Update existing exercise
+            if (index !== null) {
+              const updated = [...lesson.exercises];
+              updated[index] = {
+                ...updated[index],
+                ...data,
+              };
+              setLesson((prev) => ({ ...prev, exercises: updated }));
+
+              // 📨 Send PUT or PATCH to your backend
+              await fetch(
+                `${API_URL}/api/exercises/${lesson.exercises[index].id}`,
+                {
+                  method: "PUT",
+                  headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                  },
+                  body: JSON.stringify(updated[index]),
+                }
+              );
+            } else {
+              // Add new
+              const newExercise = {
+                ...data,
+                difficulty: "EASY",
+                skillTag: "",
+              };
+
+              const res = await fetch(`${API_URL}/api/exercise`, {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({
+                  ...newExercise,
+                  lessonId: id,
+                }),
+              });
+
+              const saved = await res.json();
+
+              // Update local state
+              setLesson((prev) => ({
+                ...prev,
+                exercises: [...prev.exercises, saved],
+              }));
+            }
+          }}
+        />
+      </div>
     </div>
   );
 }

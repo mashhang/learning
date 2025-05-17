@@ -10,6 +10,8 @@ import { toast } from "sonner";
 import groupBy from "lodash/groupBy";
 import { CgSpinner } from "react-icons/cg";
 import MathPreview from "./MathPreview";
+import { Card } from "@/components/ui/card";
+import SkillTagPill from "@/app/components/SkillTagPill";
 
 // const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
 
@@ -34,7 +36,15 @@ export default function AssessmentQuiz({
   onClose: () => void;
   onContinue: (lessonId: string) => void;
   selectedAnswers: { [key: string]: string };
-  timedAnswers: any[];
+  timedAnswers: {
+    questionId: string;
+    timeTaken: number;
+    isCorrect: boolean;
+  }[];
+  questions: {
+    id: string;
+    skillTag: string | null;
+  }[];
   setSelectedAnswers: React.Dispatch<
     React.SetStateAction<{ [key: string]: string }>
   >;
@@ -46,11 +56,39 @@ export default function AssessmentQuiz({
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [currentIndex, setCurrentIndex] = useState(0);
-  // const [selectedAnswers, setSelectedAnswers] = useState<{
-  //   [key: string]: string | null;
-  // }>({});
+  const totalTime = timedAnswers.reduce((acc, a) => acc + a.timeTaken, 0);
+  const avgTime = (totalTime / timedAnswers.length).toFixed(1);
+  const correctCount = timedAnswers.filter((a) => a.isCorrect).length;
+
+  // Group performance by skillTag
+  const performanceBySkill: Record<string, { correct: number; total: number }> =
+    {};
+
+  for (const answer of timedAnswers) {
+    const question = questions.find((q) => q.id === answer.questionId);
+    const skill = question?.skillTag || "Uncategorized";
+    if (!performanceBySkill[skill]) {
+      performanceBySkill[skill] = { correct: 0, total: 0 };
+    }
+    performanceBySkill[skill].total++;
+    if (answer.isCorrect) performanceBySkill[skill].correct++;
+  }
+
+  const strengths = Object.entries(performanceBySkill)
+    .filter(([_, data]) => data.correct / data.total >= 0.8)
+    .map(([skill]) => skill);
+
+  const weaknesses = Object.entries(performanceBySkill)
+    .filter(([_, data]) => data.correct / data.total < 0.5)
+    .map(([skill]) => skill);
+
+  const recommendation = weaknesses.length
+    ? `Focus on: ${weaknesses.join(", ")}`
+    : strengths.length
+    ? `Advance to higher topics in: ${strengths.join(", ")}`
+    : "You're on the right track. Keep reviewing!";
+
   const [questionStartTime, setQuestionStartTime] = useState(Date.now());
-  // const [timedAnswers, setTimedAnswers] = useState<any[]>([]);
   const [submitted, setSubmitted] = useState(false);
   const [score, setScore] = useState<number | null>(null);
 
@@ -190,6 +228,8 @@ export default function AssessmentQuiz({
 
   const current = questions[currentIndex];
 
+  const isMath = (str: string) => /[-+*/^\\[\\]()∞\\infty]/.test(str);
+
   return (
     <div className="min-h-screen p-6">
       {/* Question Rendering */}
@@ -288,13 +328,6 @@ export default function AssessmentQuiz({
       {submitted && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
           <div className="bg-white p-6 sm:p-10 rounded-lg shadow-xl w-full max-w-3xl max-h-[90vh] overflow-y-auto relative">
-            {/* <button
-              onClick={onClose}
-              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-xl"
-            >
-              ✕
-            </button> */}
-
             <h2 className="text-2xl font-bold text-center mb-6 capitalize text-blue-900">
               {type === "PRE" ? "Pre-Assessment" : "Post-Assessment"} Summary
             </h2>
@@ -316,34 +349,106 @@ export default function AssessmentQuiz({
               )}
             </div>
 
-            <h3 className="text-md font-semibold mb-2 border-b pb-1">
-              📝 Question Breakdown
-            </h3>
-            <ul className="text-sm space-y-4 max-h-[250px] overflow-y-auto">
-              {questions.map((q, index) => {
-                const record = timedAnswers.find((a) => a.questionId === q.id);
-                return (
-                  <li key={q.id} className="border p-3 rounded-md">
-                    <div className="font-medium mb-1">
-                      Q{index + 1}: {q.question}
-                    </div>
-                    {q.questionEquation && (
-                      <div className=" mb-2">
-                        <MathPreview value={q.questionEquation} />
-                      </div>
+            {/* KPI Cards */}
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <Card className="p-4 text-center">
+                  <p className="text-sm text-gray-600">Correct Answers</p>
+                  <p className="text-2xl font-bold text-green-700">
+                    {correctCount}
+                  </p>
+                </Card>
+                <Card className="p-4 text-center">
+                  <p className="text-sm text-gray-600">Total Questions</p>
+                  <p className="text-2xl font-bold text-blue-700">
+                    {timedAnswers.length}
+                  </p>
+                </Card>
+                <Card className="p-4 text-center">
+                  <p className="text-sm text-gray-600">Avg. Time / Question</p>
+                  <p className="text-2xl font-bold text-yellow-600">
+                    {avgTime}s
+                  </p>
+                </Card>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
+                <Card className="p-4 border border-green-200">
+                  <h4 className="font-semibold text-green-700 mb-2">
+                    ✅ Strengths
+                  </h4>
+                  <ul className="list-disc ml-5 text-gray-700">
+                    {strengths.length ? (
+                      strengths.map((skill, index) => (
+                        <SkillTagPill
+                          key={index}
+                          skill={skill}
+                          variant="blue"
+                        />
+                      ))
+                    ) : (
+                      <li className="italic text-gray-500">
+                        No strong areas yet
+                      </li>
                     )}
-                    <div className="text-sm text-gray-600">
-                      <span className="mr-2">🕐 {record?.timeTaken}s</span>
-                      {record?.isCorrect ? (
-                        <span className="text-green-600">✅ Correct</span>
-                      ) : (
-                        <span className="text-red-600">❌ Incorrect</span>
-                      )}
-                    </div>
-                  </li>
-                );
-              })}
-            </ul>
+                  </ul>
+                </Card>
+                <Card className="p-4 border border-yellow-200">
+                  <h4 className="font-semibold text-yellow-700 mb-2">
+                    ⚠️ Weaknesses
+                  </h4>
+                  <ul className="list-disc ml-5 text-gray-700">
+                    {weaknesses.length ? (
+                      weaknesses.map((skill, index) => (
+                        <SkillTagPill
+                          key={index}
+                          skill={skill}
+                          variant="yellow"
+                        />
+                      ))
+                    ) : (
+                      <li className="italic text-gray-500">
+                        No weak areas detected
+                      </li>
+                    )}
+                  </ul>
+                </Card>
+                <Card className="p-4 border border-blue-200">
+                  <h4 className="font-semibold text-blue-700 mb-2">
+                    📘 Recommendation
+                  </h4>
+                  <p className="text-gray-700">
+                    {weaknesses.length > 0 ? (
+                      <>
+                        <span className="font-medium">Focus on:</span>{" "}
+                        {weaknesses.map((skill, index) => (
+                          <SkillTagPill
+                            key={index}
+                            skill={skill}
+                            variant="yellow"
+                          />
+                        ))}
+                      </>
+                    ) : strengths.length > 0 ? (
+                      <>
+                        <span className="font-medium">
+                          Advance to higher topics in:
+                        </span>{" "}
+                        {strengths.map((skill, index) => (
+                          <SkillTagPill
+                            key={index}
+                            skill={skill}
+                            variant="blue"
+                          />
+                        ))}
+                      </>
+                    ) : (
+                      "You're on the right track. Keep reviewing!"
+                    )}
+                  </p>
+                </Card>
+              </div>
+            </div>
 
             <div className="flex justify-center gap-4 mt-8">
               <button
